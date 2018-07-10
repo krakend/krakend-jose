@@ -1,0 +1,19 @@
+[[constraint]]
+  branch = "master"
+  name = "github.com/auth0-community/go-auth0"
+
+[[constraint]]
+  name = "github.com/devopsfaith/krakend"
+  version = "0.5.0"
+
+[[constraint]]
+  name = "github.com/gin-gonic/gin"
+  version = "1.2.0"
+
+[[constraint]]
+  name = "gopkg.in/square/go-jose.v2"
+  version = "2.1.6"
+
+[prune]
+  go-tests = true
+  unused-packages = true
