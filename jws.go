@@ -12,6 +12,7 @@ import (
 const (
 	ValidatorNamespace = "github.com/devopsfaith/krakend-jose/validator"
 	SignerNamespace    = "github.com/devopsfaith/krakend-jose/signer"
+	defaultRolesKey    = "roles"
 )
 
 type signatureConfig struct {
@@ -21,6 +22,7 @@ type signatureConfig struct {
 	Issuer       string   `json:"issuer,omitempty"`
 	Audience     []string `json:"audience,omitempty"`
 	Roles        []string `json:"roles,omitempty"`
+	RolesKey     string   `json:"roles_key,omitempty"`
 }
 
 type signerConfig struct {
@@ -39,6 +41,10 @@ func getSignatureConfig(cfg *config.EndpointConfig) (*signatureConfig, error) {
 	data, _ := json.Marshal(tmp)
 	res := new(signatureConfig)
 	err := json.Unmarshal(data, res)
+
+	if res.RolesKey == "" {
+		res.RolesKey = defaultRolesKey
+	}
 	return res, err
 }
 

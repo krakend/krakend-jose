@@ -113,7 +113,7 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 				return
 			}
 
-			if !canAccess(claims, scfg.Roles) {
+			if !canAccess(scfg.RolesKey, claims, scfg.Roles) {
 				c.AbortWithStatus(http.StatusUnauthorized)
 				return
 			}
@@ -123,12 +123,12 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 	}
 }
 
-func canAccess(claims map[string]interface{}, required []string) bool {
+func canAccess(roleKey string, claims map[string]interface{}, required []string) bool {
 	if len(required) == 0 {
 		return true
 	}
 	roles := []interface{}{}
-	if tmp, ok := claims["roles"]; ok {
+	if tmp, ok := claims[roleKey]; ok {
 		if v, ok := tmp.([]interface{}); ok {
 			roles = v
 		}
