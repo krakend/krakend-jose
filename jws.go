@@ -23,6 +23,7 @@ type signatureConfig struct {
 	Audience     []string `json:"audience,omitempty"`
 	Roles        []string `json:"roles,omitempty"`
 	RolesKey     string   `json:"roles_key,omitempty"`
+	CookieKey    string   `json:"cookie_key,omitempty"`
 }
 
 type signerConfig struct {
