@@ -85,14 +85,16 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 			logger.Fatal("JOSE: unknown algorithm", scfg.Alg, "defined for", cfg.Endpoint)
 		}
 
+		tokenExtractor := TokenExtractor(scfg.CookieKey)
+
 		validator := auth0.NewValidator(
 			auth0.NewConfiguration(
-				secretProvider(scfg.URI, scfg.CacheEnabled),
+				secretProvider(scfg.URI, scfg.CacheEnabled, tokenExtractor),
 				scfg.Audience,
 				scfg.Issuer,
 				sa,
 			),
-			TokenExtractor(scfg.CookieKey),
+			tokenExtractor,
 		)
 
 		return func(c *gin.Context) {

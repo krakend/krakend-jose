@@ -66,7 +66,7 @@ func newSigner(cfg *config.EndpointConfig) (*signerConfig, Signer, error) {
 		return signerCfg, nopSigner, err
 	}
 
-	sp := secretProvider(signerCfg.URI, false)
+	sp := secretProvider(signerCfg.URI, false, nil)
 	key, err := sp.GetKey(signerCfg.KeyID)
 	if err != nil {
 		return signerCfg, nopSigner, err
