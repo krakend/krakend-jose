@@ -23,6 +23,7 @@ type signatureConfig struct {
 	Audience     []string `json:"audience,omitempty"`
 	Roles        []string `json:"roles,omitempty"`
 	RolesKey     string   `json:"roles_key,omitempty"`
+	CookieKey    string   `json:"cookie_key,omitempty"`
 }
 
 type signerConfig struct {
@@ -65,7 +66,7 @@ func newSigner(cfg *config.EndpointConfig) (*signerConfig, Signer, error) {
 		return signerCfg, nopSigner, err
 	}
 
-	sp := secretProvider(signerCfg.URI, false)
+	sp := secretProvider(signerCfg.URI, false, nil)
 	key, err := sp.GetKey(signerCfg.KeyID)
 	if err != nil {
 		return signerCfg, nopSigner, err

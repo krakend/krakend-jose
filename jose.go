@@ -11,6 +11,7 @@ import (
 	ginkrakend "github.com/devopsfaith/krakend/router/gin"
 	"github.com/gin-gonic/gin"
 	jose "gopkg.in/square/go-jose.v2"
+	"gopkg.in/square/go-jose.v2/jwt"
 )
 
 func HandlerFactory(hf ginkrakend.HandlerFactory, logger logging.Logger, rejecter Rejecter) ginkrakend.HandlerFactory {
@@ -84,14 +85,16 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 			logger.Fatal("JOSE: unknown algorithm", scfg.Alg, "defined for", cfg.Endpoint)
 		}
 
+		tokenExtractor := TokenExtractor(scfg.CookieKey)
+
 		validator := auth0.NewValidator(
 			auth0.NewConfiguration(
-				secretProvider(scfg.URI, scfg.CacheEnabled),
+				secretProvider(scfg.URI, scfg.CacheEnabled, tokenExtractor),
 				scfg.Audience,
 				scfg.Issuer,
 				sa,
 			),
-			nil,
+			tokenExtractor,
 		)
 
 		return func(c *gin.Context) {
@@ -121,6 +124,26 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 			handler(c)
 		}
 	}
+}
+
+func FromCookie(key string) func(r *http.Request) (*jwt.JSONWebToken, error) {
+	if key == "" {
+		key = "access_token"
+	}
+	return func(r *http.Request) (*jwt.JSONWebToken, error) {
+		cookie, err := r.Cookie(key)
+		if err != nil {
+			return nil, auth0.ErrTokenNotFound
+		}
+		return jwt.ParseSigned(cookie.Value)
+	}
+}
+
+func TokenExtractor(key string) auth0.RequestTokenExtractor {
+	return auth0.FromMultiple(
+		auth0.RequestTokenExtractorFunc(auth0.FromHeader),
+		auth0.RequestTokenExtractorFunc(FromCookie(key)),
+	)
 }
 
 func canAccess(roleKey string, claims map[string]interface{}, required []string) bool {

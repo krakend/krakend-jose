@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/http/httptest"
 	"time"
 
@@ -57,6 +58,64 @@ func Example_HS256() {
 	// unauthorized request
 	// 401
 	// authorized request
+	// 200
+	// {}
+	// [application/json; charset=utf-8]
+	//  ERROR: JOSE: no signer config /private
+}
+
+func Example_HS256_cookie() {
+	server := httptest.NewServer(jwkEndpoint("symmetric"))
+	defer server.Close()
+
+	sCfg := newSignerEndpointCfg("HS256", "sim2", server.URL)
+	_, signer, _ := newSigner(sCfg)
+	verifierCfg := newVerifierEndpointCfg("HS256", server.URL, []string{"role_a"})
+
+	externalTokenIssuer := func(rw http.ResponseWriter, req *http.Request) {
+		resp, _ := tokenIssuer(context.Background(), new(proxy.Request))
+		data, ok := resp.Data["access_token"]
+		if !ok {
+			rw.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		token, _ := signer(data)
+		cookie := &http.Cookie{
+			Name:    "access_token",
+			Value:   token,
+			Expires: time.Now().Add(time.Hour),
+		}
+		http.SetCookie(rw, cookie)
+	}
+
+	loginRequest, _ := http.NewRequest("GET", "/", new(bytes.Buffer))
+	w := httptest.NewRecorder()
+	externalTokenIssuer(w, loginRequest)
+
+	buf := new(bytes.Buffer)
+	logger, _ := logging.NewLogger("DEBUG", buf, "")
+	hf := HandlerFactory(ginkrakend.EndpointHandler, logger, nil)
+
+	gin.SetMode(gin.TestMode)
+	engine := gin.New()
+
+	engine.GET(verifierCfg.Endpoint, hf(verifierCfg, proxy.NoopProxy))
+
+	request, _ := http.NewRequest("GET", verifierCfg.Endpoint, new(bytes.Buffer))
+	for _, c := range w.HeaderMap["Set-Cookie"] {
+		request.Header.Add("Cookie", c)
+	}
+
+	w = httptest.NewRecorder()
+	engine.ServeHTTP(w, request)
+
+	fmt.Println(w.Code)
+	fmt.Println(w.Body.String())
+	fmt.Println(w.HeaderMap["Content-Type"])
+
+	fmt.Println(buf.String())
+
+	// output:
 	// 200
 	// {}
 	// [application/json; charset=utf-8]
