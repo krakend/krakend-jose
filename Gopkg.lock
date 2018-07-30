@@ -2,10 +2,11 @@
 
 
 [[projects]]
-  branch = "master"
+  branch = "custom_http_client"
   name = "github.com/auth0-community/go-auth0"
   packages = ["."]
-  revision = "ac84847319d2d9c15a4fa3093715f5bb7bcf4487"
+  revision = "555495804e131f7253f6bb4bfc93f8a4c8bd673a"
+  source = "github.com/kpacha/go-auth0"
 
 [[projects]]
   name = "github.com/devopsfaith/krakend"
@@ -99,6 +100,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f5c241c001e6650ff3377722ec5341492512683956778518cb3daf5e9fe960d2"
+  inputs-digest = "d8bbd4f68d495e4a52156f845cbc1ffbd30d0bf9539321bd60e08ec7caa620e1"
   solver-name = "gps-cdcl"
   solver-version = 1

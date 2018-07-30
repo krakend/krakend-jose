@@ -1,6 +1,7 @@
 [[constraint]]
-  branch = "master"
+  branch = "custom_http_client"
   name = "github.com/auth0-community/go-auth0"
+  source = "github.com/kpacha/go-auth0"
 
 [[constraint]]
   name = "github.com/devopsfaith/krakend"

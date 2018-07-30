@@ -1,6 +1,9 @@
 package jose
 
 import (
+	"crypto/tls"
+	"net"
+	"net/http"
 	"sync"
 	"time"
 
@@ -15,7 +18,33 @@ func secretProvider(URI string, cacheEnabled bool, tokenExtractor auth0.RequestT
 	}
 	mu.RUnlock()
 
-	opts := auth0.JWKClientOptions{URI: URI}
+	opts := auth0.JWKClientOptions{
+		URI: URI,
+		Client: &http.Client{
+			Transport: &http.Transport{
+				Proxy: http.ProxyFromEnvironment,
+				DialContext: (&net.Dialer{
+					Timeout:   30 * time.Second,
+					KeepAlive: 30 * time.Second,
+					DualStack: true,
+				}).DialContext,
+				MaxIdleConns:          10,
+				IdleConnTimeout:       90 * time.Second,
+				TLSHandshakeTimeout:   10 * time.Second,
+				ExpectContinueTimeout: 1 * time.Second,
+				TLSClientConfig: &tls.Config{
+					CipherSuites: []uint16{
+						tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+						tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+						tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+						tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+						tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+						tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+					},
+				},
+			},
+		},
+	}
 	if !cacheEnabled {
 		return auth0.NewJWKClient(opts, tokenExtractor)
 	}
