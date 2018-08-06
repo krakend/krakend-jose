@@ -39,9 +39,10 @@ func TestJWK(t *testing.T) {
 	} {
 		server := httptest.NewServer(jwkEndpoint(tc.Name))
 		defer server.Close()
-		secretProvider := secretProvider(server.URL, false, nil)
+
+		secretProvidr := secretProvider(server.URL, false, []uint16{}, nil)
 		for _, k := range tc.ID {
-			key, err := secretProvider.GetKey(k)
+			key, err := secretProvidr.GetKey(k)
 			if err != nil {
 				t.Errorf("[%s] extracting the key %s: %s", tc.Name, k, err.Error())
 			}

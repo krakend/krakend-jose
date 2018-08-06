@@ -1,7 +1,6 @@
 [[constraint]]
-  branch = "custom_http_client"
+  branch = "master"
   name = "github.com/auth0-community/go-auth0"
-  source = "github.com/kpacha/go-auth0"
 
 [[constraint]]
   name = "github.com/devopsfaith/krakend"
@@ -17,4 +16,5 @@
 
 [prune]
   go-tests = true
+  non-go = true
   unused-packages = true

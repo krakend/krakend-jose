@@ -2,6 +2,8 @@ package jose
 
 import (
 	"context"
+	"fmt"
+	"log"
 	"net/http"
 
 	auth0 "github.com/auth0-community/go-auth0"
@@ -20,7 +22,7 @@ func HandlerFactory(hf ginkrakend.HandlerFactory, logger logging.Logger, rejecte
 
 func TokenSigner(hf ginkrakend.HandlerFactory, logger logging.Logger) ginkrakend.HandlerFactory {
 	return func(cfg *config.EndpointConfig, prxy proxy.Proxy) gin.HandlerFunc {
-		signerCfg, signer, err := newSigner(cfg)
+		signerCfg, signer, err := newSigner(cfg, nil)
 		if err != nil {
 			logger.Error(err.Error(), cfg.Endpoint)
 			return hf(cfg, prxy)
@@ -80,22 +82,10 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 			return handler
 		}
 
-		sa, ok := supportedAlgorithms[scfg.Alg]
-		if !ok {
-			logger.Fatal("JOSE: unknown algorithm", scfg.Alg, "defined for", cfg.Endpoint)
+		validator, err := newValidator(scfg)
+		if err != nil {
+			log.Fatalf("%s: %s", cfg.Endpoint, err.Error())
 		}
-
-		tokenExtractor := TokenExtractor(scfg.CookieKey)
-
-		validator := auth0.NewValidator(
-			auth0.NewConfiguration(
-				secretProvider(scfg.URI, scfg.CacheEnabled, tokenExtractor),
-				scfg.Audience,
-				scfg.Issuer,
-				sa,
-			),
-			tokenExtractor,
-		)
 
 		return func(c *gin.Context) {
 			token, err := validator.ValidateRequest(c.Request)
@@ -126,6 +116,27 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 	}
 }
 
+func newValidator(scfg *signatureConfig) (*auth0.JWTValidator, error) {
+	sa, ok := supportedAlgorithms[scfg.Alg]
+	if !ok {
+		return nil, fmt.Errorf("JOSE: unknown algorithm %s", scfg.Alg)
+	}
+	te := auth0.FromMultiple(
+		auth0.RequestTokenExtractorFunc(auth0.FromHeader),
+		auth0.RequestTokenExtractorFunc(FromCookie(scfg.CookieKey)),
+	)
+
+	return auth0.NewValidator(
+		auth0.NewConfiguration(
+			secretProvider(scfg.URI, scfg.CacheEnabled, scfg.CipherSuites, te),
+			scfg.Audience,
+			scfg.Issuer,
+			sa,
+		),
+		te,
+	), nil
+}
+
 func FromCookie(key string) func(r *http.Request) (*jwt.JSONWebToken, error) {
 	if key == "" {
 		key = "access_token"
@@ -137,13 +148,6 @@ func FromCookie(key string) func(r *http.Request) (*jwt.JSONWebToken, error) {
 		}
 		return jwt.ParseSigned(cookie.Value)
 	}
-}
-
-func TokenExtractor(key string) auth0.RequestTokenExtractor {
-	return auth0.FromMultiple(
-		auth0.RequestTokenExtractorFunc(auth0.FromHeader),
-		auth0.RequestTokenExtractorFunc(FromCookie(key)),
-	)
 }
 
 func canAccess(roleKey string, claims map[string]interface{}, required []string) bool {

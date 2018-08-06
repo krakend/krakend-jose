@@ -69,7 +69,7 @@ func Example_HS256_cookie() {
 	defer server.Close()
 
 	sCfg := newSignerEndpointCfg("HS256", "sim2", server.URL)
-	_, signer, _ := newSigner(sCfg)
+	_, signer, _ := newSigner(sCfg, nil)
 	verifierCfg := newVerifierEndpointCfg("HS256", server.URL, []string{"role_a"})
 
 	externalTokenIssuer := func(rw http.ResponseWriter, req *http.Request) {
@@ -102,9 +102,11 @@ func Example_HS256_cookie() {
 	engine.GET(verifierCfg.Endpoint, hf(verifierCfg, proxy.NoopProxy))
 
 	request, _ := http.NewRequest("GET", verifierCfg.Endpoint, new(bytes.Buffer))
-	for _, c := range w.HeaderMap["Set-Cookie"] {
-		request.Header.Add("Cookie", c)
+	if len(w.Result().Cookies()) == 0 {
+		fmt.Println("unexpected number of cookies")
+		return
 	}
+	request.AddCookie(w.Result().Cookies()[0])
 
 	w = httptest.NewRecorder()
 	engine.ServeHTTP(w, request)

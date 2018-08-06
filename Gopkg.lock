@@ -2,13 +2,15 @@
 
 
 [[projects]]
-  branch = "custom_http_client"
+  branch = "master"
+  digest = "1:90dc93c84f037bfe9d866864f3f1dceb3e637e70b591fce95d3ee8c46b87ed99"
   name = "github.com/auth0-community/go-auth0"
   packages = ["."]
-  revision = "555495804e131f7253f6bb4bfc93f8a4c8bd673a"
-  source = "github.com/kpacha/go-auth0"
+  pruneopts = "NUT"
+  revision = "64af396f3935a5bdd005898a3a190fa8b4d8e56e"
 
 [[projects]]
+  digest = "1:2dffb189646057134a3d93062a43aacc8ccd2931f01c6757a6dee666ab0bc622"
   name = "github.com/devopsfaith/krakend"
   packages = [
     "config",
@@ -20,86 +22,112 @@
     "register/internal",
     "router",
     "router/gin",
-    "sd"
+    "sd",
   ]
+  pruneopts = "NUT"
   revision = "a9119126330c3d376857bdd6ec05c57c2dea670b"
   version = "0.5"
 
 [[projects]]
   branch = "master"
+  digest = "1:23edf5aaca7a1f15d68215ac41595c0732152757e9d7b3f282821222784049f1"
   name = "github.com/gin-contrib/sse"
   packages = ["."]
+  pruneopts = "NUT"
   revision = "22d885f9ecc78bf4ee5d72b937e4bbcdc58e8cae"
 
 [[projects]]
+  digest = "1:10095a140b7829bcf199c8447725c0b1b9874a527b3d73cb2fc9ffc4a5fe8178"
   name = "github.com/gin-gonic/gin"
   packages = [
     ".",
     "binding",
-    "render"
+    "render",
   ]
+  pruneopts = "NUT"
   revision = "d459835d2b077e44f7c9b453505ee29881d5d12d"
   version = "v1.2"
 
 [[projects]]
+  digest = "1:e52902c9084a9e40bc7fdda6ac39c3d09f9437d80911e7050d11e59a4b905790"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
-  revision = "b4deda0973fb4c70b50d226b1af49f3da59f5265"
-  version = "v1.1.0"
+  pruneopts = "NUT"
+  revision = "5a0f697c9ed9d68fef0116532c6e05cfeae00e55"
 
 [[projects]]
+  digest = "1:89e4861dccb76fd84b7de2d88791cc8d23e125805397db27195b4dd83c459713"
   name = "github.com/mattn/go-isatty"
   packages = ["."]
-  revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
-  version = "v0.0.3"
+  pruneopts = "NUT"
+  revision = "57fdcb988a5c543893cc61bce354a6e24ab70022"
 
 [[projects]]
+  digest = "1:a61cf979e3e0a51f0c86370a697d670a4163bd8adb143828117c071e26d3ef59"
   name = "github.com/ugorji/go"
   packages = ["codec"]
-  revision = "b4c50a2b199d93b13dc15e78929cfb23bfdf21ab"
-  version = "v1.1.1"
+  pruneopts = "NUT"
+  revision = "c88ee250d0221a57af388746f5cf03768c21d6e2"
 
 [[projects]]
   branch = "master"
+  digest = "1:d5891c5bca9c62e5d394ca26491d2b710a1dc08cedeb0ca8f9ac4c3305120b02"
   name = "golang.org/x/crypto"
   packages = [
     "ed25519",
-    "ed25519/internal/edwards25519"
+    "ed25519/internal/edwards25519",
   ]
-  revision = "a49355c7e3f8fe157a85be2f77e6e269a0f89602"
+  pruneopts = "NUT"
+  revision = "56440b844dfe139a8ac053f4ecac0b20b79058f4"
 
 [[projects]]
   branch = "master"
+  digest = "1:baccc2c5b92589220bb261314c7228a1748ac843562fb7fc38ae75f2c548cc25"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "7138fd3d9dc8335c567ca206f4333fb75eb05d56"
+  pruneopts = "NUT"
+  revision = "34b17bdb430002e9db9ae7ddc8480b9fa05edc22"
 
 [[projects]]
+  digest = "1:0215407129c5f116ae8f6d3af64df59c39d3f606a72ef77a1e6ed874f92a8d9c"
   name = "gopkg.in/go-playground/validator.v8"
   packages = ["."]
-  revision = "5f1438d3fca68893a817e4a66806cea46a9e4ebf"
-  version = "v8.18.2"
+  pruneopts = "NUT"
+  revision = "5f57d2222ad794d0dffb07e664ea05e2ee07d60c"
+  version = "v8.18.1"
 
 [[projects]]
+  digest = "1:e42838adf26a641c866e40ccfdda1aa4978f5fc44b480d0645d32a4dd9024e46"
   name = "gopkg.in/square/go-jose.v2"
   packages = [
     ".",
     "cipher",
     "json",
-    "jwt"
+    "jwt",
   ]
-  revision = "76dd09796242edb5b897103a75df2645c028c960"
-  version = "v2.1.6"
+  pruneopts = "NUT"
+  revision = "349dc03548930652802aadc09fb126e2b7cb6d80"
+  version = "v2.1.7"
 
 [[projects]]
+  digest = "1:ad6f94355d292690137613735965bd3688844880fdab90eccf66321910344942"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
-  revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
-  version = "v2.2.1"
+  pruneopts = "NUT"
+  revision = "a5b47d31c556af34a302ce5d659e6fea44d90de0"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d8bbd4f68d495e4a52156f845cbc1ffbd30d0bf9539321bd60e08ec7caa620e1"
+  input-imports = [
+    "github.com/auth0-community/go-auth0",
+    "github.com/devopsfaith/krakend/config",
+    "github.com/devopsfaith/krakend/logging",
+    "github.com/devopsfaith/krakend/proxy",
+    "github.com/devopsfaith/krakend/router/gin",
+    "github.com/gin-gonic/gin",
+    "gopkg.in/square/go-jose.v2",
+    "gopkg.in/square/go-jose.v2/jwt",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1
