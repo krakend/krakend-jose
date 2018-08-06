@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/auth0-community/go-auth0"
 	"github.com/devopsfaith/krakend/config"
 	jose "gopkg.in/square/go-jose.v2"
 )
@@ -24,6 +25,7 @@ type signatureConfig struct {
 	Roles        []string `json:"roles,omitempty"`
 	RolesKey     string   `json:"roles_key,omitempty"`
 	CookieKey    string   `json:"cookie_key,omitempty"`
+	CipherSuites []uint16 `json:"cipher_suites,omitempty"`
 }
 
 type signerConfig struct {
@@ -32,6 +34,7 @@ type signerConfig struct {
 	URI               string   `json:"jwk-url"`
 	FullSerialization bool     `json:"full,omitempty"`
 	KeysToSign        []string `json:"keys-to-sign,omitempty"`
+	CipherSuites      []uint16 `json:"cipher_suites,omitempty"`
 }
 
 func getSignatureConfig(cfg *config.EndpointConfig) (*signatureConfig, error) {
@@ -60,13 +63,13 @@ func getSignerConfig(cfg *config.EndpointConfig) (*signerConfig, error) {
 	return res, err
 }
 
-func newSigner(cfg *config.EndpointConfig) (*signerConfig, Signer, error) {
+func newSigner(cfg *config.EndpointConfig, te auth0.RequestTokenExtractor) (*signerConfig, Signer, error) {
 	signerCfg, err := getSignerConfig(cfg)
 	if err != nil {
 		return signerCfg, nopSigner, err
 	}
 
-	sp := secretProvider(signerCfg.URI, false, nil)
+	sp := secretProvider(signerCfg.URI, false, signerCfg.CipherSuites, te)
 	key, err := sp.GetKey(signerCfg.KeyID)
 	if err != nil {
 		return signerCfg, nopSigner, err
