@@ -3,7 +3,9 @@ package jose
 import (
 	"net/http/httptest"
 	"testing"
+	"time"
 
+	"github.com/devopsfaith/krakend/config"
 	jose "gopkg.in/square/go-jose.v2"
 )
 
@@ -23,6 +25,57 @@ func Test_getSignatureConfig(t *testing.T) {
 
 	if scfg.Audience[0] != "http://api.example.com" {
 		t.Errorf("unexpected audience: %v", scfg.Audience)
+	}
+}
+
+func Test_getSignatureConfig_unsecure(t *testing.T) {
+	cfg := &config.EndpointConfig{
+		Timeout:  time.Second,
+		Endpoint: "/private",
+		Backend: []*config.Backend{
+			{
+				URLPattern: "/",
+				Host:       []string{"http://example.com/"},
+				Timeout:    time.Second,
+			},
+		},
+		ExtraConfig: config.ExtraConfig{
+			ValidatorNamespace: map[string]interface{}{
+				"alg":      "RS256",
+				"jwk-url":  "http://jwk.example.com",
+				"audience": []string{"http://api.example.com"},
+				"issuer":   "http://example.com",
+				"roles":    []string{},
+				"cache":    false,
+			},
+		},
+	}
+
+	_, err := getSignatureConfig(cfg)
+	if err != ErrInsecureJWKSource {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func Test_getSignatureConfig_wrongStruct(t *testing.T) {
+	cfg := &config.EndpointConfig{
+		Timeout:  time.Second,
+		Endpoint: "/private",
+		Backend: []*config.Backend{
+			{
+				URLPattern: "/",
+				Host:       []string{"http://example.com/"},
+				Timeout:    time.Second,
+			},
+		},
+		ExtraConfig: config.ExtraConfig{
+			ValidatorNamespace: true,
+		},
+	}
+
+	_, err := getSignatureConfig(cfg)
+	if err == nil || err.Error() != "json: cannot unmarshal bool into Go value of type jose.signatureConfig" {
+		t.Errorf("unexpected error: %v", err)
 	}
 }
 
@@ -50,6 +103,65 @@ func Test_newSigner(t *testing.T) {
 	expected := "eyJhbGciOiJSUzI1NiIsImtpZCI6IjIwMTEtMDQtMjkifQ.eyJhdWQiOiJodHRwOi8vYXBpLmV4YW1wbGUuY29tIiwiaXNzIjoiaHR0cDovL2V4YW1wbGUuY29tIiwianRpIjoibW5iMjN2Y3NydDc1Nnl1aW9tbmJ2Y3g5OGVydHl1aW9wIiwic3ViIjoiMTIzNDU2Nzg5MHF3ZXJ0eXVpbyJ9.TWdsBQPqfDV1IFe1iD0KFu-E_wqeFXgNJXIoESl9smg2W_Snh2GwwktwlvHCSAGvUdkKU6Js6LQ594e6HZ3eAdj3mfCdCxerhuodb6GS-rZ2OrMv44VaC_YnzoOjCWUrU3ivzhYjEFBxgDgWc0G9qFdQVaZPOLPohd_mXpeM5jAS-vFzudOlJz8rtK9KfVDPiAWnGxih5fa3MF1b19vnnsfyN1Y8hTeen3j24thQbuh61vkqu8TLoG2NrETyC9zqCuL3IQnPld3IBolYJhqEcka95cCNZ1dQnqsgrP4q325JmRxXsn0GJM3VtFpKbfJCcQgdpixCohQ-_xHmTUpXng"
 	if msg != expected {
 		t.Errorf("unexpected signed payload: %s", msg)
+	}
+}
+
+func Test_newSigner_unsecure(t *testing.T) {
+	cfg := &config.EndpointConfig{
+		Timeout:  time.Second,
+		Endpoint: "/token",
+		Method:   "POST",
+		Backend: []*config.Backend{
+			{
+				URLPattern: "/token",
+				Host:       []string{"http://example.com/"},
+				Timeout:    time.Second,
+			},
+		},
+		ExtraConfig: config.ExtraConfig{
+			SignerNamespace: map[string]interface{}{
+				"alg":          "RS256",
+				"kid":          "2011-04-29",
+				"jwk-url":      "http://jwk.example.com",
+				"keys-to-sign": []string{"access_token", "refresh_token"},
+			},
+		},
+	}
+	_, _, err := newSigner(cfg, nil)
+	if err != ErrInsecureJWKSource {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func Test_newSigner_wrongStruct(t *testing.T) {
+	cfg := &config.EndpointConfig{
+		Timeout:  time.Second,
+		Endpoint: "/token",
+		Method:   "POST",
+		Backend: []*config.Backend{
+			{
+				URLPattern: "/token",
+				Host:       []string{"http://example.com/"},
+				Timeout:    time.Second,
+			},
+		},
+		ExtraConfig: config.ExtraConfig{
+			SignerNamespace: true,
+		},
+	}
+	_, _, err := newSigner(cfg, nil)
+	if err == nil || err.Error() != "json: cannot unmarshal bool into Go value of type jose.signerConfig" {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func Test_newSigner_unknownKey(t *testing.T) {
+	server := httptest.NewServer(jwkEndpoint("private"))
+	defer server.Close()
+
+	_, _, err := newSigner(newSignerEndpointCfg("RS256", "unknown key", server.URL), nil)
+	if err == nil || err.Error() != "no Keys has been found" {
+		t.Errorf("unexpected error: %v", err)
 	}
 }
 

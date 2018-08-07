@@ -38,6 +38,11 @@ func Example_RS256() {
 	// 200
 	// {}
 	// [application/json; charset=utf-8]
+	// dummy request
+	// 200
+	// {}
+	// [application/json; charset=utf-8]
+	//  ERROR: JOSE: no signer config /private
 	//  ERROR: JOSE: no signer config /private
 }
 
@@ -61,6 +66,11 @@ func Example_HS256() {
 	// 200
 	// {}
 	// [application/json; charset=utf-8]
+	// dummy request
+	// 200
+	// {}
+	// [application/json; charset=utf-8]
+	//  ERROR: JOSE: no signer config /private
 	//  ERROR: JOSE: no signer config /private
 }
 
@@ -134,6 +144,17 @@ func runValidationCycle(signerEndpointCfg, validatorEndpointCfg *config.Endpoint
 
 	engine.GET(validatorEndpointCfg.Endpoint, hf(validatorEndpointCfg, proxy.NoopProxy))
 	engine.POST(signerEndpointCfg.Endpoint, hf(signerEndpointCfg, tokenIssuer))
+	engine.GET("/", hf(&config.EndpointConfig{
+		Timeout:  time.Second,
+		Endpoint: "/private",
+		Backend: []*config.Backend{
+			{
+				URLPattern: "/",
+				Host:       []string{"http://example.com/"},
+				Timeout:    time.Second,
+			},
+		},
+	}, proxy.NoopProxy))
 
 	fmt.Println("token request")
 	req := httptest.NewRequest("POST", signerEndpointCfg.Endpoint, new(bytes.Buffer))
@@ -162,6 +183,15 @@ func runValidationCycle(signerEndpointCfg, validatorEndpointCfg *config.Endpoint
 	fmt.Println("authorized request")
 	req = httptest.NewRequest("GET", validatorEndpointCfg.Endpoint, new(bytes.Buffer))
 	req.Header.Set("Authorization", "BEARER "+responseData.AccessToken)
+	w = httptest.NewRecorder()
+	engine.ServeHTTP(w, req)
+
+	fmt.Println(w.Code)
+	fmt.Println(w.Body.String())
+	fmt.Println(w.HeaderMap["Content-Type"])
+
+	fmt.Println("dummy request")
+	req = httptest.NewRequest("GET", "/", new(bytes.Buffer))
 	w = httptest.NewRecorder()
 	engine.ServeHTTP(w, req)
 
@@ -213,10 +243,12 @@ func newSignerEndpointCfg(alg, ID, URL string) *config.EndpointConfig {
 		},
 		ExtraConfig: config.ExtraConfig{
 			SignerNamespace: map[string]interface{}{
-				"alg":          alg,
-				"kid":          ID,
-				"jwk-url":      URL,
-				"keys-to-sign": []string{"access_token", "refresh_token"},
+				"alg":                  alg,
+				"kid":                  ID,
+				"jwk-url":              URL,
+				"keys-to-sign":         []string{"access_token", "refresh_token"},
+				"disable_jwk_security": true,
+				"cache":                true,
 			},
 		},
 	}
@@ -235,12 +267,13 @@ func newVerifierEndpointCfg(alg, URL string, roles []string) *config.EndpointCon
 		},
 		ExtraConfig: config.ExtraConfig{
 			ValidatorNamespace: map[string]interface{}{
-				"alg":      alg,
-				"jwk-url":  URL,
-				"audience": []string{"http://api.example.com"},
-				"issuer":   "http://example.com",
-				"roles":    roles,
-				"cache":    false,
+				"alg":                  alg,
+				"jwk-url":              URL,
+				"audience":             []string{"http://api.example.com"},
+				"issuer":               "http://example.com",
+				"roles":                roles,
+				"disable_jwk_security": true,
+				"cache":                true,
 			},
 		},
 	}
