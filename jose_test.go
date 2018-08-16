@@ -99,3 +99,12 @@ func TestTokenSignatureValidator(t *testing.T) {
 		t.Errorf("unexpected body: %s", body)
 	}
 }
+
+func Test_newValidator_unkownAlg(t *testing.T) {
+	_, err := newValidator(&signatureConfig{
+		Alg: "random",
+	})
+	if err == nil || err.Error() != "JOSE: unknown algorithm random" {
+		t.Errorf("unexpected error: %v", err)
+	}
+}

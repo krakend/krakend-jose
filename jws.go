@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/auth0-community/go-auth0"
 	"github.com/devopsfaith/krakend/config"
@@ -16,25 +17,31 @@ const (
 	defaultRolesKey    = "roles"
 )
 
+var (
+	ErrInsecureJWKSource = errors.New("JWK client is using an insecure connection to the JWK service")
+)
+
 type signatureConfig struct {
-	Alg          string   `json:"alg"`
-	URI          string   `json:"jwk-url"`
-	CacheEnabled bool     `json:"cache,omitempty"`
-	Issuer       string   `json:"issuer,omitempty"`
-	Audience     []string `json:"audience,omitempty"`
-	Roles        []string `json:"roles,omitempty"`
-	RolesKey     string   `json:"roles_key,omitempty"`
-	CookieKey    string   `json:"cookie_key,omitempty"`
-	CipherSuites []uint16 `json:"cipher_suites,omitempty"`
+	Alg                string   `json:"alg"`
+	URI                string   `json:"jwk-url"`
+	CacheEnabled       bool     `json:"cache,omitempty"`
+	Issuer             string   `json:"issuer,omitempty"`
+	Audience           []string `json:"audience,omitempty"`
+	Roles              []string `json:"roles,omitempty"`
+	RolesKey           string   `json:"roles_key,omitempty"`
+	CookieKey          string   `json:"cookie_key,omitempty"`
+	CipherSuites       []uint16 `json:"cipher_suites,omitempty"`
+	DisableJWKSecurity bool     `json:"disable_jwk_security"`
 }
 
 type signerConfig struct {
-	Alg               string   `json:"alg"`
-	KeyID             string   `json:"kid"`
-	URI               string   `json:"jwk-url"`
-	FullSerialization bool     `json:"full,omitempty"`
-	KeysToSign        []string `json:"keys-to-sign,omitempty"`
-	CipherSuites      []uint16 `json:"cipher_suites,omitempty"`
+	Alg                string   `json:"alg"`
+	KeyID              string   `json:"kid"`
+	URI                string   `json:"jwk-url"`
+	FullSerialization  bool     `json:"full,omitempty"`
+	KeysToSign         []string `json:"keys-to-sign,omitempty"`
+	CipherSuites       []uint16 `json:"cipher_suites,omitempty"`
+	DisableJWKSecurity bool     `json:"disable_jwk_security"`
 }
 
 func getSignatureConfig(cfg *config.EndpointConfig) (*signatureConfig, error) {
@@ -44,12 +51,17 @@ func getSignatureConfig(cfg *config.EndpointConfig) (*signatureConfig, error) {
 	}
 	data, _ := json.Marshal(tmp)
 	res := new(signatureConfig)
-	err := json.Unmarshal(data, res)
+	if err := json.Unmarshal(data, res); err != nil {
+		return nil, err
+	}
 
 	if res.RolesKey == "" {
 		res.RolesKey = defaultRolesKey
 	}
-	return res, err
+	if !strings.HasPrefix(res.URI, "https://") && !res.DisableJWKSecurity {
+		return res, ErrInsecureJWKSource
+	}
+	return res, nil
 }
 
 func getSignerConfig(cfg *config.EndpointConfig) (*signerConfig, error) {
@@ -59,8 +71,13 @@ func getSignerConfig(cfg *config.EndpointConfig) (*signerConfig, error) {
 	}
 	data, _ := json.Marshal(tmp)
 	res := new(signerConfig)
-	err := json.Unmarshal(data, res)
-	return res, err
+	if err := json.Unmarshal(data, res); err != nil {
+		return nil, err
+	}
+	if !strings.HasPrefix(res.URI, "https://") && !res.DisableJWKSecurity {
+		return res, ErrInsecureJWKSource
+	}
+	return res, nil
 }
 
 func newSigner(cfg *config.EndpointConfig, te auth0.RequestTokenExtractor) (*signerConfig, Signer, error) {
