@@ -39,8 +39,7 @@ func TestJWK(t *testing.T) {
 	} {
 		server := httptest.NewServer(jwkEndpoint(tc.Name))
 		defer server.Close()
-
-		secretProvidr := secretProvider(server.URL, false, []uint16{}, nil)
+		secretProvidr := secretProvider(secretProviderConfig{URI: server.URL}, nil)
 		for _, k := range tc.ID {
 			key, err := secretProvidr.GetKey(k)
 			if err != nil {
@@ -50,6 +49,24 @@ func TestJWK(t *testing.T) {
 				t.Errorf("wrong alg. have: %s, want: %s", key.Algorithm, tc.Alg)
 			}
 		}
+	}
+}
+
+func TestDialer_DialTLS_ko(t *testing.T) {
+	d := NewDialer(secretProviderConfig{})
+	c, err := d.DialTLS("\t", "addr")
+	if err == nil {
+		t.Error(err)
+	}
+	if c != nil {
+		t.Errorf("unexpected connection: %v", c)
+	}
+}
+
+func Test_decodeFingerprints(t *testing.T) {
+	_, err := decodeFingerprints([]string{"not_encoded_message"})
+	if err == nil {
+		t.Error(err)
 	}
 }
 

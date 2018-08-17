@@ -17,10 +17,6 @@ const (
 	defaultRolesKey    = "roles"
 )
 
-var (
-	ErrInsecureJWKSource = errors.New("JWK client is using an insecure connection to the JWK service")
-)
-
 type signatureConfig struct {
 	Alg                string   `json:"alg"`
 	URI                string   `json:"jwk-url"`
@@ -32,6 +28,7 @@ type signatureConfig struct {
 	CookieKey          string   `json:"cookie_key,omitempty"`
 	CipherSuites       []uint16 `json:"cipher_suites,omitempty"`
 	DisableJWKSecurity bool     `json:"disable_jwk_security"`
+	Fingerprints       []string `json:"jwk_fingerprints,omitempty"`
 }
 
 type signerConfig struct {
@@ -42,6 +39,7 @@ type signerConfig struct {
 	KeysToSign         []string `json:"keys-to-sign,omitempty"`
 	CipherSuites       []uint16 `json:"cipher_suites,omitempty"`
 	DisableJWKSecurity bool     `json:"disable_jwk_security"`
+	Fingerprints       []string `json:"jwk_fingerprints,omitempty"`
 }
 
 func getSignatureConfig(cfg *config.EndpointConfig) (*signatureConfig, error) {
@@ -86,7 +84,18 @@ func newSigner(cfg *config.EndpointConfig, te auth0.RequestTokenExtractor) (*sig
 		return signerCfg, nopSigner, err
 	}
 
-	sp := secretProvider(signerCfg.URI, false, signerCfg.CipherSuites, te)
+	decodedFs, err := decodeFingerprints(signerCfg.Fingerprints)
+	if err != nil {
+		return signerCfg, nopSigner, err
+	}
+
+	spcfg := secretProviderConfig{
+		URI:          signerCfg.URI,
+		cs:           signerCfg.CipherSuites,
+		fingerprints: decodedFs,
+	}
+
+	sp := secretProvider(spcfg, te)
 	key, err := sp.GetKey(signerCfg.KeyID)
 	if err != nil {
 		return signerCfg, nopSigner, err

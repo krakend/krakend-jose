@@ -126,9 +126,21 @@ func newValidator(scfg *signatureConfig) (*auth0.JWTValidator, error) {
 		auth0.RequestTokenExtractorFunc(FromCookie(scfg.CookieKey)),
 	)
 
+	decodedFs, err := decodeFingerprints(scfg.Fingerprints)
+	if err != nil {
+		return nil, err
+	}
+
+	cfg := secretProviderConfig{
+		URI:          scfg.URI,
+		cacheEnabled: scfg.CacheEnabled,
+		cs:           scfg.CipherSuites,
+		fingerprints: decodedFs,
+	}
+
 	return auth0.NewValidator(
 		auth0.NewConfiguration(
-			secretProvider(scfg.URI, scfg.CacheEnabled, scfg.CipherSuites, te),
+			secretProvider(cfg, te),
 			scfg.Audience,
 			scfg.Issuer,
 			sa,
