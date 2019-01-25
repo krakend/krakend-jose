@@ -6,14 +6,14 @@ import (
 	"time"
 
 	"github.com/devopsfaith/krakend/config"
-	jose "gopkg.in/square/go-jose.v2"
+	"gopkg.in/square/go-jose.v2"
 )
 
 func Test_getSignatureConfig(t *testing.T) {
 	server := httptest.NewServer(jwkEndpoint("private"))
 	defer server.Close()
 
-	scfg, err := getSignatureConfig(newVerifierEndpointCfg("RS256", server.URL, []string{}))
+	scfg, err := GetSignatureConfig(newVerifierEndpointCfg("RS256", server.URL, []string{}))
 	if err != nil {
 		t.Error(err.Error())
 		return
@@ -51,7 +51,7 @@ func Test_getSignatureConfig_unsecure(t *testing.T) {
 		},
 	}
 
-	_, err := getSignatureConfig(cfg)
+	_, err := GetSignatureConfig(cfg)
 	if err != ErrInsecureJWKSource {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -73,8 +73,8 @@ func Test_getSignatureConfig_wrongStruct(t *testing.T) {
 		},
 	}
 
-	_, err := getSignatureConfig(cfg)
-	if err == nil || err.Error() != "json: cannot unmarshal bool into Go value of type jose.signatureConfig" {
+	_, err := GetSignatureConfig(cfg)
+	if err == nil || err.Error() != "json: cannot unmarshal bool into Go value of type jose.SignatureConfig" {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
@@ -83,7 +83,7 @@ func Test_newSigner(t *testing.T) {
 	server := httptest.NewServer(jwkEndpoint("private"))
 	defer server.Close()
 
-	_, signer, err := newSigner(newSignerEndpointCfg("RS256", "2011-04-29", server.URL), nil)
+	_, signer, err := NewSigner(newSignerEndpointCfg("RS256", "2011-04-29", server.URL), nil)
 	if err != nil {
 		t.Error(err.Error())
 		return
@@ -127,7 +127,7 @@ func Test_newSigner_unsecure(t *testing.T) {
 			},
 		},
 	}
-	_, _, err := newSigner(cfg, nil)
+	_, _, err := NewSigner(cfg, nil)
 	if err != ErrInsecureJWKSource {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -149,8 +149,8 @@ func Test_newSigner_wrongStruct(t *testing.T) {
 			SignerNamespace: true,
 		},
 	}
-	_, _, err := newSigner(cfg, nil)
-	if err == nil || err.Error() != "json: cannot unmarshal bool into Go value of type jose.signerConfig" {
+	_, _, err := NewSigner(cfg, nil)
+	if err == nil || err.Error() != "json: cannot unmarshal bool into Go value of type jose.SignerConfig" {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
@@ -159,7 +159,7 @@ func Test_newSigner_unknownKey(t *testing.T) {
 	server := httptest.NewServer(jwkEndpoint("private"))
 	defer server.Close()
 
-	_, _, err := newSigner(newSignerEndpointCfg("RS256", "unknown key", server.URL), nil)
+	_, _, err := NewSigner(newSignerEndpointCfg("RS256", "unknown key", server.URL), nil)
 	if err == nil || err.Error() != "no Keys has been found" {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -189,7 +189,7 @@ func testPrivateSigner(t *testing.T, keyType, keyName, full, compact string) {
 	server := httptest.NewServer(jwkEndpoint(keyType))
 	defer server.Close()
 
-	sp := secretProvider(secretProviderConfig{URI: server.URL}, nil)
+	sp := SecretProvider(SecretProviderConfig{URI: server.URL}, nil)
 	key, err := sp.GetKey(keyName)
 	if err != nil {
 		t.Errorf("getting the key: %s", err.Error())
@@ -236,5 +236,55 @@ func testPrivateSigner(t *testing.T, keyType, keyName, full, compact string) {
 		if data != tc.Expected {
 			t.Errorf("[%s] unexpected signed payload: %s", tc.Name, data)
 		}
+	}
+}
+
+func newSignerEndpointCfg(alg, ID, URL string) *config.EndpointConfig {
+	return &config.EndpointConfig{
+		Timeout:  time.Second,
+		Endpoint: "/token",
+		Method:   "POST",
+		Backend: []*config.Backend{
+			{
+				URLPattern: "/token",
+				Host:       []string{"http://example.com/"},
+				Timeout:    time.Second,
+			},
+		},
+		ExtraConfig: config.ExtraConfig{
+			SignerNamespace: map[string]interface{}{
+				"alg":                  alg,
+				"kid":                  ID,
+				"jwk-url":              URL,
+				"keys-to-sign":         []string{"access_token", "refresh_token"},
+				"disable_jwk_security": true,
+				"cache":                true,
+			},
+		},
+	}
+}
+
+func newVerifierEndpointCfg(alg, URL string, roles []string) *config.EndpointConfig {
+	return &config.EndpointConfig{
+		Timeout:  time.Second,
+		Endpoint: "/private",
+		Backend: []*config.Backend{
+			{
+				URLPattern: "/",
+				Host:       []string{"http://example.com/"},
+				Timeout:    time.Second,
+			},
+		},
+		ExtraConfig: config.ExtraConfig{
+			ValidatorNamespace: map[string]interface{}{
+				"alg":                  alg,
+				"jwk-url":              URL,
+				"audience":             []string{"http://api.example.com"},
+				"issuer":               "http://example.com",
+				"roles":                roles,
+				"disable_jwk_security": true,
+				"cache":                true,
+			},
+		},
 	}
 }

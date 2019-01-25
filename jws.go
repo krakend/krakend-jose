@@ -17,7 +17,7 @@ const (
 	defaultRolesKey    = "roles"
 )
 
-type signatureConfig struct {
+type SignatureConfig struct {
 	Alg                string   `json:"alg"`
 	URI                string   `json:"jwk-url"`
 	CacheEnabled       bool     `json:"cache,omitempty"`
@@ -31,7 +31,7 @@ type signatureConfig struct {
 	Fingerprints       []string `json:"jwk_fingerprints,omitempty"`
 }
 
-type signerConfig struct {
+type SignerConfig struct {
 	Alg                string   `json:"alg"`
 	KeyID              string   `json:"kid"`
 	URI                string   `json:"jwk-url"`
@@ -42,13 +42,13 @@ type signerConfig struct {
 	Fingerprints       []string `json:"jwk_fingerprints,omitempty"`
 }
 
-func getSignatureConfig(cfg *config.EndpointConfig) (*signatureConfig, error) {
+func GetSignatureConfig(cfg *config.EndpointConfig) (*SignatureConfig, error) {
 	tmp, ok := cfg.ExtraConfig[ValidatorNamespace]
 	if !ok {
 		return nil, errors.New("JOSE: no validator config")
 	}
 	data, _ := json.Marshal(tmp)
-	res := new(signatureConfig)
+	res := new(SignatureConfig)
 	if err := json.Unmarshal(data, res); err != nil {
 		return nil, err
 	}
@@ -62,13 +62,13 @@ func getSignatureConfig(cfg *config.EndpointConfig) (*signatureConfig, error) {
 	return res, nil
 }
 
-func getSignerConfig(cfg *config.EndpointConfig) (*signerConfig, error) {
+func getSignerConfig(cfg *config.EndpointConfig) (*SignerConfig, error) {
 	tmp, ok := cfg.ExtraConfig[SignerNamespace]
 	if !ok {
 		return nil, errors.New("JOSE: no signer config")
 	}
 	data, _ := json.Marshal(tmp)
-	res := new(signerConfig)
+	res := new(SignerConfig)
 	if err := json.Unmarshal(data, res); err != nil {
 		return nil, err
 	}
@@ -78,24 +78,24 @@ func getSignerConfig(cfg *config.EndpointConfig) (*signerConfig, error) {
 	return res, nil
 }
 
-func newSigner(cfg *config.EndpointConfig, te auth0.RequestTokenExtractor) (*signerConfig, Signer, error) {
+func NewSigner(cfg *config.EndpointConfig, te auth0.RequestTokenExtractor) (*SignerConfig, Signer, error) {
 	signerCfg, err := getSignerConfig(cfg)
 	if err != nil {
 		return signerCfg, nopSigner, err
 	}
 
-	decodedFs, err := decodeFingerprints(signerCfg.Fingerprints)
+	decodedFs, err := DecodeFingerprints(signerCfg.Fingerprints)
 	if err != nil {
 		return signerCfg, nopSigner, err
 	}
 
-	spcfg := secretProviderConfig{
+	spcfg := SecretProviderConfig{
 		URI:          signerCfg.URI,
-		cs:           signerCfg.CipherSuites,
-		fingerprints: decodedFs,
+		Cs:           signerCfg.CipherSuites,
+		Fingerprints: decodedFs,
 	}
 
-	sp := secretProvider(spcfg, te)
+	sp := SecretProvider(spcfg, te)
 	key, err := sp.GetKey(signerCfg.KeyID)
 	if err != nil {
 		return signerCfg, nopSigner, err

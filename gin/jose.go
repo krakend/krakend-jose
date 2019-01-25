@@ -1,4 +1,4 @@
-package jose
+package gin
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	auth0 "github.com/auth0-community/go-auth0"
+	krakendjose "github.com/devopsfaith/krakend-jose"
 	"github.com/devopsfaith/krakend/config"
 	"github.com/devopsfaith/krakend/logging"
 	"github.com/devopsfaith/krakend/proxy"
@@ -16,13 +17,13 @@ import (
 	"gopkg.in/square/go-jose.v2/jwt"
 )
 
-func HandlerFactory(hf ginkrakend.HandlerFactory, logger logging.Logger, rejecter Rejecter) ginkrakend.HandlerFactory {
+func HandlerFactory(hf ginkrakend.HandlerFactory, logger logging.Logger, rejecter krakendjose.Rejecter) ginkrakend.HandlerFactory {
 	return TokenSigner(TokenSignatureValidator(hf, logger, rejecter), logger)
 }
 
 func TokenSigner(hf ginkrakend.HandlerFactory, logger logging.Logger) ginkrakend.HandlerFactory {
 	return func(cfg *config.EndpointConfig, prxy proxy.Proxy) gin.HandlerFunc {
-		signerCfg, signer, err := newSigner(cfg, nil)
+		signerCfg, signer, err := krakendjose.NewSigner(cfg, nil)
 		if err != nil {
 			logger.Error(err.Error(), cfg.Endpoint)
 			return hf(cfg, prxy)
@@ -71,13 +72,13 @@ func TokenSigner(hf ginkrakend.HandlerFactory, logger logging.Logger) ginkrakend
 	}
 }
 
-func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger, rejecter Rejecter) ginkrakend.HandlerFactory {
+func TokenSignatureValidator(hf ginkrakend.HandlerFactory, _ logging.Logger, rejecter krakendjose.Rejecter) ginkrakend.HandlerFactory {
 	if rejecter == nil {
-		rejecter = FixedRejecter(false)
+		rejecter = krakendjose.FixedRejecter(false)
 	}
 	return func(cfg *config.EndpointConfig, prxy proxy.Proxy) gin.HandlerFunc {
 		handler := hf(cfg, prxy)
-		scfg, err := getSignatureConfig(cfg)
+		scfg, err := krakendjose.GetSignatureConfig(cfg)
 		if err != nil {
 			return handler
 		}
@@ -116,7 +117,7 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 	}
 }
 
-func newValidator(scfg *signatureConfig) (*auth0.JWTValidator, error) {
+func newValidator(scfg *krakendjose.SignatureConfig) (*auth0.JWTValidator, error) {
 	sa, ok := supportedAlgorithms[scfg.Alg]
 	if !ok {
 		return nil, fmt.Errorf("JOSE: unknown algorithm %s", scfg.Alg)
@@ -126,21 +127,21 @@ func newValidator(scfg *signatureConfig) (*auth0.JWTValidator, error) {
 		auth0.RequestTokenExtractorFunc(FromCookie(scfg.CookieKey)),
 	)
 
-	decodedFs, err := decodeFingerprints(scfg.Fingerprints)
+	decodedFs, err := krakendjose.DecodeFingerprints(scfg.Fingerprints)
 	if err != nil {
 		return nil, err
 	}
 
-	cfg := secretProviderConfig{
+	cfg := krakendjose.SecretProviderConfig{
 		URI:          scfg.URI,
-		cacheEnabled: scfg.CacheEnabled,
-		cs:           scfg.CipherSuites,
-		fingerprints: decodedFs,
+		CacheEnabled: scfg.CacheEnabled,
+		Cs:           scfg.CipherSuites,
+		Fingerprints: decodedFs,
 	}
 
 	return auth0.NewValidator(
 		auth0.NewConfiguration(
-			secretProvider(cfg, te),
+			krakendjose.SecretProvider(cfg, te),
 			scfg.Audience,
 			scfg.Issuer,
 			sa,

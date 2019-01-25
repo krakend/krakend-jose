@@ -1,13 +1,15 @@
-package jose
+package gin
 
 import (
 	"bytes"
 	"context"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	krakendjose "github.com/devopsfaith/krakend-jose"
 	"github.com/devopsfaith/krakend/logging"
 	"github.com/devopsfaith/krakend/proxy"
 	ginkrakend "github.com/devopsfaith/krakend/router/gin"
@@ -101,10 +103,22 @@ func TestTokenSignatureValidator(t *testing.T) {
 }
 
 func Test_newValidator_unkownAlg(t *testing.T) {
-	_, err := newValidator(&signatureConfig{
+	_, err := newValidator(&krakendjose.SignatureConfig{
 		Alg: "random",
 	})
 	if err == nil || err.Error() != "JOSE: unknown algorithm random" {
 		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func jwkEndpoint(name string) http.HandlerFunc {
+	data, err := ioutil.ReadFile("../fixtures/" + name + ".json")
+	return func(rw http.ResponseWriter, _ *http.Request) {
+		if err != nil {
+			rw.WriteHeader(500)
+			return
+		}
+		rw.Header().Set("Content-Type", "application/json")
+		rw.Write(data)
 	}
 }
