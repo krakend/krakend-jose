@@ -23,10 +23,16 @@ func HandlerFactory(hf ginkrakend.HandlerFactory, logger logging.Logger, rejecte
 func TokenSigner(hf ginkrakend.HandlerFactory, logger logging.Logger) ginkrakend.HandlerFactory {
 	return func(cfg *config.EndpointConfig, prxy proxy.Proxy) gin.HandlerFunc {
 		signerCfg, signer, err := newSigner(cfg, nil)
+		if err == errNoSignerCfg {
+			logger.Info("JOSE: singer disabled for the endpoint", cfg.Endpoint)
+			return hf(cfg, prxy)
+		}
 		if err != nil {
 			logger.Error(err.Error(), cfg.Endpoint)
 			return hf(cfg, prxy)
 		}
+
+		logger.Info("JOSE: singer enabled for the endpoint", cfg.Endpoint)
 
 		return func(c *gin.Context) {
 			proxyReq := ginkrakend.NewRequest(cfg.HeadersToPass)(c, cfg.QueryString)
@@ -78,7 +84,12 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 	return func(cfg *config.EndpointConfig, prxy proxy.Proxy) gin.HandlerFunc {
 		handler := hf(cfg, prxy)
 		scfg, err := getSignatureConfig(cfg)
+		if err == errNoValidatorCfg {
+			logger.Info("JOSE: validator disabled for the endpoint", cfg.Endpoint)
+			return hf(cfg, prxy)
+		}
 		if err != nil {
+			logger.Warning(fmt.Sprintf("JOSE: validator for %s: %s", cfg.Endpoint, err.Error()))
 			return handler
 		}
 
@@ -86,6 +97,8 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 		if err != nil {
 			log.Fatalf("%s: %s", cfg.Endpoint, err.Error())
 		}
+
+		logger.Info("JOSE: validator enabled for the endpoint", cfg.Endpoint)
 
 		return func(c *gin.Context) {
 			token, err := validator.ValidateRequest(c.Request)
