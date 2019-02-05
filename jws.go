@@ -42,10 +42,15 @@ type SignerConfig struct {
 	Fingerprints       []string `json:"jwk_fingerprints,omitempty"`
 }
 
+var (
+	ErrNoValidatorCfg = errors.New("JOSE: no validator config")
+	ErrNoSignerCfg    = errors.New("JOSE: no signer config")
+)
+
 func GetSignatureConfig(cfg *config.EndpointConfig) (*SignatureConfig, error) {
 	tmp, ok := cfg.ExtraConfig[ValidatorNamespace]
 	if !ok {
-		return nil, errors.New("JOSE: no validator config")
+		return nil, ErrNoValidatorCfg
 	}
 	data, _ := json.Marshal(tmp)
 	res := new(SignatureConfig)
@@ -65,7 +70,7 @@ func GetSignatureConfig(cfg *config.EndpointConfig) (*SignatureConfig, error) {
 func getSignerConfig(cfg *config.EndpointConfig) (*SignerConfig, error) {
 	tmp, ok := cfg.ExtraConfig[SignerNamespace]
 	if !ok {
-		return nil, errors.New("JOSE: no signer config")
+		return nil, ErrNoSignerCfg
 	}
 	data, _ := json.Marshal(tmp)
 	res := new(SignerConfig)

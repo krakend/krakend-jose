@@ -71,7 +71,7 @@ func TestTokenSignatureValidator(t *testing.T) {
 		t.Errorf("unexpected body: %s", body)
 	}
 
-	if log := buf.String(); !strings.Contains(log, "ERROR: JOSE: no signer config /private") {
+	if log := buf.String(); !strings.Contains(log, "INFO: JOSE: singer disabled for the endpoint /private") {
 		t.Error(log)
 	}
 

@@ -43,8 +43,11 @@ func Example_RS256() {
 	// 200
 	// {}
 	// [application/json; charset=utf-8]
-	//  ERROR: JOSE: no signer config /private
-	//  ERROR: JOSE: no signer config /private
+	//  INFO: JOSE: singer disabled for the endpoint /private
+	//  INFO: JOSE: validator enabled for the endpoint /private
+	//  INFO: JOSE: singer enabled for the endpoint /token
+	//  INFO: JOSE: singer disabled for the endpoint /private
+	//  INFO: JOSE: validator disabled for the endpoint /private
 }
 
 func Example_HS256() {
@@ -71,8 +74,11 @@ func Example_HS256() {
 	// 200
 	// {}
 	// [application/json; charset=utf-8]
-	//  ERROR: JOSE: no signer config /private
-	//  ERROR: JOSE: no signer config /private
+	//  INFO: JOSE: singer disabled for the endpoint /private
+	//  INFO: JOSE: validator enabled for the endpoint /private
+	//  INFO: JOSE: singer enabled for the endpoint /token
+	//  INFO: JOSE: singer disabled for the endpoint /private
+	//  INFO: JOSE: validator disabled for the endpoint /private
 }
 
 func Example_HS256_cookie() {
@@ -132,7 +138,8 @@ func Example_HS256_cookie() {
 	// 200
 	// {}
 	// [application/json; charset=utf-8]
-	//  ERROR: JOSE: no signer config /private
+	//  INFO: JOSE: singer disabled for the endpoint /private
+	//  INFO: JOSE: validator enabled for the endpoint /private
 }
 
 func runValidationCycle(signerEndpointCfg, validatorEndpointCfg *config.EndpointConfig) {
