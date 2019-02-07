@@ -17,11 +17,11 @@ import (
 	auth0 "github.com/auth0-community/go-auth0"
 )
 
-type secretProviderConfig struct {
+type SecretProviderConfig struct {
 	URI          string
-	cacheEnabled bool
-	fingerprints [][]byte
-	cs           []uint16
+	CacheEnabled bool
+	Fingerprints [][]byte
+	Cs           []uint16
 }
 
 var (
@@ -29,9 +29,9 @@ var (
 	ErrPinnedKeyNotFound = errors.New("JWK client did not find a pinned key")
 )
 
-func secretProvider(cfg secretProviderConfig, te auth0.RequestTokenExtractor) *auth0.JWKClient {
-	if len(cfg.cs) == 0 {
-		cfg.cs = DefaultEnabledCipherSuites
+func SecretProvider(cfg SecretProviderConfig, te auth0.RequestTokenExtractor) *auth0.JWKClient {
+	if len(cfg.Cs) == 0 {
+		cfg.Cs = DefaultEnabledCipherSuites
 	}
 
 	dialer := NewDialer(cfg)
@@ -44,12 +44,12 @@ func secretProvider(cfg secretProviderConfig, te auth0.RequestTokenExtractor) *a
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 		TLSClientConfig: &tls.Config{
-			CipherSuites: cfg.cs,
+			CipherSuites: cfg.Cs,
 			MinVersion:   tls.VersionTLS12,
 		},
 	}
 
-	if len(cfg.fingerprints) > 0 {
+	if len(cfg.Fingerprints) > 0 {
 		transport.DialTLS = dialer.DialTLS
 	}
 
@@ -60,14 +60,14 @@ func secretProvider(cfg secretProviderConfig, te auth0.RequestTokenExtractor) *a
 		},
 	}
 
-	if !cfg.cacheEnabled {
+	if !cfg.CacheEnabled {
 		return auth0.NewJWKClient(opts, te)
 	}
 	keyCacher := auth0.NewMemoryKeyCacher(15*time.Minute, 100)
 	return auth0.NewJWKClientWithCache(opts, te, keyCacher)
 }
 
-func decodeFingerprints(in []string) ([][]byte, error) {
+func DecodeFingerprints(in []string) ([][]byte, error) {
 	out := make([][]byte, len(in))
 	for i, f := range in {
 		r, err := base64.URLEncoding.DecodeString(f)
@@ -79,14 +79,14 @@ func decodeFingerprints(in []string) ([][]byte, error) {
 	return out, nil
 }
 
-func NewDialer(cfg secretProviderConfig) *Dialer {
+func NewDialer(cfg SecretProviderConfig) *Dialer {
 	return &Dialer{
 		dialer: &net.Dialer{
 			Timeout:   30 * time.Second,
 			KeepAlive: 30 * time.Second,
 			DualStack: true,
 		},
-		fingerprints: cfg.fingerprints,
+		fingerprints: cfg.Fingerprints,
 	}
 }
 

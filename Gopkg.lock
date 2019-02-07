@@ -10,7 +10,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:14bbe6ae168a425236be82ad8928e7ff884edda55b28836028cd4f387528fd23"
+  digest = "1:18006e4843becf30a3fbd551dd6df05931e0dcc656b8aea5f631079d8a4de3f9"
   name = "github.com/devopsfaith/krakend"
   packages = [
     "config",
@@ -22,11 +22,14 @@
     "register/internal",
     "router",
     "router/gin",
+    "router/mux",
     "sd",
+    "transport/http/client",
+    "transport/http/server",
   ]
   pruneopts = "NUT"
-  revision = "b978521da32e8164c853807a734147729d06665f"
-  version = "0.6.0"
+  revision = "f82f671d8f1dc151d22949a5a3902f487c76ac23"
+  version = "0.7.0"
 
 [[projects]]
   branch = "master"
@@ -34,70 +37,99 @@
   name = "github.com/gin-contrib/sse"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "22d885f9ecc78bf4ee5d72b937e4bbcdc58e8cae"
+  revision = "a7658810eb745c2f22927282dea478278103a897"
 
 [[projects]]
-  digest = "1:10095a140b7829bcf199c8447725c0b1b9874a527b3d73cb2fc9ffc4a5fe8178"
+  digest = "1:7f029513a3c64c1fc923af79bf27d4fd0ce4fafdd13b421c1884d52c84e9c600"
   name = "github.com/gin-gonic/gin"
   packages = [
     ".",
     "binding",
+    "json",
     "render",
   ]
   pruneopts = "NUT"
-  revision = "d459835d2b077e44f7c9b453505ee29881d5d12d"
-  version = "v1.2"
+  revision = "b869fe1415e4b9eb52f247441830d502aece2d4d"
+  version = "v1.3.0"
 
 [[projects]]
-  digest = "1:e52902c9084a9e40bc7fdda6ac39c3d09f9437d80911e7050d11e59a4b905790"
+  digest = "1:97df918963298c287643883209a2c3f642e6593379f97ab400c2a2e219ab647d"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
   pruneopts = "NUT"
-  revision = "5a0f697c9ed9d68fef0116532c6e05cfeae00e55"
+  revision = "aa810b61a9c79d51363740d207bb46cf8e620ed5"
+  version = "v1.2.0"
 
 [[projects]]
-  digest = "1:89e4861dccb76fd84b7de2d88791cc8d23e125805397db27195b4dd83c459713"
+  digest = "1:8e36686e8b139f8fe240c1d5cf3a145bc675c22ff8e707857cdd3ae17b00d728"
+  name = "github.com/json-iterator/go"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "1624edc4454b8682399def8740d46db5e4362ba4"
+  version = "v1.1.5"
+
+[[projects]]
+  digest = "1:bffa444ca07c69c599ae5876bc18b25bfd5fa85b297ca10a25594d284a7e9c5d"
   name = "github.com/mattn/go-isatty"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "57fdcb988a5c543893cc61bce354a6e24ab70022"
+  revision = "6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c"
+  version = "v0.0.4"
 
 [[projects]]
-  digest = "1:a61cf979e3e0a51f0c86370a697d670a4163bd8adb143828117c071e26d3ef59"
+  digest = "1:2f42fa12d6911c7b7659738758631bec870b7e9b4c6be5444f963cdcfccc191f"
+  name = "github.com/modern-go/concurrent"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "bacd9c7ef1dd9b15be4a9909b8ac7a4e313eec94"
+  version = "1.0.3"
+
+[[projects]]
+  digest = "1:c6aca19413b13dc59c220ad7430329e2ec454cc310bc6d8de2c7e2b93c18a0f6"
+  name = "github.com/modern-go/reflect2"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "4b7aa43c6742a2c18fdef89dd197aaae7dac7ccd"
+  version = "1.0.1"
+
+[[projects]]
+  digest = "1:1ebf6fbb6c7fe00eaa4eb105cfe035e67cd7a03c7962011c99d4d0ef5cdce7ab"
   name = "github.com/ugorji/go"
   packages = ["codec"]
   pruneopts = "NUT"
-  revision = "c88ee250d0221a57af388746f5cf03768c21d6e2"
+  revision = "8fd0f8d918c8f0b52d0af210a812ba882cc31a1e"
+  version = "v1.1.2"
 
 [[projects]]
   branch = "master"
-  digest = "1:d5891c5bca9c62e5d394ca26491d2b710a1dc08cedeb0ca8f9ac4c3305120b02"
+  digest = "1:b8fa1ff0fc20983395978b3f771bb10438accbfe19326b02e236c1d4bf1c91b2"
   name = "golang.org/x/crypto"
   packages = [
     "ed25519",
     "ed25519/internal/edwards25519",
+    "pbkdf2",
   ]
   pruneopts = "NUT"
-  revision = "56440b844dfe139a8ac053f4ecac0b20b79058f4"
+  revision = "057139ce5d2bdbe6fe73c53679e24e9cf007f637"
 
 [[projects]]
   branch = "master"
-  digest = "1:baccc2c5b92589220bb261314c7228a1748ac843562fb7fc38ae75f2c548cc25"
+  digest = "1:5be6e111bef99ae60fa7a01266905c8050d8a43837d5c4840ff5417584d7418e"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "NUT"
-  revision = "34b17bdb430002e9db9ae7ddc8480b9fa05edc22"
+  revision = "b90733256f2e882e81d52f9126de08df5615afd9"
 
 [[projects]]
   digest = "1:0215407129c5f116ae8f6d3af64df59c39d3f606a72ef77a1e6ed874f92a8d9c"
   name = "gopkg.in/go-playground/validator.v8"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "5f57d2222ad794d0dffb07e664ea05e2ee07d60c"
-  version = "v8.18.1"
+  revision = "5f1438d3fca68893a817e4a66806cea46a9e4ebf"
+  version = "v8.18.2"
 
 [[projects]]
-  digest = "1:e42838adf26a641c866e40ccfdda1aa4978f5fc44b480d0645d32a4dd9024e46"
+  digest = "1:3eae6badd4900930e3180060324edc2b29e9e524ef63b5fc243b63fbf7595da9"
   name = "gopkg.in/square/go-jose.v2"
   packages = [
     ".",
@@ -106,15 +138,16 @@
     "jwt",
   ]
   pruneopts = "NUT"
-  revision = "349dc03548930652802aadc09fb126e2b7cb6d80"
-  version = "v2.1.7"
+  revision = "e94fb177d3668d35ab39c61cbb2f311550557e83"
+  version = "v2.2.2"
 
 [[projects]]
-  digest = "1:ad6f94355d292690137613735965bd3688844880fdab90eccf66321910344942"
+  digest = "1:18108594151654e9e696b27b181b953f9a90b16bf14d253dd1b397b025a1487f"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "a5b47d31c556af34a302ce5d659e6fea44d90de0"
+  revision = "51d6538a90f86fe93ac480b35f37b2be17fef232"
+  version = "v2.2.2"
 
 [solve-meta]
   analyzer-name = "dep"
@@ -125,6 +158,7 @@
     "github.com/devopsfaith/krakend/logging",
     "github.com/devopsfaith/krakend/proxy",
     "github.com/devopsfaith/krakend/router/gin",
+    "github.com/devopsfaith/krakend/router/mux",
     "github.com/gin-gonic/gin",
     "gopkg.in/square/go-jose.v2",
     "gopkg.in/square/go-jose.v2/jwt",

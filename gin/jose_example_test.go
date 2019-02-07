@@ -1,4 +1,4 @@
-package jose
+package gin
 
 import (
 	"bytes"
@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"time"
 
+	krakendjose "github.com/devopsfaith/krakend-jose"
 	"github.com/devopsfaith/krakend/config"
 	"github.com/devopsfaith/krakend/logging"
 	"github.com/devopsfaith/krakend/proxy"
@@ -85,7 +86,7 @@ func Example_HS256_cookie() {
 	defer server.Close()
 
 	sCfg := newSignerEndpointCfg("HS256", "sim2", server.URL)
-	_, signer, _ := newSigner(sCfg, nil)
+	_, signer, _ := krakendjose.NewSigner(sCfg, nil)
 	verifierCfg := newVerifierEndpointCfg("HS256", server.URL, []string{"role_a"})
 
 	externalTokenIssuer := func(rw http.ResponseWriter, req *http.Request) {
@@ -249,7 +250,7 @@ func newSignerEndpointCfg(alg, ID, URL string) *config.EndpointConfig {
 			},
 		},
 		ExtraConfig: config.ExtraConfig{
-			SignerNamespace: map[string]interface{}{
+			krakendjose.SignerNamespace: map[string]interface{}{
 				"alg":                  alg,
 				"kid":                  ID,
 				"jwk-url":              URL,
@@ -273,7 +274,7 @@ func newVerifierEndpointCfg(alg, URL string, roles []string) *config.EndpointCon
 			},
 		},
 		ExtraConfig: config.ExtraConfig{
-			ValidatorNamespace: map[string]interface{}{
+			krakendjose.ValidatorNamespace: map[string]interface{}{
 				"alg":                  alg,
 				"jwk-url":              URL,
 				"audience":             []string{"http://api.example.com"},
