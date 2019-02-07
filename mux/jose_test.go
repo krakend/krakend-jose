@@ -9,7 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	krakendjose "github.com/devopsfaith/krakend-jose"
 	"github.com/devopsfaith/krakend/logging"
 	"github.com/devopsfaith/krakend/proxy"
 	muxkrakend "github.com/devopsfaith/krakend/router/mux"
@@ -69,7 +68,7 @@ func TestTokenSignatureValidator(t *testing.T) {
 		t.Errorf("unexpected body: %s", body)
 	}
 
-	if log := buf.String(); !strings.Contains(log, "ERROR: JOSE: no signer config /private") {
+	if log := buf.String(); !strings.Contains(log, "INFO: JOSE: singer disabled for the endpoint /private") {
 		t.Error(log)
 	}
 
@@ -97,15 +96,6 @@ func TestTokenSignatureValidator(t *testing.T) {
 	}
 	if body := w.Body.String(); body != `{"aaaa":{"bar":"b","foo":"a"},"bbbb":true,"cccc":1234567890}` {
 		t.Errorf("unexpected body: %s", body)
-	}
-}
-
-func Test_newValidator_unkownAlg(t *testing.T) {
-	_, err := newValidator(&krakendjose.SignatureConfig{
-		Alg: "random",
-	})
-	if err == nil || err.Error() != "JOSE: unknown algorithm random" {
-		t.Errorf("unexpected error: %v", err)
 	}
 }
 

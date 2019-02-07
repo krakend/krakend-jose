@@ -13,7 +13,6 @@ import (
 	"github.com/devopsfaith/krakend/proxy"
 	ginkrakend "github.com/devopsfaith/krakend/router/gin"
 	"github.com/gin-gonic/gin"
-	jose "gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/jwt"
 )
 
@@ -52,22 +51,10 @@ func TokenSigner(hf ginkrakend.HandlerFactory, logger logging.Logger) ginkrakend
 				return
 			}
 
-			for _, key := range signerCfg.KeysToSign {
-				tmp, ok := response.Data[key]
-				if !ok {
-					continue
-				}
-				data, ok := tmp.(map[string]interface{})
-				if !ok {
-					continue
-				}
-				token, err := signer(data)
-				if err != nil {
-					logger.Error(err.Error())
-					c.AbortWithStatus(http.StatusBadRequest)
-					return
-				}
-				response.Data[key] = token
+			if err := krakendjose.SignFields(signerCfg.KeysToSign, signer, response); err != nil {
+				logger.Error(err.Error())
+				c.AbortWithStatus(http.StatusBadRequest)
+				return
 			}
 
 			for k, v := range response.Metadata.Headers {
@@ -87,14 +74,14 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 		scfg, err := krakendjose.GetSignatureConfig(cfg)
 		if err == krakendjose.ErrNoValidatorCfg {
 			logger.Info("JOSE: validator disabled for the endpoint", cfg.Endpoint)
-			return hf(cfg, prxy)
+			return handler
 		}
 		if err != nil {
 			logger.Warning(fmt.Sprintf("JOSE: validator for %s: %s", cfg.Endpoint, err.Error()))
 			return handler
 		}
 
-		validator, err := newValidator(scfg)
+		validator, err := krakendjose.NewValidator(scfg, FromCookie)
 		if err != nil {
 			log.Fatalf("%s: %s", cfg.Endpoint, err.Error())
 		}
@@ -120,7 +107,7 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 				return
 			}
 
-			if !canAccess(scfg.RolesKey, claims, scfg.Roles) {
+			if !krakendjose.CanAccess(scfg.RolesKey, claims, scfg.Roles) {
 				c.AbortWithStatus(http.StatusUnauthorized)
 				return
 			}
@@ -128,39 +115,6 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 			handler(c)
 		}
 	}
-}
-
-func newValidator(scfg *krakendjose.SignatureConfig) (*auth0.JWTValidator, error) {
-	sa, ok := supportedAlgorithms[scfg.Alg]
-	if !ok {
-		return nil, fmt.Errorf("JOSE: unknown algorithm %s", scfg.Alg)
-	}
-	te := auth0.FromMultiple(
-		auth0.RequestTokenExtractorFunc(auth0.FromHeader),
-		auth0.RequestTokenExtractorFunc(FromCookie(scfg.CookieKey)),
-	)
-
-	decodedFs, err := krakendjose.DecodeFingerprints(scfg.Fingerprints)
-	if err != nil {
-		return nil, err
-	}
-
-	cfg := krakendjose.SecretProviderConfig{
-		URI:          scfg.URI,
-		CacheEnabled: scfg.CacheEnabled,
-		Cs:           scfg.CipherSuites,
-		Fingerprints: decodedFs,
-	}
-
-	return auth0.NewValidator(
-		auth0.NewConfiguration(
-			krakendjose.SecretProvider(cfg, te),
-			scfg.Audience,
-			scfg.Issuer,
-			sa,
-		),
-		te,
-	), nil
 }
 
 func FromCookie(key string) func(r *http.Request) (*jwt.JSONWebToken, error) {
@@ -174,40 +128,4 @@ func FromCookie(key string) func(r *http.Request) (*jwt.JSONWebToken, error) {
 		}
 		return jwt.ParseSigned(cookie.Value)
 	}
-}
-
-func canAccess(roleKey string, claims map[string]interface{}, required []string) bool {
-	if len(required) == 0 {
-		return true
-	}
-	roles := []interface{}{}
-	if tmp, ok := claims[roleKey]; ok {
-		if v, ok := tmp.([]interface{}); ok {
-			roles = v
-		}
-	}
-	for _, role := range required {
-		for _, r := range roles {
-			if r.(string) == role {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-var supportedAlgorithms = map[string]jose.SignatureAlgorithm{
-	"EdDSA": jose.EdDSA,
-	"HS256": jose.HS256,
-	"HS384": jose.HS384,
-	"HS512": jose.HS512,
-	"RS256": jose.RS256,
-	"RS384": jose.RS384,
-	"RS512": jose.RS512,
-	"ES256": jose.ES256,
-	"ES384": jose.ES384,
-	"ES512": jose.ES512,
-	"PS256": jose.PS256,
-	"PS384": jose.PS384,
-	"PS512": jose.PS512,
 }
