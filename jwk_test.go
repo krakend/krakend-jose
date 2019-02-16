@@ -1,6 +1,8 @@
+//go:generate go run $GOROOT/src/crypto/tls/generate_cert.go --rsa-bits 1024 --host 127.0.0.1,::1,localhost --ca --start-date "Jan 1 00:00:00 1970" --duration=1000000h
 package jose
 
 import (
+	"crypto/tls"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -8,6 +10,12 @@ import (
 )
 
 func TestJWK(t *testing.T) {
+	cert, err := tls.LoadX509KeyPair("cert.pem", "key.pem")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
 	for _, tc := range []struct {
 		Name string
 		Alg  string
@@ -37,9 +45,15 @@ func TestJWK(t *testing.T) {
 			Alg:  "HS256",
 		},
 	} {
-		server := httptest.NewServer(jwkEndpoint(tc.Name))
+		server := httptest.NewUnstartedServer(jwkEndpoint(tc.Name))
 		defer server.Close()
-		secretProvidr := SecretProvider(SecretProviderConfig{URI: server.URL}, nil)
+		server.TLS = &tls.Config{Certificates: []tls.Certificate{cert}}
+		server.StartTLS()
+
+		secretProvidr, err := SecretProvider(SecretProviderConfig{URI: server.URL, LocalCA: "cert.pem"}, nil)
+		if err != nil {
+			t.Error(err)
+		}
 		for _, k := range tc.ID {
 			key, err := secretProvidr.GetKey(k)
 			if err != nil {

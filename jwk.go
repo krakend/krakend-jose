@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -18,10 +19,12 @@ import (
 )
 
 type SecretProviderConfig struct {
-	URI          string
-	CacheEnabled bool
-	Fingerprints [][]byte
-	Cs           []uint16
+	URI           string
+	CacheEnabled  bool
+	Fingerprints  [][]byte
+	Cs            []uint16
+	LocalCA       string
+	AllowInsecure bool
 }
 
 var (
@@ -29,12 +32,25 @@ var (
 	ErrPinnedKeyNotFound = errors.New("JWK client did not find a pinned key")
 )
 
-func SecretProvider(cfg SecretProviderConfig, te auth0.RequestTokenExtractor) *auth0.JWKClient {
+func SecretProvider(cfg SecretProviderConfig, te auth0.RequestTokenExtractor) (*auth0.JWKClient, error) {
 	if len(cfg.Cs) == 0 {
 		cfg.Cs = DefaultEnabledCipherSuites
 	}
 
 	dialer := NewDialer(cfg)
+
+	rootCAs, _ := x509.SystemCertPool()
+	if rootCAs == nil {
+		rootCAs = x509.NewCertPool()
+	}
+
+	if cfg.LocalCA != "" {
+		certs, err := ioutil.ReadFile(cfg.LocalCA)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to append %q to RootCAs: %v", cfg.LocalCA, err)
+		}
+		rootCAs.AppendCertsFromPEM(certs)
+	}
 
 	transport := &http.Transport{
 		Proxy:                 http.ProxyFromEnvironment,
@@ -44,8 +60,10 @@ func SecretProvider(cfg SecretProviderConfig, te auth0.RequestTokenExtractor) *a
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 		TLSClientConfig: &tls.Config{
-			CipherSuites: cfg.Cs,
-			MinVersion:   tls.VersionTLS12,
+			CipherSuites:       cfg.Cs,
+			MinVersion:         tls.VersionTLS12,
+			InsecureSkipVerify: cfg.AllowInsecure,
+			RootCAs:            rootCAs,
 		},
 	}
 
@@ -61,10 +79,10 @@ func SecretProvider(cfg SecretProviderConfig, te auth0.RequestTokenExtractor) *a
 	}
 
 	if !cfg.CacheEnabled {
-		return auth0.NewJWKClient(opts, te)
+		return auth0.NewJWKClient(opts, te), nil
 	}
 	keyCacher := auth0.NewMemoryKeyCacher(15*time.Minute, 100)
-	return auth0.NewJWKClientWithCache(opts, te, keyCacher)
+	return auth0.NewJWKClientWithCache(opts, te, keyCacher), nil
 }
 
 func DecodeFingerprints(in []string) ([][]byte, error) {

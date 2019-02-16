@@ -189,7 +189,11 @@ func testPrivateSigner(t *testing.T, keyType, keyName, full, compact string) {
 	server := httptest.NewServer(jwkEndpoint(keyType))
 	defer server.Close()
 
-	sp := SecretProvider(SecretProviderConfig{URI: server.URL}, nil)
+	sp, err := SecretProvider(SecretProviderConfig{URI: server.URL}, nil)
+	if err != nil {
+		t.Error(err)
+		return
+	}
 	key, err := sp.GetKey(keyName)
 	if err != nil {
 		t.Errorf("getting the key: %s", err.Error())
