@@ -13,4 +13,5 @@ deps:
 	dep status
 
 test:
+	go generate
 	go test -cover ./...

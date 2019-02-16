@@ -29,6 +29,7 @@ type SignatureConfig struct {
 	CipherSuites       []uint16 `json:"cipher_suites,omitempty"`
 	DisableJWKSecurity bool     `json:"disable_jwk_security"`
 	Fingerprints       []string `json:"jwk_fingerprints,omitempty"`
+	LocalCA            string   `json:"jwk_local_ca,omitempty"`
 }
 
 type SignerConfig struct {
@@ -40,6 +41,7 @@ type SignerConfig struct {
 	CipherSuites       []uint16 `json:"cipher_suites,omitempty"`
 	DisableJWKSecurity bool     `json:"disable_jwk_security"`
 	Fingerprints       []string `json:"jwk_fingerprints,omitempty"`
+	LocalCA            string   `json:"jwk_local_ca,omitempty"`
 }
 
 var (
@@ -95,12 +97,17 @@ func NewSigner(cfg *config.EndpointConfig, te auth0.RequestTokenExtractor) (*Sig
 	}
 
 	spcfg := SecretProviderConfig{
-		URI:          signerCfg.URI,
-		Cs:           signerCfg.CipherSuites,
-		Fingerprints: decodedFs,
+		URI:           signerCfg.URI,
+		Cs:            signerCfg.CipherSuites,
+		Fingerprints:  decodedFs,
+		LocalCA:       signerCfg.LocalCA,
+		AllowInsecure: signerCfg.DisableJWKSecurity,
 	}
 
-	sp := SecretProvider(spcfg, te)
+	sp, err := SecretProvider(spcfg, te)
+	if err != nil {
+		return signerCfg, nopSigner, err
+	}
 	key, err := sp.GetKey(signerCfg.KeyID)
 	if err != nil {
 		return signerCfg, nopSigner, err
