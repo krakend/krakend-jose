@@ -16,8 +16,8 @@ import (
 	"gopkg.in/square/go-jose.v2/jwt"
 )
 
-func HandlerFactory(hf ginkrakend.HandlerFactory, logger logging.Logger, rejecter krakendjose.Rejecter) ginkrakend.HandlerFactory {
-	return TokenSigner(TokenSignatureValidator(hf, logger, rejecter), logger)
+func HandlerFactory(hf ginkrakend.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory) ginkrakend.HandlerFactory {
+	return TokenSigner(TokenSignatureValidator(hf, logger, rejecterF), logger)
 }
 
 func TokenSigner(hf ginkrakend.HandlerFactory, logger logging.Logger) ginkrakend.HandlerFactory {
@@ -65,11 +65,13 @@ func TokenSigner(hf ginkrakend.HandlerFactory, logger logging.Logger) ginkrakend
 	}
 }
 
-func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger, rejecter krakendjose.Rejecter) ginkrakend.HandlerFactory {
-	if rejecter == nil {
-		rejecter = krakendjose.FixedRejecter(false)
-	}
+func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory) ginkrakend.HandlerFactory {
 	return func(cfg *config.EndpointConfig, prxy proxy.Proxy) gin.HandlerFunc {
+		if rejecterF == nil {
+			rejecterF = new(krakendjose.NopRejecterFactory)
+		}
+		rejecter := rejecterF.New(logger, cfg)
+
 		handler := hf(cfg, prxy)
 		scfg, err := krakendjose.GetSignatureConfig(cfg)
 		if err == krakendjose.ErrNoValidatorCfg {
