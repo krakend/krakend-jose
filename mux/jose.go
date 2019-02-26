@@ -134,7 +134,7 @@ func TokenSignatureValidator(hf muxkrakend.HandlerFactory, logger logging.Logger
 			}
 
 			if !krakendjose.CanAccess(signatureConfig.RolesKey, claims, signatureConfig.Roles) {
-				http.Error(w, "", http.StatusUnauthorized)
+				http.Error(w, "", http.StatusForbidden)
 				return
 			}
 
