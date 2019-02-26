@@ -51,14 +51,26 @@ func TestTokenSignatureValidator(t *testing.T) {
 
 	engine := muxkrakend.DefaultEngine()
 
-	engine.Handle(validatorEndpointCfg.Endpoint, "GET", hf(validatorEndpointCfg, dummyProxy))
-	engine.Handle(forbidenEndpointCfg.Endpoint, "GET", hf(forbidenEndpointCfg, dummyProxy))
-	engine.Handle(registeredEndpointCfg.Endpoint, "GET", hf(registeredEndpointCfg, dummyProxy))
+	engine.Handle(validatorEndpointCfg.Endpoint, hf(validatorEndpointCfg, dummyProxy))
+	engine.Handle(forbidenEndpointCfg.Endpoint, hf(forbidenEndpointCfg, dummyProxy))
+	engine.Handle(registeredEndpointCfg.Endpoint, hf(registeredEndpointCfg, dummyProxy))
 
-	req := httptest.NewRequest("GET", validatorEndpointCfg.Endpoint, new(bytes.Buffer))
-	req.Header.Set("Authorization", "BEARER "+token)
+	req := httptest.NewRequest("GET", forbidenEndpointCfg.Endpoint, new(bytes.Buffer))
 
 	w := httptest.NewRecorder()
+	engine.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("unexpected status code: %d", w.Code)
+	}
+	if body := w.Body.String(); body != "Token not found\n" {
+		t.Errorf("unexpected body: '%s'", body)
+	}
+
+	req = httptest.NewRequest("GET", validatorEndpointCfg.Endpoint, new(bytes.Buffer))
+	req.Header.Set("Authorization", "BEARER "+token)
+
+	w = httptest.NewRecorder()
 	engine.ServeHTTP(w, req)
 
 	if w.Code != 200 {

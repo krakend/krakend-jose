@@ -57,10 +57,22 @@ func TestTokenSignatureValidator(t *testing.T) {
 	engine.GET(forbidenEndpointCfg.Endpoint, hf(forbidenEndpointCfg, dummyProxy))
 	engine.GET(registeredEndpointCfg.Endpoint, hf(registeredEndpointCfg, dummyProxy))
 
-	req := httptest.NewRequest("GET", validatorEndpointCfg.Endpoint, new(bytes.Buffer))
-	req.Header.Set("Authorization", "BEARER "+token)
+	req := httptest.NewRequest("GET", forbidenEndpointCfg.Endpoint, new(bytes.Buffer))
 
 	w := httptest.NewRecorder()
+	engine.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("unexpected status code: %d", w.Code)
+	}
+	if body := w.Body.String(); body != "" {
+		t.Errorf("unexpected body: %s", body)
+	}
+
+	req = httptest.NewRequest("GET", validatorEndpointCfg.Endpoint, new(bytes.Buffer))
+	req.Header.Set("Authorization", "BEARER "+token)
+
+	w = httptest.NewRecorder()
 	engine.ServeHTTP(w, req)
 
 	if w.Code != 200 {
