@@ -80,7 +80,7 @@ func TestTokenSignatureValidator(t *testing.T) {
 	w = httptest.NewRecorder()
 	engine.ServeHTTP(w, req)
 
-	if w.Code != http.StatusUnauthorized {
+	if w.Code != http.StatusForbidden {
 		t.Errorf("unexpected status code: %d", w.Code)
 	}
 	if body := w.Body.String(); body != "" {
