@@ -110,7 +110,7 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 			}
 
 			if !krakendjose.CanAccess(scfg.RolesKey, claims, scfg.Roles) {
-				c.AbortWithStatus(http.StatusUnauthorized)
+				c.AbortWithStatus(http.StatusForbidden)
 				return
 			}
 
