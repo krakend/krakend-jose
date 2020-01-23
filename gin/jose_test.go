@@ -78,7 +78,7 @@ func TestTokenSignatureValidator(t *testing.T) {
 	if w.Code != 200 {
 		t.Errorf("unexpected status code: %d", w.Code)
 	}
-	if body := w.Body.String(); body != `{"aaaa":{"bar":"b","foo":"a"},"bbbb":true,"cccc":1234567890}` {
+	if body := w.Body.String(); body != "{\"aaaa\":{\"bar\":\"b\",\"foo\":\"a\"},\"bbbb\":true,\"cccc\":1234567890}\n" {
 		t.Errorf("unexpected body: %s", body)
 	}
 
@@ -108,7 +108,7 @@ func TestTokenSignatureValidator(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Errorf("unexpected status code: %d", w.Code)
 	}
-	if body := w.Body.String(); body != `{"aaaa":{"bar":"b","foo":"a"},"bbbb":true,"cccc":1234567890}` {
+	if body := w.Body.String(); body != "{\"aaaa\":{\"bar\":\"b\",\"foo\":\"a\"},\"bbbb\":true,\"cccc\":1234567890}\n" {
 		t.Errorf("unexpected body: %s", body)
 	}
 }

@@ -1,11 +1,13 @@
 language: go
 
 go:
+    - "1.13.x"
+    - "1.12.x"
     - "1.11.x"
-    - "1.10.x"
-
-before_install:
-  - make prepare
+    
+env:
+    - GO111MODULE=on
 
 script:
-    - make
+    - go generate
+    - go test -cover ./...
