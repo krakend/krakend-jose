@@ -3,6 +3,7 @@ package jose
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/auth0-community/go-auth0"
 	"github.com/devopsfaith/krakend/proxy"
@@ -52,16 +53,42 @@ func NewValidator(signatureConfig *SignatureConfig, ef ExtractorFactory) (*auth0
 	), nil
 }
 
+func CanAccessNested(roleKey string, claims map[string]interface{}, required []string) bool {
+	if len(required) == 0 {
+		return true
+	}
+
+	tmp := claims
+	keys := strings.Split(roleKey, ".")
+
+	for _, key := range keys[:len(keys)-1] {
+		v, ok := tmp[key]
+		if !ok {
+			return false
+		}
+		tmp, ok = v.(map[string]interface{})
+		if !ok {
+			return false
+		}
+	}
+	return CanAccess(keys[len(keys)-1], tmp, required)
+}
+
 func CanAccess(roleKey string, claims map[string]interface{}, required []string) bool {
 	if len(required) == 0 {
 		return true
 	}
-	var roles []interface{}
-	if tmp, ok := claims[roleKey]; ok {
-		if v, ok := tmp.([]interface{}); ok {
-			roles = v
-		}
+
+	tmp, ok := claims[roleKey]
+	if !ok {
+		return false
 	}
+
+	roles, ok := tmp.([]interface{})
+	if !ok {
+		return false
+	}
+
 	for _, role := range required {
 		for _, r := range roles {
 			if r.(string) == role {
