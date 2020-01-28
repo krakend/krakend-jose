@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/auth0-community/go-auth0"
 	krakendjose "github.com/devopsfaith/krakend-jose"
@@ -112,6 +113,14 @@ func TokenSignatureValidator(hf muxkrakend.HandlerFactory, logger logging.Logger
 			log.Fatalf("%s: %s", cfg.Endpoint, err.Error())
 		}
 
+		var aclCheck func(string, map[string]interface{}, []string) bool
+
+		if strings.Contains(signatureConfig.RolesKey, ".") {
+			aclCheck = krakendjose.CanAccessNested
+		} else {
+			aclCheck = krakendjose.CanAccess
+		}
+
 		logger.Info("JOSE: validator enabled for the endpoint", cfg.Endpoint)
 
 		return func(w http.ResponseWriter, r *http.Request) {
@@ -133,7 +142,7 @@ func TokenSignatureValidator(hf muxkrakend.HandlerFactory, logger logging.Logger
 				return
 			}
 
-			if !krakendjose.CanAccess(signatureConfig.RolesKey, claims, signatureConfig.Roles) {
+			if !aclCheck(signatureConfig.RolesKey, claims, signatureConfig.Roles) {
 				http.Error(w, "", http.StatusForbidden)
 				return
 			}
