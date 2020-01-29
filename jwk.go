@@ -21,6 +21,7 @@ import (
 type SecretProviderConfig struct {
 	URI           string
 	CacheEnabled  bool
+	CacheDuration time.Duration
 	Fingerprints  [][]byte
 	Cs            []uint16
 	LocalCA       string
@@ -81,7 +82,11 @@ func SecretProvider(cfg SecretProviderConfig, te auth0.RequestTokenExtractor) (*
 	if !cfg.CacheEnabled {
 		return auth0.NewJWKClient(opts, te), nil
 	}
-	keyCacher := auth0.NewMemoryKeyCacher(15*time.Minute, 100)
+	cacheDuration := cfg.CacheDuration
+	if cacheDuration == 0 {
+		cacheDuration = 15 * time.Minute
+	}
+	keyCacher := auth0.NewMemoryKeyCacher(cacheDuration, 100)
 	return auth0.NewJWKClientWithCache(opts, te, keyCacher), nil
 }
 

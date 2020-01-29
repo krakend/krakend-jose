@@ -263,6 +263,7 @@ func newSignerEndpointCfg(alg, ID, URL string) *config.EndpointConfig {
 				"keys-to-sign":         []string{"access_token", "refresh_token"},
 				"disable_jwk_security": true,
 				"cache":                true,
+				"cacheDuration":        time.Minute,
 			},
 		},
 	}
