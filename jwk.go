@@ -21,7 +21,7 @@ import (
 type SecretProviderConfig struct {
 	URI           string
 	CacheEnabled  bool
-	CacheDuration time.Duration
+	CacheDuration uint32
 	Fingerprints  [][]byte
 	Cs            []uint16
 	LocalCA       string
@@ -82,7 +82,9 @@ func SecretProvider(cfg SecretProviderConfig, te auth0.RequestTokenExtractor) (*
 	if !cfg.CacheEnabled {
 		return auth0.NewJWKClient(opts, te), nil
 	}
-	cacheDuration := cfg.CacheDuration
+	var cacheDuration time.Duration
+	cacheDuration = time.Duration(cfg.CacheDuration) * time.Second
+	// Set default duration to 15 minute
 	if cacheDuration == 0 {
 		cacheDuration = 15 * time.Minute
 	}
