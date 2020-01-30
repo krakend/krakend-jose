@@ -21,6 +21,7 @@ type SignatureConfig struct {
 	Alg                string   `json:"alg"`
 	URI                string   `json:"jwk-url"`
 	CacheEnabled       bool     `json:"cache,omitempty"`
+	CacheDuration      uint32   `json:"cache_duration,omitempty"`
 	Issuer             string   `json:"issuer,omitempty"`
 	Audience           []string `json:"audience,omitempty"`
 	Roles              []string `json:"roles,omitempty"`
