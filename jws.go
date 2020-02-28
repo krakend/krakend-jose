@@ -34,7 +34,7 @@ type SignatureConfig struct {
 }
 
 type SignerConfig struct {
-	Alg                string   `json:"alg"`
+	Alg                string   `json:"alg,omitempty"`
 	KeyID              string   `json:"kid"`
 	URI                string   `json:"jwk-url"`
 	FullSerialization  bool     `json:"full,omitempty"`
@@ -116,9 +116,15 @@ func NewSigner(cfg *config.EndpointConfig, te auth0.RequestTokenExtractor) (*Sig
 	if key.IsPublic() {
 		// TODO: we should not sign with a public key
 	}
+
+	alg := key.Algorithm
+	if signerCfg.Alg != "" {
+		alg = signerCfg.Alg
+	}
+
 	signingKey := jose.SigningKey{
 		Key:       key.Key,
-		Algorithm: jose.SignatureAlgorithm(signerCfg.Alg),
+		Algorithm: jose.SignatureAlgorithm(alg),
 	}
 	opts := &jose.SignerOptions{
 		ExtraHeaders: map[jose.HeaderKey]interface{}{
