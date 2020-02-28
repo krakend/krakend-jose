@@ -18,7 +18,7 @@ const (
 )
 
 type SignatureConfig struct {
-	Alg                string   `json:"alg"`
+	Alg                string   `json:"alg,omitempty"`
 	URI                string   `json:"jwk-url"`
 	CacheEnabled       bool     `json:"cache,omitempty"`
 	CacheDuration      uint32   `json:"cache_duration,omitempty"`
@@ -34,7 +34,7 @@ type SignatureConfig struct {
 }
 
 type SignerConfig struct {
-	Alg                string   `json:"alg,omitempty"`
+	Alg                string   `json:"alg"`
 	KeyID              string   `json:"kid"`
 	URI                string   `json:"jwk-url"`
 	FullSerialization  bool     `json:"full,omitempty"`
