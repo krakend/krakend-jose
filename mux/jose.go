@@ -29,7 +29,8 @@ func TokenSigner(hf muxkrakend.HandlerFactory, paramExtractor muxkrakend.ParamEx
 			return hf(cfg, prxy)
 		}
 		if err != nil {
-			logger.Error(err.Error(), cfg.Endpoint)
+			logger.Error("JOSE: unable to create the signer for the endpoint", cfg.Endpoint)
+			logger.Error(err.Error())
 			return hf(cfg, prxy)
 		}
 
