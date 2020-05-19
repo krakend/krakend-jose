@@ -25,7 +25,7 @@ func TokenSigner(hf ginkrakend.HandlerFactory, logger logging.Logger) ginkrakend
 	return func(cfg *config.EndpointConfig, prxy proxy.Proxy) gin.HandlerFunc {
 		signerCfg, signer, err := krakendjose.NewSigner(cfg, nil)
 		if err == krakendjose.ErrNoSignerCfg {
-			logger.Info("JOSE: singer disabled for the endpoint", cfg.Endpoint)
+			logger.Info("JOSE: signer disabled for the endpoint", cfg.Endpoint)
 			return hf(cfg, prxy)
 		}
 		if err != nil {
@@ -34,7 +34,7 @@ func TokenSigner(hf ginkrakend.HandlerFactory, logger logging.Logger) ginkrakend
 			return hf(cfg, prxy)
 		}
 
-		logger.Info("JOSE: singer enabled for the endpoint", cfg.Endpoint)
+		logger.Info("JOSE: signer enabled for the endpoint", cfg.Endpoint)
 
 		return func(c *gin.Context) {
 			proxyReq := ginkrakend.NewRequest(cfg.HeadersToPass)(c, cfg.QueryString)
