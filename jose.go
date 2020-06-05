@@ -85,18 +85,32 @@ func CanAccess(roleKey string, claims map[string]interface{}, required []string)
 	}
 
 	roles, ok := tmp.([]interface{})
-	if !ok {
+	if ok {
+		for _, role := range required {
+			for _, r := range roles {
+				if r.(string) == role {
+					return true
+				}
+			}
+		}
 		return false
 	}
 
+	roleString, ok := tmp.(string)
+	if !ok {
+		return false
+	}
+	roless := strings.Split(roleString, " ")
+
 	for _, role := range required {
-		for _, r := range roles {
-			if r.(string) == role {
+		for _, r := range roless {
+			if r == role {
 				return true
 			}
 		}
 	}
 	return false
+
 }
 
 func SignFields(keys []string, signer Signer, response *proxy.Response) error {
