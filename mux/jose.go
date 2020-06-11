@@ -25,7 +25,7 @@ func TokenSigner(hf muxkrakend.HandlerFactory, paramExtractor muxkrakend.ParamEx
 	return func(cfg *config.EndpointConfig, prxy proxy.Proxy) http.HandlerFunc {
 		signerCfg, signer, err := krakendjose.NewSigner(cfg, nil)
 		if err == krakendjose.ErrNoSignerCfg {
-			logger.Info("JOSE: singer disabled for the endpoint", cfg.Endpoint)
+			logger.Info("JOSE: signer disabled for the endpoint", cfg.Endpoint)
 			return hf(cfg, prxy)
 		}
 		if err != nil {
@@ -34,7 +34,7 @@ func TokenSigner(hf muxkrakend.HandlerFactory, paramExtractor muxkrakend.ParamEx
 			return hf(cfg, prxy)
 		}
 
-		logger.Info("JOSE: singer enabled for the endpoint", cfg.Endpoint)
+		logger.Info("JOSE: signer enabled for the endpoint", cfg.Endpoint)
 
 		return func(w http.ResponseWriter, r *http.Request) {
 			proxyReq := muxkrakend.NewRequestBuilder(paramExtractor)(r, cfg.QueryString, cfg.HeadersToPass)
@@ -116,7 +116,7 @@ func TokenSignatureValidator(hf muxkrakend.HandlerFactory, logger logging.Logger
 
 		var aclCheck func(string, map[string]interface{}, []string) bool
 
-		if strings.Contains(signatureConfig.RolesKey, ".") {
+		if signatureConfig.RolesKeyIsNested && strings.Contains(signatureConfig.RolesKey, ".") {
 			aclCheck = krakendjose.CanAccessNested
 		} else {
 			aclCheck = krakendjose.CanAccess

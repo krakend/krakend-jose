@@ -92,7 +92,7 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 
 		var aclCheck func(string, map[string]interface{}, []string) bool
 
-		if strings.Contains(scfg.RolesKey, ".") {
+		if scfg.RolesKeyIsNested && strings.Contains(scfg.RolesKey, ".") {
 			aclCheck = krakendjose.CanAccessNested
 		} else {
 			aclCheck = krakendjose.CanAccess
