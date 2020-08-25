@@ -140,10 +140,10 @@ func extractRequiredJWTClaims(cfg *config.EndpointConfig) func(*gin.Context, map
 	required := []string{}
 	for _, backend := range cfg.Backend {
 		for _, part := range strings.Split(backend.URLPattern, "/") {
-			if len(part) < 6 || part[:6] != "{{JWT." {
+			if len(part) < 7 || part[:7] != "{{.JWT." {
 				continue
 			}
-			required = append(required, part[2:len(part)-2])
+			required = append(required, part[3:len(part)-2])
 		}
 	}
 	if len(required) == 0 {
@@ -155,6 +155,7 @@ func extractRequiredJWTClaims(cfg *config.EndpointConfig) func(*gin.Context, map
 			if len(param) < 5 {
 				continue
 			}
+			// TODO: check for nested claims
 			if v, ok := claims[param[4:]].(string); ok {
 				params := append(c.Params, gin.Param{Key: param, Value: v})
 				c.Params = params
