@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 )
 
@@ -46,7 +47,6 @@ func TestJWK(t *testing.T) {
 		},
 	} {
 		server := httptest.NewUnstartedServer(jwkEndpoint(tc.Name))
-		defer server.Close()
 		server.TLS = &tls.Config{Certificates: []tls.Certificate{cert}}
 		server.StartTLS()
 
@@ -62,6 +62,77 @@ func TestJWK(t *testing.T) {
 			if key.Algorithm != tc.Alg {
 				t.Errorf("wrong alg. have: %s, want: %s", key.Algorithm, tc.Alg)
 			}
+		}
+		server.Close()
+	}
+}
+
+func TestJWK_cache(t *testing.T) {
+	cert, err := tls.LoadX509KeyPair("cert.pem", "key.pem")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	for _, tc := range []struct {
+		Name string
+		Alg  string
+		ID   []string
+	}{
+		{
+			Name: "public",
+			ID:   []string{"2011-04-29"},
+			Alg:  "RS256",
+		},
+		{
+			Name: "public",
+			ID:   []string{"1"},
+		},
+		{
+			Name: "private",
+			ID:   []string{"2011-04-29"},
+			Alg:  "RS256",
+		},
+		{
+			Name: "private",
+			ID:   []string{"1"},
+		},
+		{
+			Name: "symmetric",
+			ID:   []string{"sim2"},
+			Alg:  "HS256",
+		},
+	} {
+		var hits uint32
+		server := httptest.NewUnstartedServer(jwkEndpointWithCounter(tc.Name, &hits))
+		server.TLS = &tls.Config{Certificates: []tls.Certificate{cert}}
+		server.StartTLS()
+
+		cfg := SecretProviderConfig{
+			URI:          server.URL,
+			LocalCA:      "cert.pem",
+			CacheEnabled: true,
+		}
+
+		secretProvidr, err := SecretProvider(cfg, nil)
+		if err != nil {
+			t.Error(err)
+		}
+		for i := 0; i < 10; i++ {
+			for _, k := range tc.ID {
+				key, err := secretProvidr.GetKey(k)
+				if err != nil {
+					t.Errorf("[%s] extracting the key %s: %s", tc.Name, k, err.Error())
+				}
+				if key.Algorithm != tc.Alg {
+					t.Errorf("wrong alg. have: %s, want: %s", key.Algorithm, tc.Alg)
+				}
+			}
+		}
+		server.Close()
+
+		if hits != 1 {
+			t.Errorf("wrong number of hits to the jwk endpoint: %d", hits)
 		}
 	}
 }
@@ -93,5 +164,18 @@ func jwkEndpoint(name string) http.HandlerFunc {
 		}
 		rw.Header().Set("Content-Type", "application/json")
 		rw.Write(data)
+	}
+}
+
+func jwkEndpointWithCounter(name string, hits *uint32) http.HandlerFunc {
+	data, err := ioutil.ReadFile("./fixtures/" + name + ".json")
+	return func(rw http.ResponseWriter, _ *http.Request) {
+		if err != nil {
+			rw.WriteHeader(500)
+			return
+		}
+		rw.Header().Set("Content-Type", "application/json")
+		rw.Write(data)
+		atomic.AddUint32(hits, 1)
 	}
 }
