@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	github.com/auth0-community/go-auth0 v1.0.0
-	github.com/devopsfaith/krakend v0.0.0-20181030151625-f82f671d8f1d
+	github.com/devopsfaith/krakend v1.1.2-0.20200826121428-f41e024bd50a
 	github.com/gin-contrib/sse v0.1.0
 	github.com/gin-gonic/gin v1.5.0
 	github.com/golang/protobuf v1.3.2

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
 	"strings"
 
 	auth0 "github.com/auth0-community/go-auth0"
@@ -100,6 +101,8 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 
 		logger.Info("JOSE: validator enabled for the endpoint", cfg.Endpoint)
 
+		paramExtractor := extractRequiredJWTClaims(cfg)
+
 		return func(c *gin.Context) {
 			token, err := validator.ValidateRequest(c.Request)
 			if err != nil {
@@ -124,7 +127,39 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 				return
 			}
 
+			paramExtractor(c, claims)
+
 			handler(c)
+		}
+	}
+}
+
+var jwtParamsPattern = regexp.MustCompile(`(JWT\.(.*)\/)*(JWT\.(.*))`)
+
+func extractRequiredJWTClaims(cfg *config.EndpointConfig) func(*gin.Context, map[string]interface{}) {
+	required := []string{}
+	for _, backend := range cfg.Backend {
+		for _, part := range strings.Split(backend.URLPattern, "/") {
+			if len(part) < 7 || part[:7] != "{{.JWT." {
+				continue
+			}
+			required = append(required, part[3:len(part)-2])
+		}
+	}
+	if len(required) == 0 {
+		return func(_ *gin.Context, _ map[string]interface{}) {}
+	}
+
+	return func(c *gin.Context, claims map[string]interface{}) {
+		for _, param := range required {
+			if len(param) < 5 {
+				continue
+			}
+			// TODO: check for nested claims
+			if v, ok := claims[param[4:]].(string); ok {
+				params := append(c.Params, gin.Param{Key: param, Value: v})
+				c.Params = params
+			}
 		}
 	}
 }
