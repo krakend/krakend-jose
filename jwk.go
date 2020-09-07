@@ -80,15 +80,16 @@ func SecretProvider(cfg SecretProviderConfig, te auth0.RequestTokenExtractor) (*
 	}
 
 	if !cfg.CacheEnabled {
-		return auth0.NewJWKClient(opts, te), nil
+		return auth0.NewJWKClientWithCache(opts, te, auth0.NewMemoryKeyCacher(0, 0)), nil
 	}
+
 	var cacheDuration time.Duration
 	cacheDuration = time.Duration(cfg.CacheDuration) * time.Second
 	// Set default duration to 15 minute
 	if cacheDuration == 0 {
 		cacheDuration = 15 * time.Minute
 	}
-	keyCacher := auth0.NewMemoryKeyCacher(cacheDuration, 100)
+	keyCacher := auth0.NewMemoryKeyCacher(cacheDuration, auth0.MaxCacheSizeNoCheck)
 	return auth0.NewJWKClientWithCache(opts, te, keyCacher), nil
 }
 
