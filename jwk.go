@@ -34,6 +34,35 @@ var (
 )
 
 func SecretProvider(cfg SecretProviderConfig, te auth0.RequestTokenExtractor) (*auth0.JWKClient, error) {
+	opts, err := newJWKClientOptions(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	if !cfg.CacheEnabled {
+		return auth0.NewJWKClientWithCache(opts, te, auth0.NewMemoryKeyCacher(0, 0)), nil
+	}
+
+	var cacheDuration time.Duration
+	cacheDuration = time.Duration(cfg.CacheDuration) * time.Second
+	// Set default duration to 15 minute
+	if cacheDuration == 0 {
+		cacheDuration = 15 * time.Minute
+	}
+
+	client := auth0.NewJWKClientWithCache(
+		opts,
+		te,
+		auth0.NewMemoryKeyCacher(cacheDuration, auth0.MaxCacheSizeNoCheck),
+	)
+
+	// request an unexistent key in order to cache all the actual ones
+	client.GetKey("unknown")
+
+	return client, nil
+}
+
+func newJWKClientOptions(cfg SecretProviderConfig) (auth0.JWKClientOptions, error) {
 	if len(cfg.Cs) == 0 {
 		cfg.Cs = DefaultEnabledCipherSuites
 	}
@@ -48,7 +77,7 @@ func SecretProvider(cfg SecretProviderConfig, te auth0.RequestTokenExtractor) (*
 	if cfg.LocalCA != "" {
 		certs, err := ioutil.ReadFile(cfg.LocalCA)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to append %q to RootCAs: %v", cfg.LocalCA, err)
+			return auth0.JWKClientOptions{}, fmt.Errorf("Failed to append %q to RootCAs: %v", cfg.LocalCA, err)
 		}
 		rootCAs.AppendCertsFromPEM(certs)
 	}
@@ -72,25 +101,12 @@ func SecretProvider(cfg SecretProviderConfig, te auth0.RequestTokenExtractor) (*
 		transport.DialTLS = dialer.DialTLS
 	}
 
-	opts := auth0.JWKClientOptions{
+	return auth0.JWKClientOptions{
 		URI: cfg.URI,
 		Client: &http.Client{
 			Transport: transport,
 		},
-	}
-
-	if !cfg.CacheEnabled {
-		return auth0.NewJWKClientWithCache(opts, te, auth0.NewMemoryKeyCacher(0, 0)), nil
-	}
-
-	var cacheDuration time.Duration
-	cacheDuration = time.Duration(cfg.CacheDuration) * time.Second
-	// Set default duration to 15 minute
-	if cacheDuration == 0 {
-		cacheDuration = 15 * time.Minute
-	}
-	keyCacher := auth0.NewMemoryKeyCacher(cacheDuration, auth0.MaxCacheSizeNoCheck)
-	return auth0.NewJWKClientWithCache(opts, te, keyCacher), nil
+	}, nil
 }
 
 func DecodeFingerprints(in []string) ([][]byte, error) {
