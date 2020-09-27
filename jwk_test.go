@@ -2,12 +2,17 @@
 package jose
 
 import (
+	"context"
+	"crypto/rand"
 	"crypto/tls"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"sync/atomic"
 	"testing"
+
+	"github.com/devopsfaith/krakend-jose/secrets"
 )
 
 func TestJWK(t *testing.T) {
@@ -64,6 +69,126 @@ func TestJWK(t *testing.T) {
 			}
 		}
 		server.Close()
+	}
+}
+
+func TestJWK_file(t *testing.T) {
+	for _, tc := range []struct {
+		Name string
+		Alg  string
+		ID   string
+	}{
+		{
+			Name: "public",
+			ID:   "2011-04-29",
+			Alg:  "RS256",
+		},
+		{
+			Name: "public",
+			ID:   "1",
+			Alg:  "RS256",
+		},
+		{
+			Name: "private",
+			ID:   "2011-04-29",
+			Alg:  "RS256",
+		},
+		{
+			Name: "private",
+			ID:   "1",
+			Alg:  "RS256",
+		},
+		{
+			Name: "symmetric",
+			ID:   "sim2",
+			Alg:  "HS256",
+		},
+	} {
+		secretProvidr, err := SecretProvider(
+			SecretProviderConfig{
+				URI:           "",
+				AllowInsecure: true,
+				LocalPath:     "./fixtures/" + tc.Name + ".json",
+			},
+			nil,
+		)
+		if err != nil {
+			t.Error(err)
+		}
+		key, err := secretProvidr.GetKey(tc.ID)
+		if err != nil {
+			t.Errorf("[%s] extracting the key %s: %s", tc.Name, tc.ID, err.Error())
+		}
+		if key.Algorithm != tc.Alg {
+			t.Errorf("wrong alg. have: %s, want: %s", key.Algorithm, tc.Alg)
+		}
+	}
+}
+
+func TestJWK_cyperfile(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	url := "base64key://smGbjm71Nxd1Ig5FS0wj9SlbzAIrnolCz9bQQ6uAhl4="
+
+	cypher, err := secrets.New(ctx, url)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer cypher.Close()
+
+	plainKey := make([]byte, 32)
+	rand.Read(plainKey)
+
+	cypherKey, err := cypher.EncryptKey(ctx, plainKey)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	b, _ := ioutil.ReadFile("./fixtures/private.json")
+	cypherText, err := cypher.Encrypt(ctx, b, cypherKey)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	ioutil.WriteFile("./fixtures/private.txt", cypherText, 0666)
+	defer os.Remove("./fixtures/private.txt")
+
+	for k, tc := range []struct {
+		Alg string
+		ID  string
+	}{
+		{
+			ID:  "2011-04-29",
+			Alg: "RS256",
+		},
+		{
+			ID:  "1",
+			Alg: "RS256",
+		},
+	} {
+		secretProvidr, err := SecretProvider(
+			SecretProviderConfig{
+				URI:           "",
+				AllowInsecure: true,
+				LocalPath:     "./fixtures/private.txt",
+				CipherKey:     cypherKey,
+				SecretURL:     url,
+			},
+			nil,
+		)
+		if err != nil {
+			t.Error(err)
+		}
+		key, err := secretProvidr.GetKey(tc.ID)
+		if err != nil {
+			t.Errorf("[%d] extracting the key %s: %s", k, tc.ID, err.Error())
+		}
+		if key.Algorithm != tc.Alg {
+			t.Errorf("wrong alg. have: %s, want: %s", key.Algorithm, tc.Alg)
+		}
 	}
 }
 
@@ -157,6 +282,50 @@ func Test_decodeFingerprints(t *testing.T) {
 	_, err := DecodeFingerprints([]string{"not_encoded_message"})
 	if err == nil {
 		t.Error(err)
+	}
+}
+
+func TestNewFileKeyCacher(t *testing.T) {
+	for _, tc := range []struct {
+		Name string
+		Alg  string
+		ID   string
+	}{
+		{
+			Name: "public",
+			ID:   "2011-04-29",
+			Alg:  "RS256",
+		},
+		{
+			Name: "public",
+			ID:   "1",
+		},
+		{
+			Name: "private",
+			ID:   "2011-04-29",
+			Alg:  "RS256",
+		},
+		{
+			Name: "private",
+			ID:   "1",
+		},
+		{
+			Name: "symmetric",
+			ID:   "sim2",
+			Alg:  "HS256",
+		},
+	} {
+		b, err := ioutil.ReadFile("./fixtures/" + tc.Name + ".json")
+		if err != nil {
+			t.Error(err)
+		}
+		kc, err := NewFileKeyCacher(b)
+		if err != nil {
+			t.Error(err)
+		}
+		if _, err := kc.Get(tc.ID); err != nil {
+			t.Error(err)
+		}
 	}
 }
 
