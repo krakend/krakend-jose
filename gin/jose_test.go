@@ -152,7 +152,7 @@ func TestTokenSignatureValidator(t *testing.T) {
 	}
 
 	if req.Header.Get("x-krakend-ne") != "" {
-		t.Error("JWT claim propagated, although it shouldn't: nonexistend")
+		t.Error("JWT claim propagated, although it shouldn't: nonexistent")
 	}
 
 	if w.Code != http.StatusOK {
