@@ -127,9 +127,23 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 				return
 			}
 
+			propagateHeaders(cfg, scfg.PropagateClaimsToHeader, claims, c, logger)
+
 			paramExtractor(c, claims)
 
 			handler(c)
+		}
+	}
+}
+
+func propagateHeaders(cfg *config.EndpointConfig, propagationCfg [][]string, claims map[string]interface{}, c *gin.Context, logger logging.Logger) {
+	if len(propagationCfg) > 0 {
+		headersToPropagate, err := krakendjose.CalculateHeadersToPropagate(propagationCfg, claims)
+		if err != nil {
+			logger.Warning(fmt.Sprintf("JOSE: header propagations error for %s: %s", cfg.Endpoint, err.Error()))
+		}
+		for k, v := range headersToPropagate {
+			c.Request.Header.Add(k, v)
 		}
 	}
 }

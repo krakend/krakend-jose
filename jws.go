@@ -18,20 +18,21 @@ const (
 )
 
 type SignatureConfig struct {
-	Alg                string   `json:"alg"`
-	URI                string   `json:"jwk-url"`
-	CacheEnabled       bool     `json:"cache,omitempty"`
-	CacheDuration      uint32   `json:"cache_duration,omitempty"`
-	Issuer             string   `json:"issuer,omitempty"`
-	Audience           []string `json:"audience,omitempty"`
-	Roles              []string `json:"roles,omitempty"`
-	RolesKey           string   `json:"roles_key,omitempty"`
-	RolesKeyIsNested   bool     `json:"roles_key_is_nested,omitempty"`
-	CookieKey          string   `json:"cookie_key,omitempty"`
-	CipherSuites       []uint16 `json:"cipher_suites,omitempty"`
-	DisableJWKSecurity bool     `json:"disable_jwk_security"`
-	Fingerprints       []string `json:"jwk_fingerprints,omitempty"`
-	LocalCA            string   `json:"jwk_local_ca,omitempty"`
+	Alg                     string     `json:"alg"`
+	URI                     string     `json:"jwk-url"`
+	CacheEnabled            bool       `json:"cache,omitempty"`
+	CacheDuration           uint32     `json:"cache_duration,omitempty"`
+	Issuer                  string     `json:"issuer,omitempty"`
+	Audience                []string   `json:"audience,omitempty"`
+	Roles                   []string   `json:"roles,omitempty"`
+	PropagateClaimsToHeader [][]string `json:"propagate-claims,omitempty"`
+	RolesKey                string     `json:"roles_key,omitempty"`
+	RolesKeyIsNested        bool       `json:"roles_key_is_nested,omitempty"`
+	CookieKey               string     `json:"cookie_key,omitempty"`
+	CipherSuites            []uint16   `json:"cipher_suites,omitempty"`
+	DisableJWKSecurity      bool       `json:"disable_jwk_security"`
+	Fingerprints            []string   `json:"jwk_fingerprints,omitempty"`
+	LocalCA                 string     `json:"jwk_local_ca,omitempty"`
 }
 
 type SignerConfig struct {
