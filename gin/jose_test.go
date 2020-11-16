@@ -26,7 +26,7 @@ func TestTokenSignatureValidator(t *testing.T) {
 
 	registeredEndpointCfg := newVerifierEndpointCfg("RS256", server.URL, []string{})
 	registeredEndpointCfg.Endpoint = "/registered"
-	registeredEndpointCfg.Backend[0].URLPattern = "/{{.JWT.sub}}/{{.JWT.jti}}"
+	registeredEndpointCfg.Backend[0].URLPattern = "/{{.JWT.sub}}/{{.JWT.jti}}?foo={{.JWT.iss}}"
 
 	propagateHeadersEndpointCfg := newVerifierEndpointCfg("RS256", server.URL, []string{})
 	propagateHeadersEndpointCfg.Endpoint = "/propagateheaders"
@@ -61,13 +61,19 @@ func TestTokenSignatureValidator(t *testing.T) {
 		if v, ok := r.Params["JWT.sub"]; !ok {
 			t.Errorf("JWT param not injected: %v", r.Params)
 		} else if v != "1234567890qwertyuio" {
-			t.Errorf("wrong JWT param injected: %v", v)
+			t.Errorf("wrong JWT param injected (sub): %v", v)
 		}
 
 		if v, ok := r.Params["JWT.jti"]; !ok {
 			t.Errorf("JWT param not injected: %v", r.Params)
 		} else if v != "mnb23vcsrt756yuiomnbvcx98ertyuiop" {
-			t.Errorf("wrong JWT param injected: %v", v)
+			t.Errorf("wrong JWT param injected (jti): %v", v)
+		}
+
+		if v, ok := r.Params["JWT.iss"]; !ok {
+			t.Errorf("JWT param not injected: %v", r.Params)
+		} else if v != "http://example.com" {
+			t.Errorf("wrong JWT param injected (iss): %v", v)
 		}
 
 		return dummyProxy(ctx, r)
