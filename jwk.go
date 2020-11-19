@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -16,6 +17,9 @@ import (
 	"time"
 
 	auth0 "github.com/auth0-community/go-auth0"
+	jose "gopkg.in/square/go-jose.v2"
+
+	"github.com/devopsfaith/krakend-jose/secrets"
 )
 
 type SecretProviderConfig struct {
@@ -26,6 +30,9 @@ type SecretProviderConfig struct {
 	Cs            []uint16
 	LocalCA       string
 	AllowInsecure bool
+	LocalPath     string
+	SecretURL     string
+	CipherKey     []byte
 }
 
 var (
@@ -40,7 +47,10 @@ func SecretProvider(cfg SecretProviderConfig, te auth0.RequestTokenExtractor) (*
 	}
 
 	if !cfg.CacheEnabled {
-		return auth0.NewJWKClientWithCache(opts, te, auth0.NewMemoryKeyCacher(0, 0)), nil
+		if cfg.LocalPath == "" {
+			return auth0.NewJWKClientWithCache(opts, te, auth0.NewMemoryKeyCacher(0, 0)), nil
+		}
+		return newLocalSecretProvider(opts, cfg, te)
 	}
 
 	var cacheDuration time.Duration
@@ -60,6 +70,56 @@ func SecretProvider(cfg SecretProviderConfig, te auth0.RequestTokenExtractor) (*
 	client.GetKey("unknown")
 
 	return client, nil
+}
+
+func newLocalSecretProvider(opts auth0.JWKClientOptions, cfg SecretProviderConfig, te auth0.RequestTokenExtractor) (*auth0.JWKClient, error) {
+	data, err := ioutil.ReadFile(cfg.LocalPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if cfg.SecretURL != "" {
+		ctx := context.Background()
+		sk, err := secrets.New(ctx, cfg.SecretURL)
+		if err != nil {
+			return nil, err
+		}
+		data, err = sk.Decrypt(ctx, data, cfg.CipherKey)
+		if err != nil {
+			return nil, err
+		}
+		sk.Close()
+	}
+
+	keyCacher, err := NewFileKeyCacher(data)
+	if err != nil {
+		return nil, err
+	}
+	return auth0.NewJWKClientWithCache(opts, te, keyCacher), nil
+}
+
+func NewFileKeyCacher(data []byte) (*FileKeyCacher, error) {
+	keys := jose.JSONWebKeySet{}
+	if err := json.Unmarshal(data, &keys); err != nil {
+		return nil, err
+	}
+	keyMap := map[string]*jose.JSONWebKey{}
+	for _, k := range keys.Keys {
+		keyMap[k.KeyID] = &k
+	}
+	return &FileKeyCacher{keys: keyMap}, nil
+}
+
+type FileKeyCacher struct {
+	keys map[string]*jose.JSONWebKey
+}
+
+func (f *FileKeyCacher) Get(keyID string) (*jose.JSONWebKey, error) {
+	return f.keys[keyID], nil
+}
+
+func (f *FileKeyCacher) Add(keyID string, _ []jose.JSONWebKey) (*jose.JSONWebKey, error) {
+	return f.keys[keyID], nil
 }
 
 func newJWKClientOptions(cfg SecretProviderConfig) (auth0.JWKClientOptions, error) {
