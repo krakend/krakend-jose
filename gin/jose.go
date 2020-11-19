@@ -127,6 +127,8 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 				return
 			}
 
+			propagateHeaders(cfg, scfg.PropagateClaimsToHeader, claims, c, logger)
+
 			paramExtractor(c, claims)
 
 			handler(c)
@@ -134,16 +136,28 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 	}
 }
 
-var jwtParamsPattern = regexp.MustCompile(`(JWT\.(.*)\/)*(JWT\.(.*))`)
+func propagateHeaders(cfg *config.EndpointConfig, propagationCfg [][]string, claims map[string]interface{}, c *gin.Context, logger logging.Logger) {
+	if len(propagationCfg) > 0 {
+		headersToPropagate, err := krakendjose.CalculateHeadersToPropagate(propagationCfg, claims)
+		if err != nil {
+			logger.Warning(fmt.Sprintf("JOSE: header propagations error for %s: %s", cfg.Endpoint, err.Error()))
+		}
+		for k, v := range headersToPropagate {
+			c.Request.Header.Add(k, v)
+		}
+	}
+}
+
+var jwtParamsPattern = regexp.MustCompile(`{{\.JWT\.([^}]*)}}`)
 
 func extractRequiredJWTClaims(cfg *config.EndpointConfig) func(*gin.Context, map[string]interface{}) {
 	required := []string{}
 	for _, backend := range cfg.Backend {
-		for _, part := range strings.Split(backend.URLPattern, "/") {
-			if len(part) < 7 || part[:7] != "{{.JWT." {
+		for _, match := range jwtParamsPattern.FindAllStringSubmatch(backend.URLPattern, -1) {
+			if len(match) < 2 {
 				continue
 			}
-			required = append(required, part[3:len(part)-2])
+			required = append(required, match[1])
 		}
 	}
 	if len(required) == 0 {
@@ -152,12 +166,9 @@ func extractRequiredJWTClaims(cfg *config.EndpointConfig) func(*gin.Context, map
 
 	return func(c *gin.Context, claims map[string]interface{}) {
 		for _, param := range required {
-			if len(param) < 5 {
-				continue
-			}
 			// TODO: check for nested claims
-			if v, ok := claims[param[4:]].(string); ok {
-				params := append(c.Params, gin.Param{Key: param, Value: v})
+			if v, ok := claims[param].(string); ok {
+				params := append(c.Params, gin.Param{Key: "JWT." + param, Value: v})
 				c.Params = params
 			}
 		}

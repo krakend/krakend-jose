@@ -268,6 +268,7 @@ func newVerifierEndpointCfg(alg, URL string, roles []string) *config.EndpointCon
 				"audience":             []string{"http://api.example.com"},
 				"issuer":               "http://example.com",
 				"roles":                roles,
+				"propagate-claims":     [][]string{{"jti", "x-krakend-jti"}, {"sub", "x-krakend-sub"}, {"nonexistent", "x-krakend-ne"}},
 				"disable_jwk_security": true,
 				"cache":                true,
 			},

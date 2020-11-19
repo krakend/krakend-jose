@@ -148,6 +148,8 @@ func TokenSignatureValidator(hf muxkrakend.HandlerFactory, logger logging.Logger
 				return
 			}
 
+			propagateHeaders(cfg, signatureConfig.PropagateClaimsToHeader, claims, r, logger)
+
 			handler(w, r)
 		}
 	}
@@ -163,5 +165,18 @@ func FromCookie(key string) func(r *http.Request) (*jwt.JSONWebToken, error) {
 			return nil, auth0.ErrTokenNotFound
 		}
 		return jwt.ParseSigned(cookie.Value)
+	}
+}
+
+func propagateHeaders(cfg *config.EndpointConfig, propagationCfg [][]string, claims map[string]interface{}, r *http.Request, logger logging.Logger) {
+	if len(propagationCfg) > 0 {
+		headersToPropagate, err := krakendjose.CalculateHeadersToPropagate(propagationCfg, claims)
+		if err != nil {
+			logger.Warning(fmt.Sprintf("JOSE: header propagations error for %s: %s", cfg.Endpoint, err.Error()))
+		}
+		for k, v := range headersToPropagate {
+			r.Header.Add(k, v)
+
+		}
 	}
 }

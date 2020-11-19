@@ -135,6 +135,27 @@ func SignFields(keys []string, signer Signer, response *proxy.Response) error {
 	return nil
 }
 
+func CalculateHeadersToPropagate(propagationCfg [][]string, claims map[string]interface{}) (map[string]string, error) {
+	if len(propagationCfg) == 0 {
+		return nil, fmt.Errorf("JOSE: no headers to propagate. Config size: %d", len(propagationCfg))
+	}
+
+	propagated := make(map[string]string)
+
+	for _, tuple := range propagationCfg {
+		fromClaim := tuple[0]
+		toHeader := tuple[1]
+		tmp, ok := claims[fromClaim].(string)
+		if !ok {
+			continue
+		}
+		propagated[toHeader] = tmp
+	}
+
+	return propagated, nil
+
+}
+
 var supportedAlgorithms = map[string]jose.SignatureAlgorithm{
 	"EdDSA": jose.EdDSA,
 	"HS256": jose.HS256,
