@@ -122,6 +122,18 @@ func TokenSignatureValidator(hf muxkrakend.HandlerFactory, logger logging.Logger
 			aclCheck = krakendjose.CanAccess
 		}
 
+		var scopesMatcher func(string, map[string]interface{}, []string) bool
+
+		if len(signatureConfig.Scopes) > 0 && signatureConfig.ScopesKey != "" {
+			if signatureConfig.ScopesMatcher == "all" {
+				scopesMatcher = krakendjose.ScopesAllMatcher
+			} else {
+				scopesMatcher = krakendjose.ScopesAnyMatcher
+			}
+		} else {
+			scopesMatcher = krakendjose.ScopesDefaultMatcher
+		}
+
 		logger.Info("JOSE: validator enabled for the endpoint", cfg.Endpoint)
 
 		return func(w http.ResponseWriter, r *http.Request) {
@@ -144,6 +156,11 @@ func TokenSignatureValidator(hf muxkrakend.HandlerFactory, logger logging.Logger
 			}
 
 			if !aclCheck(signatureConfig.RolesKey, claims, signatureConfig.Roles) {
+				http.Error(w, "", http.StatusForbidden)
+				return
+			}
+
+			if !scopesMatcher(signatureConfig.ScopesKey, claims, signatureConfig.Scopes) {
 				http.Error(w, "", http.StatusForbidden)
 				return
 			}

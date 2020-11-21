@@ -132,3 +132,166 @@ func TestCanAccessNested(t *testing.T) {
 		})
 	}
 }
+
+func TestScopesAllMatcher(t *testing.T) {
+	for _, v := range []struct {
+		name           string
+		scopesKey      string
+		claims         map[string]interface{}
+		requiredScopes []string
+		expected       bool
+	}{
+		{
+			name:           "all_simple_success",
+			scopesKey:      "scope",
+			claims:         map[string]interface{}{"scope": "a b"},
+			requiredScopes: []string{"a", "b"},
+			expected:       true,
+		},
+		{
+			name:           "all_simple_fail",
+			scopesKey:      "scope",
+			claims:         map[string]interface{}{"scope": "a b"},
+			requiredScopes: []string{"c"},
+			expected:       false,
+		},
+		{
+			name:           "all_missingone_fail",
+			scopesKey:      "scope",
+			claims:         map[string]interface{}{"scope": "a b"},
+			requiredScopes: []string{"a", "b", "c"},
+			expected:       false,
+		},
+		{
+			name:           "all_one_simple_success",
+			scopesKey:      "scope",
+			claims:         map[string]interface{}{"scope": "a b"},
+			requiredScopes: []string{"b"},
+			expected:       true,
+		},
+		{
+			name:           "all_no_req_scopes_success",
+			scopesKey:      "scope",
+			claims:         map[string]interface{}{"scope": "a b"},
+			requiredScopes: []string{},
+			expected:       true,
+		},
+		{
+			name:           "all_struct_success",
+			scopesKey:      "data.scope",
+			claims:         map[string]interface{}{"data": map[string]interface{}{"scope": "a b"}},
+			requiredScopes: []string{"a", "b"},
+			expected:       true,
+		},
+		{
+			name:      "all_deep_struct_success",
+			scopesKey: "data.data.data.data.data.data.data.scope",
+			claims: map[string]interface{}{
+				"data": map[string]interface{}{
+					"data": map[string]interface{}{
+						"data": map[string]interface{}{
+							"data": map[string]interface{}{
+								"data": map[string]interface{}{
+									"data": map[string]interface{}{
+										"data": map[string]interface{}{
+											"scope": "a b",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			requiredScopes: []string{"a", "b"},
+			expected:       true,
+		},
+	} {
+		t.Run(v.name, func(t *testing.T) {
+			if res := ScopesAllMatcher(v.scopesKey, v.claims, v.requiredScopes); res != v.expected {
+				t.Errorf("'%s' have %v, want %v", v.name, res, v.expected)
+			}
+		})
+	}
+}
+func TestScopesAnyMatcher(t *testing.T) {
+	for _, v := range []struct {
+		name           string
+		scopesKey      string
+		claims         map[string]interface{}
+		requiredScopes []string
+		expected       bool
+	}{
+		{
+			name:           "any_simple_success",
+			scopesKey:      "scope",
+			claims:         map[string]interface{}{"scope": "a b"},
+			requiredScopes: []string{"a", "b"},
+			expected:       true,
+		},
+		{
+			name:           "any_simple_fail",
+			scopesKey:      "scope",
+			claims:         map[string]interface{}{"scope": "a b"},
+			requiredScopes: []string{"c"},
+			expected:       false,
+		},
+		{
+			name:           "any_missingone_success",
+			scopesKey:      "scope",
+			claims:         map[string]interface{}{"scope": "a"},
+			requiredScopes: []string{"a", "b"},
+			expected:       true,
+		},
+		{
+			name:           "any_one_simple_success",
+			scopesKey:      "scope",
+			claims:         map[string]interface{}{"scope": "a b"},
+			requiredScopes: []string{"b"},
+			expected:       true,
+		},
+		{
+			name:           "any_no_req_scopes_success",
+			scopesKey:      "scope",
+			claims:         map[string]interface{}{"scope": "a b"},
+			requiredScopes: []string{},
+			expected:       true,
+		},
+		{
+			name:           "any_struct_success",
+			scopesKey:      "data.scope",
+			claims:         map[string]interface{}{"data": map[string]interface{}{"scope": "a"}},
+			requiredScopes: []string{"a", "b"},
+			expected:       true,
+		},
+		{
+			name:      "any_deep_struct_success",
+			scopesKey: "data.data.data.data.data.data.data.scope",
+			claims: map[string]interface{}{
+				"data": map[string]interface{}{
+					"data": map[string]interface{}{
+						"data": map[string]interface{}{
+							"data": map[string]interface{}{
+								"data": map[string]interface{}{
+									"data": map[string]interface{}{
+										"data": map[string]interface{}{
+											"scope": "a",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			requiredScopes: []string{"a", "b"},
+			expected:       true,
+		},
+	} {
+		t.Run(v.name, func(t *testing.T) {
+			if res := ScopesAnyMatcher(v.scopesKey, v.claims, v.requiredScopes); res != v.expected {
+				t.Errorf("'%s' have %v, want %v", v.name, res, v.expected)
+			}
+		})
+	}
+}

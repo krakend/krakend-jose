@@ -99,6 +99,18 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 			aclCheck = krakendjose.CanAccess
 		}
 
+		var scopesMatcher func(string, map[string]interface{}, []string) bool
+
+		if len(scfg.Scopes) > 0 && scfg.ScopesKey != "" {
+			if scfg.ScopesMatcher == "all" {
+				scopesMatcher = krakendjose.ScopesAllMatcher
+			} else {
+				scopesMatcher = krakendjose.ScopesAnyMatcher
+			}
+		} else {
+			scopesMatcher = krakendjose.ScopesDefaultMatcher
+		}
+
 		logger.Info("JOSE: validator enabled for the endpoint", cfg.Endpoint)
 
 		paramExtractor := extractRequiredJWTClaims(cfg)
@@ -123,6 +135,11 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 			}
 
 			if !aclCheck(scfg.RolesKey, claims, scfg.Roles) {
+				c.AbortWithStatus(http.StatusForbidden)
+				return
+			}
+
+			if !scopesMatcher(scfg.ScopesKey, claims, scfg.Scopes) {
 				c.AbortWithStatus(http.StatusForbidden)
 				return
 			}
