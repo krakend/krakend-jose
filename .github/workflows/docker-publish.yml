@@ -1,0 +1,30 @@
+name: Integration-build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+
+env:
+  KRAKEND_CE_REPO: "https://github.com/devopsfaith/krakend-ce.git"
+  GO_DOWNLOAD_URL: "https://dl.google.com/go/go1.14.2.linux-amd64.tar.gz" 
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Download and install GO
+        run: wget -c ${GO_DOWNLOAD_URL} -O - | sudo tar -xz -C /usr/local && sudo echo "export PATH=$PATH:/usr/local/go/bin" >> ~/profile 
+
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y build-essential 
+
+      - name: Checkout Krakend-CE
+        run: git clone ${KRAKEND_CE_REPO} krakend-ce
+
+      - name: Build Krakend-CE with latest versions
+        run: source ~/profile && cd krakend-ce && make update_krakend_deps
+
