@@ -250,6 +250,10 @@ func newSignerEndpointCfg(alg, ID, URL string) *config.EndpointConfig {
 }
 
 func newVerifierEndpointCfg(alg, URL string, roles []string) *config.EndpointConfig {
+	return newVerifierEndpointCfgWithRedirect(alg, URL, roles, "")
+}
+
+func newVerifierEndpointCfgWithRedirect(alg, URL string, roles []string, redirectUri string) *config.EndpointConfig {
 	return &config.EndpointConfig{
 		Timeout:  time.Second,
 		Endpoint: "/private",
@@ -263,14 +267,15 @@ func newVerifierEndpointCfg(alg, URL string, roles []string) *config.EndpointCon
 		},
 		ExtraConfig: config.ExtraConfig{
 			krakendjose.ValidatorNamespace: map[string]interface{}{
-				"alg":                  alg,
-				"jwk-url":              URL,
-				"audience":             []string{"http://api.example.com"},
-				"issuer":               "http://example.com",
-				"roles":                roles,
-				"propagate-claims":     [][]string{{"jti", "x-krakend-jti"}, {"sub", "x-krakend-sub"}, {"nonexistent", "x-krakend-ne"}},
-				"disable_jwk_security": true,
-				"cache":                true,
+				"alg":                  		alg,
+				"jwk-url":              		URL,
+				"audience":             		[]string{"http://api.example.com"},
+				"issuer":               		"http://example.com",
+				"roles":                		roles,
+				"propagate-claims":     		[][]string{{"jti", "x-krakend-jti"}, {"sub", "x-krakend-sub"}, {"nonexistent", "x-krakend-ne"}},
+				"disable_jwk_security": 		true,
+				"cache":                		true,
+				"redirect_uri_invalid_jwk":     redirectUri,
 			},
 		},
 	}

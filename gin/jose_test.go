@@ -21,8 +21,11 @@ func TestTokenSignatureValidator(t *testing.T) {
 
 	validatorEndpointCfg := newVerifierEndpointCfg("RS256", server.URL, []string{"role_a"})
 
-	forbidenEndpointCfg := newVerifierEndpointCfg("RS256", server.URL, []string{"role_c"})
-	forbidenEndpointCfg.Endpoint = "/forbiden"
+	validatorEndpointWithRedirectCfg := newVerifierEndpointCfgWithRedirect("RS256", server.URL, []string{"role_a"}, "https://www.krakend.io")
+	validatorEndpointWithRedirectCfg.Endpoint = "/redirect"
+
+	forbiddenEndpointCfg := newVerifierEndpointCfg("RS256", server.URL, []string{"role_c"})
+	forbiddenEndpointCfg.Endpoint = "/forbidden"
 
 	registeredEndpointCfg := newVerifierEndpointCfg("RS256", server.URL, []string{})
 	registeredEndpointCfg.Endpoint = "/registered"
@@ -80,11 +83,12 @@ func TestTokenSignatureValidator(t *testing.T) {
 	}
 
 	engine.GET(validatorEndpointCfg.Endpoint, hf(validatorEndpointCfg, dummyProxy))
-	engine.GET(forbidenEndpointCfg.Endpoint, hf(forbidenEndpointCfg, dummyProxy))
+	engine.GET(forbiddenEndpointCfg.Endpoint, hf(forbiddenEndpointCfg, dummyProxy))
 	engine.GET(registeredEndpointCfg.Endpoint, hf(registeredEndpointCfg, assertProxy))
 	engine.GET(propagateHeadersEndpointCfg.Endpoint, hf(propagateHeadersEndpointCfg, dummyProxy))
+	engine.GET(validatorEndpointWithRedirectCfg.Endpoint, hf(validatorEndpointWithRedirectCfg, dummyProxy))
 
-	req := httptest.NewRequest("GET", forbidenEndpointCfg.Endpoint, new(bytes.Buffer))
+	req := httptest.NewRequest("GET", forbiddenEndpointCfg.Endpoint, new(bytes.Buffer))
 
 	w := httptest.NewRecorder()
 	engine.ServeHTTP(w, req)
@@ -94,6 +98,16 @@ func TestTokenSignatureValidator(t *testing.T) {
 	}
 	if body := w.Body.String(); body != "" {
 		t.Errorf("unexpected body: %s", body)
+	}
+
+	req = httptest.NewRequest("GET", validatorEndpointWithRedirectCfg.Endpoint, new(bytes.Buffer))
+	req.Header.Set("Authorization", "BEARER iNVaLidT0k3n")
+
+	w = httptest.NewRecorder()
+	engine.ServeHTTP(w, req)
+
+	if w.Code != http.StatusFound {
+		t.Errorf("unexpected status code: %d", w.Code)
 	}
 
 	req = httptest.NewRequest("GET", validatorEndpointCfg.Endpoint, new(bytes.Buffer))
@@ -113,7 +127,7 @@ func TestTokenSignatureValidator(t *testing.T) {
 		t.Error(log)
 	}
 
-	req = httptest.NewRequest("GET", forbidenEndpointCfg.Endpoint, new(bytes.Buffer))
+	req = httptest.NewRequest("GET", forbiddenEndpointCfg.Endpoint, new(bytes.Buffer))
 	req.Header.Set("Authorization", "BEARER "+token)
 
 	w = httptest.NewRecorder()

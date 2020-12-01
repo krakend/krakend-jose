@@ -36,6 +36,7 @@ type SignatureConfig struct {
 	LocalPath               string     `json:"jwk_local_path,omitempty"`
 	SecretURL               string     `json:"secret_url,omitempty"`
 	CipherKey               []byte     `json:"cypher_key,omitempty"`
+	RedirectUri             string     `json:"redirect_uri_invalid_jwk,omitempty"`
 }
 
 type SignerConfig struct {

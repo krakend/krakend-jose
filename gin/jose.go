@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -86,6 +87,12 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 			return handler
 		}
 
+		if scfg.RedirectUri != "" {
+			if _, err = url.ParseRequestURI(scfg.RedirectUri); err != nil {
+				log.Fatalf("Provided redirect URI is invalid, URI: %s error: %s", cfg.Endpoint, err.Error())
+			}
+		}
+
 		validator, err := krakendjose.NewValidator(scfg, FromCookie)
 		if err != nil {
 			log.Fatalf("%s: %s", cfg.Endpoint, err.Error())
@@ -106,7 +113,12 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 		return func(c *gin.Context) {
 			token, err := validator.ValidateRequest(c.Request)
 			if err != nil {
-				c.AbortWithError(http.StatusUnauthorized, err)
+				if scfg.RedirectUri != "" {
+					c.Header("Location", scfg.RedirectUri)
+					c.Status(http.StatusFound)
+				} else {
+					c.AbortWithError(http.StatusUnauthorized, err)
+				}
 				return
 			}
 

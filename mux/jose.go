@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/auth0-community/go-auth0"
@@ -122,15 +123,25 @@ func TokenSignatureValidator(hf muxkrakend.HandlerFactory, logger logging.Logger
 			aclCheck = krakendjose.CanAccess
 		}
 
+		if signatureConfig.RedirectUri != "" {
+			if _, err = url.ParseRequestURI(signatureConfig.RedirectUri); err != nil {
+				log.Fatalf("Provided redirect URI is invalid, URI: %s error: %s", cfg.Endpoint, err.Error())
+			}
+		}
+
 		logger.Info("JOSE: validator enabled for the endpoint", cfg.Endpoint)
 
 		return func(w http.ResponseWriter, r *http.Request) {
 			token, err := validator.ValidateRequest(r)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusUnauthorized)
+				if signatureConfig.RedirectUri != "" {
+					w.Header().Set("Location", signatureConfig.RedirectUri)
+					w.WriteHeader(http.StatusFound)
+				} else {
+					http.Error(w, err.Error(), http.StatusUnauthorized)
+				}
 				return
 			}
-
 			claims := map[string]interface{}{}
 			err = validator.Claims(r, token, &claims)
 			if err != nil {

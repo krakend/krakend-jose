@@ -20,8 +20,11 @@ func TestTokenSignatureValidator(t *testing.T) {
 
 	validatorEndpointCfg := newVerifierEndpointCfg("RS256", server.URL, []string{"role_a"})
 
-	forbidenEndpointCfg := newVerifierEndpointCfg("RS256", server.URL, []string{"role_c"})
-	forbidenEndpointCfg.Endpoint = "/forbiden"
+	validatorEndpointWithRedirectCfg := newVerifierEndpointCfgWithRedirect("RS256", server.URL, []string{"role_c"}, "https://www.krakend.io")
+	validatorEndpointWithRedirectCfg.Endpoint = "/redirect"
+
+	forbiddenEndpointCfg := newVerifierEndpointCfg("RS256", server.URL, []string{"role_c"})
+	forbiddenEndpointCfg.Endpoint = "/forbidden"
 
 	registeredEndpointCfg := newVerifierEndpointCfg("RS256", server.URL, []string{})
 	registeredEndpointCfg.Endpoint = "/registered"
@@ -55,11 +58,12 @@ func TestTokenSignatureValidator(t *testing.T) {
 	engine := muxkrakend.DefaultEngine()
 
 	engine.Handle(validatorEndpointCfg.Endpoint, "GET", hf(validatorEndpointCfg, dummyProxy))
-	engine.Handle(forbidenEndpointCfg.Endpoint, "GET", hf(forbidenEndpointCfg, dummyProxy))
+	engine.Handle(forbiddenEndpointCfg.Endpoint, "GET", hf(forbiddenEndpointCfg, dummyProxy))
 	engine.Handle(registeredEndpointCfg.Endpoint, "GET", hf(registeredEndpointCfg, dummyProxy))
 	engine.Handle(propagateHeadersEndpointCfg.Endpoint, "GET", hf(propagateHeadersEndpointCfg, dummyProxy))
+	engine.Handle(validatorEndpointWithRedirectCfg.Endpoint, "GET", hf(validatorEndpointWithRedirectCfg, dummyProxy))
 
-	req := httptest.NewRequest("GET", forbidenEndpointCfg.Endpoint, new(bytes.Buffer))
+	req := httptest.NewRequest("GET", forbiddenEndpointCfg.Endpoint, new(bytes.Buffer))
 
 	w := httptest.NewRecorder()
 	engine.ServeHTTP(w, req)
@@ -71,13 +75,23 @@ func TestTokenSignatureValidator(t *testing.T) {
 		t.Errorf("unexpected body: '%s'", body)
 	}
 
+	req = httptest.NewRequest("GET", validatorEndpointWithRedirectCfg.Endpoint, new(bytes.Buffer))
+	req.Header.Set("Authorization", "BEARER th3T0k3n1saL1e")
+
+	w = httptest.NewRecorder()
+	engine.ServeHTTP(w, req)
+
+	if w.Code != http.StatusFound {
+		t.Errorf("unexpected status code: %d", w.Code)
+	}
+
 	req = httptest.NewRequest("GET", validatorEndpointCfg.Endpoint, new(bytes.Buffer))
 	req.Header.Set("Authorization", "BEARER "+token)
 
 	w = httptest.NewRecorder()
 	engine.ServeHTTP(w, req)
 
-	if w.Code != 200 {
+	if w.Code != http.StatusOK {
 		t.Errorf("unexpected status code: %d", w.Code)
 	}
 	if body := w.Body.String(); body != `{"aaaa":{"bar":"b","foo":"a"},"bbbb":true,"cccc":1234567890}` {
@@ -88,7 +102,7 @@ func TestTokenSignatureValidator(t *testing.T) {
 		t.Error(log)
 	}
 
-	req = httptest.NewRequest("GET", forbidenEndpointCfg.Endpoint, new(bytes.Buffer))
+	req = httptest.NewRequest("GET", forbiddenEndpointCfg.Endpoint, new(bytes.Buffer))
 	req.Header.Set("Authorization", "BEARER "+token)
 
 	w = httptest.NewRecorder()
