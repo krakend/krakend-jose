@@ -116,6 +116,106 @@ func CanAccess(roleKey string, claims map[string]interface{}, required []string)
 
 }
 
+func getNestedClaim(nestedKey string, claims map[string]interface{}) (string, map[string]interface{}) {
+	tmp := claims
+	keys := strings.Split(nestedKey, ".")
+
+	for _, key := range keys[:len(keys)-1] {
+		v, ok := tmp[key]
+		if !ok {
+			return nestedKey, nil
+		}
+		tmp, ok = v.(map[string]interface{})
+		if !ok {
+			return nestedKey, nil
+		}
+	}
+
+	return keys[len(keys)-1], tmp
+}
+
+func ScopesAllMatcher(scopesKey string, claims map[string]interface{}, requiredScopes []string) bool {
+	if len(requiredScopes) == 0 {
+		return true
+	}
+
+	tmpClaims := claims
+	tmpKey := scopesKey
+
+	if strings.Contains(scopesKey, ".") {
+		tmpKey, tmpClaims = getNestedClaim(scopesKey, claims)
+	}
+
+	tmp, ok := tmpClaims[tmpKey]
+	if !ok {
+		return false
+	}
+	scopeClaim, ok := tmp.(string)
+	if !ok {
+		return false
+	}
+
+	presentScopes := strings.Split(scopeClaim, " ")
+	if len(presentScopes) > 0 {
+		for _, rScope := range requiredScopes {
+			matched := false
+			for _, pScope := range presentScopes {
+				if rScope == fmt.Sprintf("%s", pScope) {
+					matched = true
+				}
+			}
+			if matched == false { // required scope was not found --> immediately return
+				return false
+			}
+		}
+		// all required scopes have been found in provided (claims) scopes
+		return true
+	}
+
+	return false
+}
+
+func ScopesDefaultMatcher(scopesKey string, claims map[string]interface{}, requiredScopes []string) bool {
+	return true
+}
+
+func ScopesAnyMatcher(scopesKey string, claims map[string]interface{}, requiredScopes []string) bool {
+	if len(requiredScopes) == 0 {
+		return true
+	}
+
+	tmpClaims := claims
+	tmpKey := scopesKey
+
+	if strings.Contains(scopesKey, ".") {
+		tmpKey, tmpClaims = getNestedClaim(scopesKey, claims)
+	}
+
+	tmp, ok := tmpClaims[tmpKey]
+	if !ok {
+		return false
+	}
+	scopeClaim, ok := tmp.(string)
+	if !ok {
+		return false
+	}
+
+	presentScopes := strings.Split(scopeClaim, " ")
+	if len(presentScopes) > 0 {
+		for _, rScope := range requiredScopes {
+			for _, pScope := range presentScopes {
+				if rScope == fmt.Sprintf("%s", pScope) {
+					return true // found any of the required scopes --> return
+				}
+			}
+		}
+		// none of the scopes have been found in provided (claims) scopes
+		return false
+	}
+
+	return false
+}
+
 func SignFields(keys []string, signer Signer, response *proxy.Response) error {
 	for _, key := range keys {
 		tmp, ok := response.Data[key]

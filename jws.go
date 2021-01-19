@@ -36,6 +36,9 @@ type SignatureConfig struct {
 	LocalPath               string     `json:"jwk_local_path,omitempty"`
 	SecretURL               string     `json:"secret_url,omitempty"`
 	CipherKey               []byte     `json:"cypher_key,omitempty"`
+	Scopes                  []string   `json:"scopes,omitempty"`
+	ScopesKey               string     `json:"scopes_key,omitempty"`
+	ScopesMatcher           string     `json:"scopes_matcher,omitempty"`
 }
 
 type SignerConfig struct {
