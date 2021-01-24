@@ -39,6 +39,7 @@ type SignatureConfig struct {
 	Scopes                  []string   `json:"scopes,omitempty"`
 	ScopesKey               string     `json:"scopes_key,omitempty"`
 	ScopesMatcher           string     `json:"scopes_matcher,omitempty"`
+	KeyIdentifyStrategy     string     `json:"key_identify_strategy"`
 }
 
 type SignerConfig struct {

@@ -23,16 +23,17 @@ import (
 )
 
 type SecretProviderConfig struct {
-	URI           string
-	CacheEnabled  bool
-	CacheDuration uint32
-	Fingerprints  [][]byte
-	Cs            []uint16
-	LocalCA       string
-	AllowInsecure bool
-	LocalPath     string
-	SecretURL     string
-	CipherKey     []byte
+	URI                 string
+	CacheEnabled        bool
+	CacheDuration       uint32
+	Fingerprints        [][]byte
+	Cs                  []uint16
+	LocalCA             string
+	AllowInsecure       bool
+	LocalPath           string
+	SecretURL           string
+	CipherKey           []byte
+	KeyIdentifyStrategy string
 }
 
 var (
@@ -40,7 +41,7 @@ var (
 	ErrPinnedKeyNotFound = errors.New("JWK client did not find a pinned key")
 )
 
-func SecretProvider(cfg SecretProviderConfig, te auth0.RequestTokenExtractor) (*auth0.JWKClient, error) {
+func SecretProvider(cfg SecretProviderConfig, te auth0.RequestTokenExtractor) (*JWKClient, error) {
 	opts, err := newJWKClientOptions(cfg)
 	if err != nil {
 		return nil, err
@@ -48,7 +49,7 @@ func SecretProvider(cfg SecretProviderConfig, te auth0.RequestTokenExtractor) (*
 
 	if !cfg.CacheEnabled {
 		if cfg.LocalPath == "" {
-			return auth0.NewJWKClientWithCache(opts, te, auth0.NewMemoryKeyCacher(0, 0)), nil
+			return NewJWKClientWithCache(opts, te, NewMemoryKeyCacher(0, 0, opts.KeyIdentifyStrategy)), nil
 		}
 		return newLocalSecretProvider(opts, cfg, te)
 	}
@@ -60,10 +61,10 @@ func SecretProvider(cfg SecretProviderConfig, te auth0.RequestTokenExtractor) (*
 		cacheDuration = 15 * time.Minute
 	}
 
-	client := auth0.NewJWKClientWithCache(
+	client := NewJWKClientWithCache(
 		opts,
 		te,
-		auth0.NewMemoryKeyCacher(cacheDuration, auth0.MaxCacheSizeNoCheck),
+		NewMemoryKeyCacher(cacheDuration, auth0.MaxCacheSizeNoCheck, opts.KeyIdentifyStrategy),
 	)
 
 	// request an unexistent key in order to cache all the actual ones
@@ -72,7 +73,7 @@ func SecretProvider(cfg SecretProviderConfig, te auth0.RequestTokenExtractor) (*
 	return client, nil
 }
 
-func newLocalSecretProvider(opts auth0.JWKClientOptions, cfg SecretProviderConfig, te auth0.RequestTokenExtractor) (*auth0.JWKClient, error) {
+func newLocalSecretProvider(opts JWKClientOptions, cfg SecretProviderConfig, te auth0.RequestTokenExtractor) (*JWKClient, error) {
 	data, err := ioutil.ReadFile(cfg.LocalPath)
 	if err != nil {
 		return nil, err
@@ -91,21 +92,22 @@ func newLocalSecretProvider(opts auth0.JWKClientOptions, cfg SecretProviderConfi
 		sk.Close()
 	}
 
-	keyCacher, err := NewFileKeyCacher(data)
+	keyCacher, err := NewFileKeyCacher(data, opts.KeyIdentifyStrategy)
 	if err != nil {
 		return nil, err
 	}
-	return auth0.NewJWKClientWithCache(opts, te, keyCacher), nil
+	return NewJWKClientWithCache(opts, te, keyCacher), nil
 }
 
-func NewFileKeyCacher(data []byte) (*FileKeyCacher, error) {
+func NewFileKeyCacher(data []byte, keyIdentifyStrategy string) (*FileKeyCacher, error) {
 	keys := jose.JSONWebKeySet{}
 	if err := json.Unmarshal(data, &keys); err != nil {
 		return nil, err
 	}
 	keyMap := map[string]*jose.JSONWebKey{}
+	keyIDGetter := KeyIDGetterFactory(keyIdentifyStrategy)
 	for _, k := range keys.Keys {
-		keyMap[k.KeyID] = &k
+		keyMap[keyIDGetter.Get(&k)] = &k
 	}
 	return &FileKeyCacher{keys: keyMap}, nil
 }
@@ -122,7 +124,7 @@ func (f *FileKeyCacher) Add(keyID string, _ []jose.JSONWebKey) (*jose.JSONWebKey
 	return f.keys[keyID], nil
 }
 
-func newJWKClientOptions(cfg SecretProviderConfig) (auth0.JWKClientOptions, error) {
+func newJWKClientOptions(cfg SecretProviderConfig) (JWKClientOptions, error) {
 	if len(cfg.Cs) == 0 {
 		cfg.Cs = DefaultEnabledCipherSuites
 	}
@@ -137,7 +139,7 @@ func newJWKClientOptions(cfg SecretProviderConfig) (auth0.JWKClientOptions, erro
 	if cfg.LocalCA != "" {
 		certs, err := ioutil.ReadFile(cfg.LocalCA)
 		if err != nil {
-			return auth0.JWKClientOptions{}, fmt.Errorf("Failed to append %q to RootCAs: %v", cfg.LocalCA, err)
+			return JWKClientOptions{}, fmt.Errorf("Failed to append %q to RootCAs: %v", cfg.LocalCA, err)
 		}
 		rootCAs.AppendCertsFromPEM(certs)
 	}
@@ -161,11 +163,14 @@ func newJWKClientOptions(cfg SecretProviderConfig) (auth0.JWKClientOptions, erro
 		transport.DialTLS = dialer.DialTLS
 	}
 
-	return auth0.JWKClientOptions{
-		URI: cfg.URI,
-		Client: &http.Client{
-			Transport: transport,
+	return JWKClientOptions{
+		JWKClientOptions: auth0.JWKClientOptions{
+			URI: cfg.URI,
+			Client: &http.Client{
+				Transport: transport,
+			},
 		},
+		KeyIdentifyStrategy: cfg.KeyIdentifyStrategy,
 	}, nil
 }
 
