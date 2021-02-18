@@ -319,7 +319,7 @@ func TestNewFileKeyCacher(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		kc, err := NewFileKeyCacher(b)
+		kc, err := NewFileKeyCacher(b,"")
 		if err != nil {
 			t.Error(err)
 		}

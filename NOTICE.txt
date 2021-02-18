@@ -1,0 +1,6 @@
+KrakenD
+Copyright 2016 - 2021 DevOps Faith 
+This product includes software developed at
+DevOps Faith (https://devops.faith/).
+The Initial Developer of the key_identify_strategy to validate different JWK keys is Oracle.
+Copyright (C) 2021, Oracle and/or its affiliates. 

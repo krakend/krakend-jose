@@ -29,15 +29,16 @@ func NewValidator(signatureConfig *SignatureConfig, ef ExtractorFactory) (*auth0
 	}
 
 	cfg := SecretProviderConfig{
-		URI:           signatureConfig.URI,
-		CacheEnabled:  signatureConfig.CacheEnabled,
-		Cs:            signatureConfig.CipherSuites,
-		Fingerprints:  decodedFs,
-		LocalCA:       signatureConfig.LocalCA,
-		AllowInsecure: signatureConfig.DisableJWKSecurity,
-		LocalPath:     signatureConfig.LocalPath,
-		SecretURL:     signatureConfig.SecretURL,
-		CipherKey:     signatureConfig.CipherKey,
+		URI:                 signatureConfig.URI,
+		CacheEnabled:        signatureConfig.CacheEnabled,
+		Fingerprints:        decodedFs,
+		Cs:                  signatureConfig.CipherSuites,
+		LocalCA:             signatureConfig.LocalCA,
+		AllowInsecure:       signatureConfig.DisableJWKSecurity,
+		LocalPath:           signatureConfig.LocalPath,
+		SecretURL:           signatureConfig.SecretURL,
+		CipherKey:           signatureConfig.CipherKey,
+		KeyIdentifyStrategy: signatureConfig.KeyIdentifyStrategy,
 	}
 
 	sp, err := SecretProvider(cfg, te)
