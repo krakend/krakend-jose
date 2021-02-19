@@ -116,7 +116,7 @@ func TokenSignatureValidator(hf muxkrakend.HandlerFactory, logger logging.Logger
 
 		var aclCheck func(string, map[string]interface{}, []string) bool
 
-		if signatureConfig.RolesKeyIsNested && strings.Contains(signatureConfig.RolesKey, ".") {
+		if signatureConfig.RolesKeyIsNested && strings.Contains(signatureConfig.RolesKey, ".") && signatureConfig.RolesKey[:4] != "http" {
 			aclCheck = krakendjose.CanAccessNested
 		} else {
 			aclCheck = krakendjose.CanAccess
