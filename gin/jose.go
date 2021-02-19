@@ -93,7 +93,7 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 
 		var aclCheck func(string, map[string]interface{}, []string) bool
 
-		if scfg.RolesKeyIsNested && strings.Contains(scfg.RolesKey, ".") {
+		if scfg.RolesKeyIsNested && strings.Contains(scfg.RolesKey, ".") && scfg.RolesKey[:4] != "http" {
 			aclCheck = krakendjose.CanAccessNested
 		} else {
 			aclCheck = krakendjose.CanAccess
