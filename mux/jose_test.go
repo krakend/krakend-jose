@@ -116,6 +116,8 @@ func TestTokenSignatureValidator(t *testing.T) {
 
 	req = httptest.NewRequest("GET", propagateHeadersEndpointCfg.Endpoint, new(bytes.Buffer))
 	req.Header.Set("Authorization", "BEARER "+token)
+	// Check header-overwrite: it must be overwritten by a claim in the JWT!
+	req.Header.Set("x-krakend-replace", "abc")
 
 	w = httptest.NewRecorder()
 	engine.ServeHTTP(w, req)
@@ -124,6 +126,13 @@ func TestTokenSignatureValidator(t *testing.T) {
 		t.Error("JWT claim not propagated to header: jti")
 	} else if req.Header.Get("x-krakend-jti") != "mnb23vcsrt756yuiomnbvcx98ertyuiop" {
 		t.Errorf("wrong JWT claim propagated for 'jti': %v", req.Header.Get("x-krakend-jti"))
+	}
+
+	// Check that existing header values are overwritten
+	if req.Header.Get("x-krakend-replace") == "abc" {
+		t.Error("JWT claim not propagated to x-krakend-replace header: sub")
+	} else if req.Header.Get("x-krakend-replace") != "1234567890qwertyuio" {
+		t.Errorf("wrong JWT claim propagated for 'sub': %v", req.Header.Get("x-krakend-replace"))
 	}
 
 	if req.Header.Get("x-krakend-sub") == "" {
