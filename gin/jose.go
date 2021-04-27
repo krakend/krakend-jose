@@ -160,7 +160,8 @@ func propagateHeaders(cfg *config.EndpointConfig, propagationCfg [][]string, cla
 			logger.Warning(fmt.Sprintf("JOSE: header propagations error for %s: %s", cfg.Endpoint, err.Error()))
 		}
 		for k, v := range headersToPropagate {
-			c.Request.Header.Add(k, v)
+			// Set header value - replaces existing one
+			c.Request.Header.Set(k, v)
 		}
 	}
 }
