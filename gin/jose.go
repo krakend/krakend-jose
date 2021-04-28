@@ -183,12 +183,15 @@ func extractRequiredJWTClaims(cfg *config.EndpointConfig) func(*gin.Context, map
 	}
 
 	return func(c *gin.Context, claims map[string]interface{}) {
+		cl := krakendjose.Claims(claims)
 		for _, param := range required {
 			// TODO: check for nested claims
-			if v, ok := claims[param].(string); ok {
-				params := append(c.Params, gin.Param{Key: "JWT." + param, Value: v})
-				c.Params = params
+			v, ok := cl.Get(param)
+			if !ok {
+				continue
 			}
+			params := append(c.Params, gin.Param{Key: "JWT." + param, Value: v})
+			c.Params = params
 		}
 	}
 }
