@@ -19,7 +19,7 @@ import (
 )
 
 func HandlerFactory(hf ginkrakend.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory) ginkrakend.HandlerFactory {
-	return TokenSigner(TokenSignatureValidator(hf, logger, rejecterF), logger)
+	return TokenSignatureValidator(TokenSigner(hf, logger), logger, rejecterF)
 }
 
 func TokenSigner(hf ginkrakend.HandlerFactory, logger logging.Logger) ginkrakend.HandlerFactory {

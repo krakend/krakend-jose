@@ -47,9 +47,17 @@ func Example_RS256() {
 	// {}
 	//
 	// [application/json; charset=utf-8]
+	// refresh token request
+	// 201
+	// {"access_token":"eyJhbGciOiJSUzI1NiIsImtpZCI6IjIwMTEtMDQtMjkifQ.eyJhdWQiOiJodHRwOi8vYXBpLmV4YW1wbGUuY29tIiwiZXhwIjoxNzM1Njg5NjAwLCJpc3MiOiJodHRwOi8vZXhhbXBsZS5jb20iLCJqdGkiOiJtbmIyM3Zjc3J0NzU2eXVpb21uYnZjeDk4ZXJ0eXVpb3AiLCJyb2xlcyI6WyJyb2xlX2EiLCJyb2xlX2IiXSwic3ViIjoiMTIzNDU2Nzg5MHF3ZXJ0eXVpbyJ9.NrLwxZK8UhS6CV2ijdJLUfAinpjBn5_uliZCdzQ7v-Dc8lcv1AQA9cYsG63RseKWH9u6-TqPKMZQ56WfhqL028BLDdQCiaeuBoLzYU1tQLakA1V0YmouuEVixWLzueVaQhyGx-iKuiuFhzHWZSqFqSehiyzI9fb5O6Gcc2L6rMEoxQMaJomVS93h-t013MNq3ADLWTXRaO-negydqax_WmzlVWp_RDroR0s5J2L2klgmBXVwh6SYy5vg7RrnuN3S8g4oSicJIi9NgnG-dDikuaOg2DeFUt-mYq_j_PbNXf9TUl5hl4kEy7E0JauJ17d1BUuTl3ChY4BOmhQYRN0dYg","exp":1735689600,"refresh_token":"eyJhbGciOiJSUzI1NiIsImtpZCI6IjIwMTEtMDQtMjkifQ.eyJhdWQiOiJodHRwOi8vYXBpLmV4YW1wbGUuY29tIiwiZXhwIjoxNzM1Njg5NjAwLCJpc3MiOiJodHRwOi8vZXhhbXBsZS5jb20iLCJqdGkiOiJtbmIyM3Zjc3J0NzU2eXVpb21uMTI4NzZidmN4OThlcnR5dWlvcCIsInN1YiI6IjEyMzQ1Njc4OTBxd2VydHl1aW8ifQ.v5dzeXlcYGOCwlhJ05tQ7JXgNw_KO49YvAtURxUOlWqF-OMExzjbevNPSZ2tdWrf8FO5VByoLW6b4cD_6-4PS5XAvTcip2GHOLsvfBokCaxRcMc-tSF-wfPQ4Z2B2GM3_0ErmXC5bSTuBeGaYQ76dONKFUDn7t2lxuABD9oEsLfQYJDnzhCkOzBo8Gg_AY1Vyx-MEYIcatqHI52QGi2_6EBbpJ2ienOaoeGgMfrOMWKFAmBABLkxjnNCzEjAR2lT04NWdB4NnXNa3-m8WedF2TZzmcWzp3mtI9uJhMjpnu8rNi1Uy8LAm6qCjVZABtgfLs-YZekQ2JXx_b0Zojg7og"}
+	//
+	// [application/json; charset=utf-8]
 	//  INFO: JOSE: signer disabled for the endpoint /private
 	//  INFO: JOSE: validator enabled for the endpoint /private
 	//  INFO: JOSE: signer enabled for the endpoint /token
+	//  INFO: JOSE: validator disabled for the endpoint /token
+	//  INFO: JOSE: signer enabled for the endpoint /refresh_token
+	//  INFO: JOSE: validator enabled for the endpoint /refresh_token
 	//  INFO: JOSE: signer disabled for the endpoint /private
 	//  INFO: JOSE: validator disabled for the endpoint /private
 }
@@ -81,9 +89,17 @@ func Example_HS256() {
 	// {}
 	//
 	// [application/json; charset=utf-8]
+	// refresh token request
+	// 201
+	// {"access_token":"eyJhbGciOiJIUzI1NiIsImtpZCI6InNpbTIifQ.eyJhdWQiOiJodHRwOi8vYXBpLmV4YW1wbGUuY29tIiwiZXhwIjoxNzM1Njg5NjAwLCJpc3MiOiJodHRwOi8vZXhhbXBsZS5jb20iLCJqdGkiOiJtbmIyM3Zjc3J0NzU2eXVpb21uYnZjeDk4ZXJ0eXVpb3AiLCJyb2xlcyI6WyJyb2xlX2EiLCJyb2xlX2IiXSwic3ViIjoiMTIzNDU2Nzg5MHF3ZXJ0eXVpbyJ9.vTdN1Nm6Eeb3oJWC5yOpmvwTrwuXFYkqy2131u3G0Hk","exp":1735689600,"refresh_token":"eyJhbGciOiJIUzI1NiIsImtpZCI6InNpbTIifQ.eyJhdWQiOiJodHRwOi8vYXBpLmV4YW1wbGUuY29tIiwiZXhwIjoxNzM1Njg5NjAwLCJpc3MiOiJodHRwOi8vZXhhbXBsZS5jb20iLCJqdGkiOiJtbmIyM3Zjc3J0NzU2eXVpb21uMTI4NzZidmN4OThlcnR5dWlvcCIsInN1YiI6IjEyMzQ1Njc4OTBxd2VydHl1aW8ifQ.F7KWdUacMQX9g2SGk-UMAU0kfC4xUFsuB-QTFdg9P-M"}
+	//
+	// [application/json; charset=utf-8]
 	//  INFO: JOSE: signer disabled for the endpoint /private
 	//  INFO: JOSE: validator enabled for the endpoint /private
 	//  INFO: JOSE: signer enabled for the endpoint /token
+	//  INFO: JOSE: validator disabled for the endpoint /token
+	//  INFO: JOSE: signer enabled for the endpoint /refresh_token
+	//  INFO: JOSE: validator enabled for the endpoint /refresh_token
 	//  INFO: JOSE: signer disabled for the endpoint /private
 	//  INFO: JOSE: validator disabled for the endpoint /private
 }
@@ -155,11 +171,23 @@ func runValidationCycle(signerEndpointCfg, validatorEndpointCfg *config.Endpoint
 	logger, _ := logging.NewLogger("DEBUG", buf, "")
 	hf := HandlerFactory(ginkrakend.EndpointHandler, logger, nil)
 
+	mixedCfg := &config.EndpointConfig{
+		Timeout:  time.Second,
+		Endpoint: "/refresh_token",
+		Method:   signerEndpointCfg.Method,
+		Backend:  signerEndpointCfg.Backend,
+		ExtraConfig: config.ExtraConfig{
+			krakendjose.SignerNamespace:    signerEndpointCfg.ExtraConfig[krakendjose.SignerNamespace],
+			krakendjose.ValidatorNamespace: validatorEndpointCfg.ExtraConfig[krakendjose.ValidatorNamespace],
+		},
+	}
+
 	gin.SetMode(gin.TestMode)
 	engine := gin.New()
 
 	engine.GET(validatorEndpointCfg.Endpoint, hf(validatorEndpointCfg, proxy.NoopProxy))
 	engine.POST(signerEndpointCfg.Endpoint, hf(signerEndpointCfg, tokenIssuer))
+	engine.POST(mixedCfg.Endpoint, hf(mixedCfg, tokenIssuer))
 	engine.GET("/", hf(&config.EndpointConfig{
 		Timeout:  time.Second,
 		Endpoint: "/private",
@@ -208,6 +236,16 @@ func runValidationCycle(signerEndpointCfg, validatorEndpointCfg *config.Endpoint
 
 	fmt.Println("dummy request")
 	req = httptest.NewRequest("GET", "/", new(bytes.Buffer))
+	w = httptest.NewRecorder()
+	engine.ServeHTTP(w, req)
+
+	fmt.Println(w.Code)
+	fmt.Println(w.Body.String())
+	fmt.Println(w.HeaderMap["Content-Type"])
+
+	fmt.Println("refresh token request")
+	req = httptest.NewRequest("POST", mixedCfg.Endpoint, new(bytes.Buffer))
+	req.Header.Set("Authorization", "BEARER "+responseData.AccessToken)
 	w = httptest.NewRecorder()
 	engine.ServeHTTP(w, req)
 
