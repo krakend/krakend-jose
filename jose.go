@@ -250,7 +250,7 @@ func CalculateHeadersToPropagate(propagationCfg [][]string, claims map[string]in
 		tmpClaims := claims
 		tmpKey := fromClaim
 
-		if strings.Contains(fromClaim, ".") {
+		if strings.Contains(fromClaim, ".") && fromClaim[:4] != "http" {
 			tmpKey, tmpClaims = getNestedClaim(fromClaim, claims)
 		}
 
