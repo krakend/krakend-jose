@@ -1,6 +1,7 @@
 package jose
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -236,6 +237,36 @@ func SignFields(keys []string, signer Signer, response *proxy.Response) error {
 	return nil
 }
 
+type Claims map[string]interface{}
+
+func (c Claims) Get(name string) (string, bool) {
+	tmp, ok := c[name]
+	if !ok {
+		return "", ok
+	}
+
+	var normalized string
+
+	switch v := tmp.(type) {
+	case string:
+		normalized = v
+	case int:
+		normalized = fmt.Sprintf("%d", v)
+	case float64:
+		normalized = fmt.Sprintf("%f", v)
+	case []interface{}:
+		normalized = fmt.Sprintf("%v", v[0])
+		for _, elem := range v[1:] {
+			normalized += fmt.Sprintf(",%v", elem)
+		}
+	default:
+		b, _ := json.Marshal(v)
+		normalized = string(b)
+	}
+
+	return normalized, ok
+}
+
 func CalculateHeadersToPropagate(propagationCfg [][]string, claims map[string]interface{}) (map[string]string, error) {
 	if len(propagationCfg) == 0 {
 		return nil, fmt.Errorf("JOSE: no headers to propagate. Config size: %d", len(propagationCfg))
@@ -243,22 +274,28 @@ func CalculateHeadersToPropagate(propagationCfg [][]string, claims map[string]in
 
 	propagated := make(map[string]string)
 
+	c := Claims(claims)
+
 	for _, tuple := range propagationCfg {
 		fromClaim := tuple[0]
 		toHeader := tuple[1]
 
-		tmpClaims := claims
-		tmpKey := fromClaim
-
 		if strings.Contains(fromClaim, ".") && fromClaim[:4] != "http" {
-			tmpKey, tmpClaims = getNestedClaim(fromClaim, claims)
+			tmpKey, tmpClaims := getNestedClaim(fromClaim, claims)
+
+			tmp, ok := tmpClaims[tmpKey].(string)
+			if !ok {
+				continue
+			}
+			propagated[toHeader] = tmp
+			continue
 		}
 
-		tmp, ok := tmpClaims[tmpKey].(string)
+		v, ok := c.Get(fromClaim)
 		if !ok {
 			continue
 		}
-		propagated[toHeader] = tmp
+		propagated[toHeader] = v
 	}
 
 	return propagated, nil

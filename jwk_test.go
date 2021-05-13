@@ -86,7 +86,6 @@ func TestJWK_file(t *testing.T) {
 		{
 			Name: "public",
 			ID:   "1",
-			Alg:  "RS256",
 		},
 		{
 			Name: "private",
@@ -96,7 +95,6 @@ func TestJWK_file(t *testing.T) {
 		{
 			Name: "private",
 			ID:   "1",
-			Alg:  "RS256",
 		},
 		{
 			Name: "symmetric",
@@ -165,8 +163,7 @@ func TestJWK_cyperfile(t *testing.T) {
 			Alg: "RS256",
 		},
 		{
-			ID:  "1",
-			Alg: "RS256",
+			ID: "1",
 		},
 	} {
 		secretProvidr, err := SecretProvider(
@@ -319,7 +316,7 @@ func TestNewFileKeyCacher(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		kc, err := NewFileKeyCacher(b,"")
+		kc, err := NewFileKeyCacher(b, "")
 		if err != nil {
 			t.Error(err)
 		}

@@ -2,6 +2,7 @@ package jose
 
 import (
 	"net/http"
+	"reflect"
 	"testing"
 
 	"gopkg.in/square/go-jose.v2/jwt"
@@ -300,5 +301,38 @@ func TestScopesAnyMatcher(t *testing.T) {
 				t.Errorf("'%s' have %v, want %v", v.name, res, v.expected)
 			}
 		})
+	}
+}
+
+func TestCalculateHeadersToPropagate(t *testing.T) {
+	for i, tc := range []struct {
+		cfg      [][]string
+		claims   map[string]interface{}
+		expected map[string]string
+	}{
+		{
+			cfg: [][]string{{"a", "x-a"}, {"b", "x-b"}, {"c", "x-c"}, {"d", "x-d"}},
+			claims: map[string]interface{}{
+				"a": 1,
+				"b": "foo",
+				"c": []interface{}{"one", "two"},
+				"d": map[string]interface{}{
+					"a": 1,
+					"b": "foo",
+					"c": []interface{}{"one", "two"},
+				},
+			},
+			expected: map[string]string{"x-a": "1", "x-b": "foo", "x-c": "one,two", "x-d": `{"a":1,"b":"foo","c":["one","two"]}`},
+		},
+	} {
+		res, err := CalculateHeadersToPropagate(tc.cfg, tc.claims)
+		if err != nil {
+			t.Errorf("tc-%d: unexpected error: %v", i, err)
+			continue
+		}
+
+		if !reflect.DeepEqual(tc.expected, res) {
+			t.Errorf("tc-%d: unexpected response: %v", i, res)
+		}
 	}
 }
