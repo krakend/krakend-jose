@@ -3,8 +3,9 @@ package jose
 import (
 	b64 "encoding/base64"
 	"errors"
-	"gopkg.in/square/go-jose.v2"
 	"time"
+
+	"gopkg.in/square/go-jose.v2"
 )
 
 var (

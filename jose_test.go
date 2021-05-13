@@ -44,6 +44,13 @@ func TestCanAccess(t *testing.T) {
 			expected:     true,
 		},
 		{
+			name:         "single_success",
+			roleKey:      "role",
+			claims:       map[string]interface{}{"role": "a"},
+			requirements: []string{"a"},
+			expected:     true,
+		},
+		{
 			name:         "simple_sfail",
 			roleKey:      "role",
 			claims:       map[string]interface{}{"role": []interface{}{"c", "b"}},

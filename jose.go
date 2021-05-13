@@ -279,6 +279,18 @@ func CalculateHeadersToPropagate(propagationCfg [][]string, claims map[string]in
 	for _, tuple := range propagationCfg {
 		fromClaim := tuple[0]
 		toHeader := tuple[1]
+
+		if strings.Contains(fromClaim, ".") && fromClaim[:4] != "http" {
+			tmpKey, tmpClaims := getNestedClaim(fromClaim, claims)
+
+			tmp, ok := tmpClaims[tmpKey].(string)
+			if !ok {
+				continue
+			}
+			propagated[toHeader] = tmp
+			continue
+		}
+
 		v, ok := c.Get(fromClaim)
 		if !ok {
 			continue

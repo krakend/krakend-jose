@@ -107,7 +107,8 @@ func NewFileKeyCacher(data []byte, keyIdentifyStrategy string) (*FileKeyCacher, 
 	keyMap := map[string]*jose.JSONWebKey{}
 	keyIDGetter := KeyIDGetterFactory(keyIdentifyStrategy)
 	for _, k := range keys.Keys {
-		keyMap[keyIDGetter.Get(&k)] = &k
+		keyToStore := k
+		keyMap[keyIDGetter.Get(&keyToStore)] = &keyToStore
 	}
 	return &FileKeyCacher{keys: keyMap}, nil
 }
@@ -242,5 +243,9 @@ var (
 		tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
 		tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
 		tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+		// TLS 1.3 cipher suites.
+		tls.TLS_AES_128_GCM_SHA256,
+		tls.TLS_AES_256_GCM_SHA384,
+		tls.TLS_CHACHA20_POLY1305_SHA256,
 	}
 )

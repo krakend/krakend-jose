@@ -18,7 +18,7 @@ import (
 )
 
 func HandlerFactory(hf muxkrakend.HandlerFactory, paramExtractor muxkrakend.ParamExtractor, logger logging.Logger, rejecterF krakendjose.RejecterFactory) muxkrakend.HandlerFactory {
-	return TokenSigner(TokenSignatureValidator(hf, logger, rejecterF), paramExtractor, logger)
+	return TokenSignatureValidator(TokenSigner(hf, paramExtractor, logger), logger, rejecterF)
 }
 
 func TokenSigner(hf muxkrakend.HandlerFactory, paramExtractor muxkrakend.ParamExtractor, logger logging.Logger) muxkrakend.HandlerFactory {
