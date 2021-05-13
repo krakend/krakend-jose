@@ -107,7 +107,8 @@ func NewFileKeyCacher(data []byte, keyIdentifyStrategy string) (*FileKeyCacher, 
 	keyMap := map[string]*jose.JSONWebKey{}
 	keyIDGetter := KeyIDGetterFactory(keyIdentifyStrategy)
 	for _, k := range keys.Keys {
-		keyMap[keyIDGetter.Get(&k)] = &k
+		keyToStore := k
+		keyMap[keyIDGetter.Get(&keyToStore)] = &keyToStore
 	}
 	return &FileKeyCacher{keys: keyMap}, nil
 }
