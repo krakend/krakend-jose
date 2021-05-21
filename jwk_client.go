@@ -1,9 +1,10 @@
 package jose
 
 import (
+	"net/http"
+
 	"github.com/auth0-community/go-auth0"
 	"gopkg.in/square/go-jose.v2/jwt"
-	"net/http"
 )
 
 //TokenIDGetter extracts the keyID from the JSON web token

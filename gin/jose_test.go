@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/devopsfaith/krakend/logging"
-	"github.com/devopsfaith/krakend/proxy"
-	ginkrakend "github.com/devopsfaith/krakend/router/gin"
 	"github.com/gin-gonic/gin"
+	"github.com/luraproject/lura/logging"
+	"github.com/luraproject/lura/proxy"
+	ginlura "github.com/luraproject/lura/router/gin"
 )
 
 func TestTokenSignatureValidator(t *testing.T) {
@@ -52,7 +52,7 @@ func TestTokenSignatureValidator(t *testing.T) {
 
 	buf := new(bytes.Buffer)
 	logger, _ := logging.NewLogger("DEBUG", buf, "")
-	hf := HandlerFactory(ginkrakend.EndpointHandler, logger, nil)
+	hf := HandlerFactory(ginlura.EndpointHandler, logger, nil)
 
 	gin.SetMode(gin.TestMode)
 	engine := gin.New()
@@ -109,8 +109,10 @@ func TestTokenSignatureValidator(t *testing.T) {
 		t.Errorf("unexpected body: %s", body)
 	}
 
-	if log := buf.String(); !strings.Contains(log, "INFO: JOSE: signer disabled for the endpoint /private") {
+	if log := buf.String(); !strings.Contains(log, "INFO: [JOSE: signer disabled for the endpoint /private]") {
 		t.Error(log)
+		t.Fail()
+		return
 	}
 
 	req = httptest.NewRequest("GET", forbidenEndpointCfg.Endpoint, new(bytes.Buffer))

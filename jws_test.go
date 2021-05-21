@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/devopsfaith/krakend/config"
+	"github.com/luraproject/lura/config"
 	"gopkg.in/square/go-jose.v2"
 )
 

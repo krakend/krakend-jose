@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/auth0-community/go-auth0"
-	"github.com/devopsfaith/krakend/proxy"
+	"github.com/luraproject/lura/proxy"
 	jose "gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/jwt"
 )
