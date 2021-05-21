@@ -11,10 +11,10 @@ import (
 	"time"
 
 	krakendjose "github.com/devopsfaith/krakend-jose"
-	"github.com/devopsfaith/krakend/config"
-	"github.com/devopsfaith/krakend/logging"
-	"github.com/devopsfaith/krakend/proxy"
-	muxkrakend "github.com/devopsfaith/krakend/router/mux"
+	"github.com/luraproject/lura/config"
+	"github.com/luraproject/lura/logging"
+	"github.com/luraproject/lura/proxy"
+	muxlura "github.com/luraproject/lura/router/mux"
 )
 
 func Example_RS256() {
@@ -101,7 +101,7 @@ func Example_HS256_cookie() {
 
 	buf := new(bytes.Buffer)
 	logger, _ := logging.NewLogger("DEBUG", os.Stderr, "")
-	hf := HandlerFactory(muxkrakend.EndpointHandler, dummyParamsExtractor, logger, nil)
+	hf := HandlerFactory(muxlura.EndpointHandler, dummyParamsExtractor, logger, nil)
 
 	engine := http.ServeMux{}
 
@@ -132,7 +132,7 @@ func Example_HS256_cookie() {
 func runValidationCycle(signerEndpointCfg, validatorEndpointCfg *config.EndpointConfig) {
 	buf := new(bytes.Buffer)
 	logger, _ := logging.NewLogger("DEBUG", os.Stderr, "")
-	hf := HandlerFactory(muxkrakend.EndpointHandler, dummyParamsExtractor, logger, nil)
+	hf := HandlerFactory(muxlura.EndpointHandler, dummyParamsExtractor, logger, nil)
 
 	engine := http.ServeMux{}
 

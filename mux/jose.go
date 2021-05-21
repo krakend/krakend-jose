@@ -10,18 +10,18 @@ import (
 
 	"github.com/auth0-community/go-auth0"
 	krakendjose "github.com/devopsfaith/krakend-jose"
-	"github.com/devopsfaith/krakend/config"
-	"github.com/devopsfaith/krakend/logging"
-	"github.com/devopsfaith/krakend/proxy"
-	muxkrakend "github.com/devopsfaith/krakend/router/mux"
+	"github.com/luraproject/lura/config"
+	"github.com/luraproject/lura/logging"
+	"github.com/luraproject/lura/proxy"
+	muxlura "github.com/luraproject/lura/router/mux"
 	"gopkg.in/square/go-jose.v2/jwt"
 )
 
-func HandlerFactory(hf muxkrakend.HandlerFactory, paramExtractor muxkrakend.ParamExtractor, logger logging.Logger, rejecterF krakendjose.RejecterFactory) muxkrakend.HandlerFactory {
+func HandlerFactory(hf muxlura.HandlerFactory, paramExtractor muxlura.ParamExtractor, logger logging.Logger, rejecterF krakendjose.RejecterFactory) muxlura.HandlerFactory {
 	return TokenSignatureValidator(TokenSigner(hf, paramExtractor, logger), logger, rejecterF)
 }
 
-func TokenSigner(hf muxkrakend.HandlerFactory, paramExtractor muxkrakend.ParamExtractor, logger logging.Logger) muxkrakend.HandlerFactory {
+func TokenSigner(hf muxlura.HandlerFactory, paramExtractor muxlura.ParamExtractor, logger logging.Logger) muxlura.HandlerFactory {
 	return func(cfg *config.EndpointConfig, prxy proxy.Proxy) http.HandlerFunc {
 		signerCfg, signer, err := krakendjose.NewSigner(cfg, nil)
 		if err == krakendjose.ErrNoSignerCfg {
@@ -37,7 +37,7 @@ func TokenSigner(hf muxkrakend.HandlerFactory, paramExtractor muxkrakend.ParamEx
 		logger.Info("JOSE: signer enabled for the endpoint", cfg.Endpoint)
 
 		return func(w http.ResponseWriter, r *http.Request) {
-			proxyReq := muxkrakend.NewRequestBuilder(paramExtractor)(r, cfg.QueryString, cfg.HeadersToPass)
+			proxyReq := muxlura.NewRequestBuilder(paramExtractor)(r, cfg.QueryString, cfg.HeadersToPass)
 			ctx, cancel := context.WithTimeout(r.Context(), cfg.Timeout)
 			defer cancel()
 
@@ -91,7 +91,7 @@ func jsonRender(w http.ResponseWriter, response *proxy.Response) error {
 	return err
 }
 
-func TokenSignatureValidator(hf muxkrakend.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory) muxkrakend.HandlerFactory {
+func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory) muxlura.HandlerFactory {
 	return func(cfg *config.EndpointConfig, prxy proxy.Proxy) http.HandlerFunc {
 		if rejecterF == nil {
 			rejecterF = new(krakendjose.NopRejecterFactory)

@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/devopsfaith/krakend/logging"
-	"github.com/devopsfaith/krakend/proxy"
-	muxkrakend "github.com/devopsfaith/krakend/router/mux"
+	"github.com/luraproject/lura/logging"
+	"github.com/luraproject/lura/proxy"
+	muxlura "github.com/luraproject/lura/router/mux"
 )
 
 func TestTokenSignatureValidator(t *testing.T) {
@@ -50,9 +50,9 @@ func TestTokenSignatureValidator(t *testing.T) {
 
 	buf := new(bytes.Buffer)
 	logger, _ := logging.NewLogger("DEBUG", buf, "")
-	hf := HandlerFactory(muxkrakend.EndpointHandler, dummyParamsExtractor, logger, nil)
+	hf := HandlerFactory(muxlura.EndpointHandler, dummyParamsExtractor, logger, nil)
 
-	engine := muxkrakend.DefaultEngine()
+	engine := muxlura.DefaultEngine()
 
 	engine.Handle(validatorEndpointCfg.Endpoint, "GET", hf(validatorEndpointCfg, dummyProxy))
 	engine.Handle(forbidenEndpointCfg.Endpoint, "GET", hf(forbidenEndpointCfg, dummyProxy))
@@ -84,7 +84,7 @@ func TestTokenSignatureValidator(t *testing.T) {
 		t.Errorf("unexpected body: %s", body)
 	}
 
-	if log := buf.String(); !strings.Contains(log, "INFO: JOSE: signer disabled for the endpoint /private") {
+	if log := buf.String(); !strings.Contains(log, "INFO: [JOSE: signer disabled for the endpoint /private]") {
 		t.Error(log)
 	}
 

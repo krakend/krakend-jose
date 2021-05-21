@@ -10,19 +10,19 @@ import (
 
 	auth0 "github.com/auth0-community/go-auth0"
 	krakendjose "github.com/devopsfaith/krakend-jose"
-	"github.com/devopsfaith/krakend/config"
-	"github.com/devopsfaith/krakend/logging"
-	"github.com/devopsfaith/krakend/proxy"
-	ginkrakend "github.com/devopsfaith/krakend/router/gin"
 	"github.com/gin-gonic/gin"
+	"github.com/luraproject/lura/config"
+	"github.com/luraproject/lura/logging"
+	"github.com/luraproject/lura/proxy"
+	ginlura "github.com/luraproject/lura/router/gin"
 	"gopkg.in/square/go-jose.v2/jwt"
 )
 
-func HandlerFactory(hf ginkrakend.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory) ginkrakend.HandlerFactory {
+func HandlerFactory(hf ginlura.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory) ginlura.HandlerFactory {
 	return TokenSignatureValidator(TokenSigner(hf, logger), logger, rejecterF)
 }
 
-func TokenSigner(hf ginkrakend.HandlerFactory, logger logging.Logger) ginkrakend.HandlerFactory {
+func TokenSigner(hf ginlura.HandlerFactory, logger logging.Logger) ginlura.HandlerFactory {
 	return func(cfg *config.EndpointConfig, prxy proxy.Proxy) gin.HandlerFunc {
 		signerCfg, signer, err := krakendjose.NewSigner(cfg, nil)
 		if err == krakendjose.ErrNoSignerCfg {
@@ -38,7 +38,7 @@ func TokenSigner(hf ginkrakend.HandlerFactory, logger logging.Logger) ginkrakend
 		logger.Info("JOSE: signer enabled for the endpoint", cfg.Endpoint)
 
 		return func(c *gin.Context) {
-			proxyReq := ginkrakend.NewRequest(cfg.HeadersToPass)(c, cfg.QueryString)
+			proxyReq := ginlura.NewRequest(cfg.HeadersToPass)(c, cfg.QueryString)
 			ctx, cancel := context.WithTimeout(c, cfg.Timeout)
 			defer cancel()
 
@@ -68,7 +68,7 @@ func TokenSigner(hf ginkrakend.HandlerFactory, logger logging.Logger) ginkrakend
 	}
 }
 
-func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory) ginkrakend.HandlerFactory {
+func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory) ginlura.HandlerFactory {
 	return func(cfg *config.EndpointConfig, prxy proxy.Proxy) gin.HandlerFunc {
 		if rejecterF == nil {
 			rejecterF = new(krakendjose.NopRejecterFactory)
