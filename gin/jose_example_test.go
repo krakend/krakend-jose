@@ -52,14 +52,15 @@ func Example_RS256() {
 	// {"access_token":"eyJhbGciOiJSUzI1NiIsImtpZCI6IjIwMTEtMDQtMjkifQ.eyJhdWQiOiJodHRwOi8vYXBpLmV4YW1wbGUuY29tIiwiZXhwIjoxNzM1Njg5NjAwLCJpc3MiOiJodHRwOi8vZXhhbXBsZS5jb20iLCJqdGkiOiJtbmIyM3Zjc3J0NzU2eXVpb21uYnZjeDk4ZXJ0eXVpb3AiLCJyb2xlcyI6WyJyb2xlX2EiLCJyb2xlX2IiXSwic3ViIjoiMTIzNDU2Nzg5MHF3ZXJ0eXVpbyJ9.NrLwxZK8UhS6CV2ijdJLUfAinpjBn5_uliZCdzQ7v-Dc8lcv1AQA9cYsG63RseKWH9u6-TqPKMZQ56WfhqL028BLDdQCiaeuBoLzYU1tQLakA1V0YmouuEVixWLzueVaQhyGx-iKuiuFhzHWZSqFqSehiyzI9fb5O6Gcc2L6rMEoxQMaJomVS93h-t013MNq3ADLWTXRaO-negydqax_WmzlVWp_RDroR0s5J2L2klgmBXVwh6SYy5vg7RrnuN3S8g4oSicJIi9NgnG-dDikuaOg2DeFUt-mYq_j_PbNXf9TUl5hl4kEy7E0JauJ17d1BUuTl3ChY4BOmhQYRN0dYg","exp":1735689600,"refresh_token":"eyJhbGciOiJSUzI1NiIsImtpZCI6IjIwMTEtMDQtMjkifQ.eyJhdWQiOiJodHRwOi8vYXBpLmV4YW1wbGUuY29tIiwiZXhwIjoxNzM1Njg5NjAwLCJpc3MiOiJodHRwOi8vZXhhbXBsZS5jb20iLCJqdGkiOiJtbmIyM3Zjc3J0NzU2eXVpb21uMTI4NzZidmN4OThlcnR5dWlvcCIsInN1YiI6IjEyMzQ1Njc4OTBxd2VydHl1aW8ifQ.v5dzeXlcYGOCwlhJ05tQ7JXgNw_KO49YvAtURxUOlWqF-OMExzjbevNPSZ2tdWrf8FO5VByoLW6b4cD_6-4PS5XAvTcip2GHOLsvfBokCaxRcMc-tSF-wfPQ4Z2B2GM3_0ErmXC5bSTuBeGaYQ76dONKFUDn7t2lxuABD9oEsLfQYJDnzhCkOzBo8Gg_AY1Vyx-MEYIcatqHI52QGi2_6EBbpJ2ienOaoeGgMfrOMWKFAmBABLkxjnNCzEjAR2lT04NWdB4NnXNa3-m8WedF2TZzmcWzp3mtI9uJhMjpnu8rNi1Uy8LAm6qCjVZABtgfLs-YZekQ2JXx_b0Zojg7og"}
 	//
 	// [application/json; charset=utf-8]
-	//  INFO: [JOSE: signer disabled for the endpoint /private]
-	//  INFO: [JOSE: validator enabled for the endpoint /private]
-	//  INFO: [JOSE: signer enabled for the endpoint /token]
-	//  INFO: [JOSE: validator disabled for the endpoint /token]
-	//  INFO: [JOSE: signer enabled for the endpoint /refresh_token]
-	//  INFO: [JOSE: validator enabled for the endpoint /refresh_token]
-	//  INFO: [JOSE: signer disabled for the endpoint /private]
-	//  INFO: [JOSE: validator disabled for the endpoint /private]
+	//  INFO: [[ENDPOINT: /private][JWTSigner] Signer disabled for this endpoint]
+	//  DEBUG: [[ENDPOINT: /private][JWTValidator] Validator enabled for this endpoint]
+	//  DEBUG: [[ENDPOINT: /token][JWTSigner] Signer enabled for this endpoint]
+	//  INFO: [[ENDPOINT: /token][JWTValidator] This endpoint has no JWT validation /token]
+	//  DEBUG: [[ENDPOINT: /refresh_token][JWTSigner] Signer enabled for this endpoint]
+	//  DEBUG: [[ENDPOINT: /refresh_token][JWTValidator] Validator enabled for this endpoint]
+	//  INFO: [[ENDPOINT: /private][JWTSigner] Signer disabled for this endpoint]
+	//  INFO: [[ENDPOINT: /private][JWTValidator] This endpoint has no JWT validation /private]
+
 }
 
 func Example_HS256() {
@@ -94,14 +95,15 @@ func Example_HS256() {
 	// {"access_token":"eyJhbGciOiJIUzI1NiIsImtpZCI6InNpbTIifQ.eyJhdWQiOiJodHRwOi8vYXBpLmV4YW1wbGUuY29tIiwiZXhwIjoxNzM1Njg5NjAwLCJpc3MiOiJodHRwOi8vZXhhbXBsZS5jb20iLCJqdGkiOiJtbmIyM3Zjc3J0NzU2eXVpb21uYnZjeDk4ZXJ0eXVpb3AiLCJyb2xlcyI6WyJyb2xlX2EiLCJyb2xlX2IiXSwic3ViIjoiMTIzNDU2Nzg5MHF3ZXJ0eXVpbyJ9.vTdN1Nm6Eeb3oJWC5yOpmvwTrwuXFYkqy2131u3G0Hk","exp":1735689600,"refresh_token":"eyJhbGciOiJIUzI1NiIsImtpZCI6InNpbTIifQ.eyJhdWQiOiJodHRwOi8vYXBpLmV4YW1wbGUuY29tIiwiZXhwIjoxNzM1Njg5NjAwLCJpc3MiOiJodHRwOi8vZXhhbXBsZS5jb20iLCJqdGkiOiJtbmIyM3Zjc3J0NzU2eXVpb21uMTI4NzZidmN4OThlcnR5dWlvcCIsInN1YiI6IjEyMzQ1Njc4OTBxd2VydHl1aW8ifQ.F7KWdUacMQX9g2SGk-UMAU0kfC4xUFsuB-QTFdg9P-M"}
 	//
 	// [application/json; charset=utf-8]
-	//  INFO: [JOSE: signer disabled for the endpoint /private]
-	//  INFO: [JOSE: validator enabled for the endpoint /private]
-	//  INFO: [JOSE: signer enabled for the endpoint /token]
-	//  INFO: [JOSE: validator disabled for the endpoint /token]
-	//  INFO: [JOSE: signer enabled for the endpoint /refresh_token]
-	//  INFO: [JOSE: validator enabled for the endpoint /refresh_token]
-	//  INFO: [JOSE: signer disabled for the endpoint /private]
-	//  INFO: [JOSE: validator disabled for the endpoint /private]
+	//  INFO: [[ENDPOINT: /private][JWTSigner] Signer disabled for this endpoint]
+	//  DEBUG: [[ENDPOINT: /private][JWTValidator] Validator enabled for this endpoint]
+	//  DEBUG: [[ENDPOINT: /token][JWTSigner] Signer enabled for this endpoint]
+	//  INFO: [[ENDPOINT: /token][JWTValidator] This endpoint has no JWT validation /token]
+	//  DEBUG: [[ENDPOINT: /refresh_token][JWTSigner] Signer enabled for this endpoint]
+	//  DEBUG: [[ENDPOINT: /refresh_token][JWTValidator] Validator enabled for this endpoint]
+	//  INFO: [[ENDPOINT: /private][JWTSigner] Signer disabled for this endpoint]
+	//  INFO: [[ENDPOINT: /private][JWTValidator] This endpoint has no JWT validation /private]
+
 }
 
 func Example_HS256_cookie() {
@@ -162,8 +164,8 @@ func Example_HS256_cookie() {
 	// {}
 	//
 	// [application/json; charset=utf-8]
-	//  INFO: [JOSE: signer disabled for the endpoint /private]
-	//  INFO: [JOSE: validator enabled for the endpoint /private]
+	//  INFO: [[ENDPOINT: /private][JWTSigner] Signer disabled for this endpoint]
+	//  DEBUG: [[ENDPOINT: /private][JWTValidator] Validator enabled for this endpoint]
 }
 
 func runValidationCycle(signerEndpointCfg, validatorEndpointCfg *config.EndpointConfig) {
@@ -299,8 +301,8 @@ func newSignerEndpointCfg(alg, ID, URL string) *config.EndpointConfig {
 			krakendjose.SignerNamespace: map[string]interface{}{
 				"alg":                  alg,
 				"kid":                  ID,
-				"jwk-url":              URL,
-				"keys-to-sign":         []string{"access_token", "refresh_token"},
+				"jwk_url":              URL,
+				"keys_to_sign":         []string{"access_token", "refresh_token"},
 				"disable_jwk_security": true,
 				"cache":                true,
 			},
@@ -322,11 +324,11 @@ func newVerifierEndpointCfg(alg, URL string, roles []string) *config.EndpointCon
 		ExtraConfig: config.ExtraConfig{
 			krakendjose.ValidatorNamespace: map[string]interface{}{
 				"alg":                  alg,
-				"jwk-url":              URL,
+				"jwk_url":              URL,
 				"audience":             []string{"http://api.example.com"},
 				"issuer":               "http://example.com",
 				"roles":                roles,
-				"propagate-claims":     [][]string{{"jti", "x-krakend-jti"}, {"sub", "x-krakend-sub"}, {"nonexistent", "x-krakend-ne"}, {"sub", "x-krakend-replace"}},
+				"propagate_claims":     [][]string{{"jti", "x-krakend-jti"}, {"sub", "x-krakend-sub"}, {"nonexistent", "x-krakend-ne"}, {"sub", "x-krakend-replace"}},
 				"disable_jwk_security": true,
 				"cache":                true,
 			},

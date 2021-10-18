@@ -42,7 +42,7 @@ func Test_getSignatureConfig_unsecure(t *testing.T) {
 		ExtraConfig: config.ExtraConfig{
 			ValidatorNamespace: map[string]interface{}{
 				"alg":      "RS256",
-				"jwk-url":  "http://jwk.example.com",
+				"jwk_url":  "http://jwk.example.com",
 				"audience": []string{"http://api.example.com"},
 				"issuer":   "http://example.com",
 				"roles":    []string{},
@@ -122,8 +122,8 @@ func Test_newSigner_unsecure(t *testing.T) {
 			SignerNamespace: map[string]interface{}{
 				"alg":          "RS256",
 				"kid":          "2011-04-29",
-				"jwk-url":      "http://jwk.example.com",
-				"keys-to-sign": []string{"access_token", "refresh_token"},
+				"jwk_url":      "http://jwk.example.com",
+				"keys_to_sign": []string{"access_token", "refresh_token"},
 			},
 		},
 	}
@@ -259,8 +259,8 @@ func newSignerEndpointCfg(alg, ID, URL string) *config.EndpointConfig {
 			SignerNamespace: map[string]interface{}{
 				"alg":                  alg,
 				"kid":                  ID,
-				"jwk-url":              URL,
-				"keys-to-sign":         []string{"access_token", "refresh_token"},
+				"jwk_url":              URL,
+				"keys_to_sign":         []string{"access_token", "refresh_token"},
 				"disable_jwk_security": true,
 				"cache":                true,
 				"cacheDuration":        time.Minute,
@@ -283,7 +283,7 @@ func newVerifierEndpointCfg(alg, URL string, roles []string) *config.EndpointCon
 		ExtraConfig: config.ExtraConfig{
 			ValidatorNamespace: map[string]interface{}{
 				"alg":                  alg,
-				"jwk-url":              URL,
+				"jwk_url":              URL,
 				"audience":             []string{"http://api.example.com"},
 				"issuer":               "http://example.com",
 				"roles":                roles,
