@@ -160,7 +160,7 @@ func Test_newSigner_unknownKey(t *testing.T) {
 	defer server.Close()
 
 	_, _, err := NewSigner(newSignerEndpointCfg("RS256", "unknown key", server.URL), nil)
-	if err == nil || err.Error() != "no Keys has been found" {
+	if err == nil || err.Error() != "no Keys have been found" {
 		t.Errorf("unexpected error: %v", err)
 	}
 }

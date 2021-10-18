@@ -2,7 +2,6 @@ package gin
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"regexp"
@@ -24,18 +23,19 @@ func HandlerFactory(hf ginlura.HandlerFactory, logger logging.Logger, rejecterF 
 
 func TokenSigner(hf ginlura.HandlerFactory, logger logging.Logger) ginlura.HandlerFactory {
 	return func(cfg *config.EndpointConfig, prxy proxy.Proxy) gin.HandlerFunc {
+		logPrefix := "[ENDPOINT: " + cfg.Endpoint + "][JWTSigner]"
 		signerCfg, signer, err := krakendjose.NewSigner(cfg, nil)
 		if err == krakendjose.ErrNoSignerCfg {
-			logger.Info("JOSE: signer disabled for the endpoint", cfg.Endpoint)
+			logger.Info(logPrefix, "Signer disabled for this endpoint")
 			return hf(cfg, prxy)
 		}
 		if err != nil {
-			logger.Error("JOSE: unable to create the signer for the endpoint", cfg.Endpoint)
-			logger.Error(err.Error())
+			logger.Error(logPrefix, "Unable to create the signer for the endpoint")
+			logger.Error(logPrefix, err.Error())
 			return hf(cfg, prxy)
 		}
 
-		logger.Info("JOSE: signer enabled for the endpoint", cfg.Endpoint)
+		logger.Debug(logPrefix, "Signer enabled for this endpoint")
 
 		return func(c *gin.Context) {
 			proxyReq := ginlura.NewRequest(cfg.HeadersToPass)(c, cfg.QueryString)
@@ -55,7 +55,7 @@ func TokenSigner(hf ginlura.HandlerFactory, logger logging.Logger) ginlura.Handl
 			}
 
 			if err := krakendjose.SignFields(signerCfg.KeysToSign, signer, response); err != nil {
-				logger.Error(err.Error())
+				logger.Error(logPrefix, err.Error())
 				c.AbortWithStatus(http.StatusBadRequest)
 				return
 			}
@@ -70,6 +70,7 @@ func TokenSigner(hf ginlura.HandlerFactory, logger logging.Logger) ginlura.Handl
 
 func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory) ginlura.HandlerFactory {
 	return func(cfg *config.EndpointConfig, prxy proxy.Proxy) gin.HandlerFunc {
+		logPrefix := "[ENDPOINT: " + cfg.Endpoint + "][JWTValidator]"
 		if rejecterF == nil {
 			rejecterF = new(krakendjose.NopRejecterFactory)
 		}
@@ -78,17 +79,17 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 		handler := hf(cfg, prxy)
 		scfg, err := krakendjose.GetSignatureConfig(cfg)
 		if err == krakendjose.ErrNoValidatorCfg {
-			logger.Info("JOSE: validator disabled for the endpoint", cfg.Endpoint)
+			logger.Info(logPrefix, "This endpoint has no JWT validation", cfg.Endpoint)
 			return handler
 		}
 		if err != nil {
-			logger.Warning(fmt.Sprintf("JOSE: validator for %s: %s", cfg.Endpoint, err.Error()))
+			logger.Warning(logPrefix, err.Error())
 			return handler
 		}
 
 		validator, err := krakendjose.NewValidator(scfg, FromCookie)
 		if err != nil {
-			log.Fatalf("%s: %s", cfg.Endpoint, err.Error())
+			log.Fatalf(logPrefix, err.Error())
 		}
 
 		var aclCheck func(string, map[string]interface{}, []string) bool
@@ -111,7 +112,7 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 			scopesMatcher = krakendjose.ScopesDefaultMatcher
 		}
 
-		logger.Info("JOSE: validator enabled for the endpoint", cfg.Endpoint)
+		logger.Debug(logPrefix, "Validator enabled for this endpoint")
 
 		paramExtractor := extractRequiredJWTClaims(cfg)
 
@@ -154,10 +155,11 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 }
 
 func propagateHeaders(cfg *config.EndpointConfig, propagationCfg [][]string, claims map[string]interface{}, c *gin.Context, logger logging.Logger) {
+	logPrefix := "[ENDPOINT: " + cfg.Endpoint + "][PropagateHeaders]"
 	if len(propagationCfg) > 0 {
 		headersToPropagate, err := krakendjose.CalculateHeadersToPropagate(propagationCfg, claims)
 		if err != nil {
-			logger.Warning(fmt.Sprintf("JOSE: header propagations error for %s: %s", cfg.Endpoint, err.Error()))
+			logger.Warning(logPrefix, err.Error())
 		}
 		for k, v := range headersToPropagate {
 			// Set header value - replaces existing one
