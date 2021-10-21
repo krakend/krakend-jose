@@ -10,11 +10,11 @@ import (
 	"os"
 	"time"
 
-	krakendjose "github.com/devopsfaith/krakend-jose"
-	"github.com/luraproject/lura/config"
-	"github.com/luraproject/lura/logging"
-	"github.com/luraproject/lura/proxy"
-	muxlura "github.com/luraproject/lura/router/mux"
+	krakendjose "github.com/devopsfaith/krakend-jose/v2"
+	"github.com/luraproject/lura/v2/config"
+	"github.com/luraproject/lura/v2/logging"
+	"github.com/luraproject/lura/v2/proxy"
+	muxlura "github.com/luraproject/lura/v2/router/mux"
 )
 
 func Example_RS256() {

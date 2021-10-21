@@ -8,12 +8,12 @@ import (
 	"strings"
 
 	auth0 "github.com/auth0-community/go-auth0"
-	krakendjose "github.com/devopsfaith/krakend-jose"
+	krakendjose "github.com/devopsfaith/krakend-jose/v2"
 	"github.com/gin-gonic/gin"
-	"github.com/luraproject/lura/config"
-	"github.com/luraproject/lura/logging"
-	"github.com/luraproject/lura/proxy"
-	ginlura "github.com/luraproject/lura/router/gin"
+	"github.com/luraproject/lura/v2/config"
+	"github.com/luraproject/lura/v2/logging"
+	"github.com/luraproject/lura/v2/proxy"
+	ginlura "github.com/luraproject/lura/v2/router/gin"
 	"gopkg.in/square/go-jose.v2/jwt"
 )
 

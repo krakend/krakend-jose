@@ -19,7 +19,7 @@ import (
 	auth0 "github.com/auth0-community/go-auth0"
 	jose "gopkg.in/square/go-jose.v2"
 
-	"github.com/devopsfaith/krakend-jose/secrets"
+	"github.com/devopsfaith/krakend-jose/v2/secrets"
 )
 
 type SecretProviderConfig struct {
