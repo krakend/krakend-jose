@@ -79,7 +79,7 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 		handler := hf(cfg, prxy)
 		scfg, err := krakendjose.GetSignatureConfig(cfg)
 		if err == krakendjose.ErrNoValidatorCfg {
-			logger.Info(logPrefix, "This endpoint has no JWT validation", cfg.Endpoint)
+			logger.Info(logPrefix, "Validator disabled for this endpoint")
 			return handler
 		}
 		if err != nil {

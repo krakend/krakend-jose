@@ -51,11 +51,11 @@ func Example_RS256() {
 	//  INFO: [[ENDPOINT: /private][JWTSigner] Signer disabled for this endpoint]
 	//  DEBUG: [[ENDPOINT: /private][JWTValidator] Validator enabled for this endpoint]
 	//  DEBUG: [[ENDPOINT: /token][JWTSigner] Signer enabled for this endpoint]
-	//  INFO: [[ENDPOINT: /token][JWTValidator] This endpoint has no JWT validation /token]
+	//  INFO: [[ENDPOINT: /token][JWTValidator] Validator disabled for this endpoint]
 	//  DEBUG: [[ENDPOINT: /refresh_token][JWTSigner] Signer enabled for this endpoint]
 	//  DEBUG: [[ENDPOINT: /refresh_token][JWTValidator] Validator enabled for this endpoint]
 	//  INFO: [[ENDPOINT: /private][JWTSigner] Signer disabled for this endpoint]
-	//  INFO: [[ENDPOINT: /private][JWTValidator] This endpoint has no JWT validation /private]
+	//  INFO: [[ENDPOINT: /private][JWTValidator] Validator disabled for this endpoint]
 
 }
 
@@ -90,11 +90,11 @@ func Example_HS256() {
 	//  INFO: [[ENDPOINT: /private][JWTSigner] Signer disabled for this endpoint]
 	//  DEBUG: [[ENDPOINT: /private][JWTValidator] Validator enabled for this endpoint]
 	//  DEBUG: [[ENDPOINT: /token][JWTSigner] Signer enabled for this endpoint]
-	//  INFO: [[ENDPOINT: /token][JWTValidator] This endpoint has no JWT validation /token]
+	//  INFO: [[ENDPOINT: /token][JWTValidator] Validator disabled for this endpoint]
 	//  DEBUG: [[ENDPOINT: /refresh_token][JWTSigner] Signer enabled for this endpoint]
 	//  DEBUG: [[ENDPOINT: /refresh_token][JWTValidator] Validator enabled for this endpoint]
 	//  INFO: [[ENDPOINT: /private][JWTSigner] Signer disabled for this endpoint]
-	//  INFO: [[ENDPOINT: /private][JWTValidator] This endpoint has no JWT validation /private]
+	//  INFO: [[ENDPOINT: /private][JWTValidator] Validator disabled for this endpoint]
 
 }
 
