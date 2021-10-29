@@ -326,6 +326,26 @@ func TestNewFileKeyCacher(t *testing.T) {
 	}
 }
 
+func TestNewFileKeyCacher_unknownKey(t *testing.T) {
+	b, err := ioutil.ReadFile("./fixtures/symmetric.json")
+	if err != nil {
+		t.Error(err)
+	}
+	kc, err := NewFileKeyCacher(b, "")
+	if err != nil {
+		t.Error(err)
+	}
+	v, err := kc.Get("unknown")
+	if err == nil {
+		t.Error("error expected")
+	} else if e := err.Error(); e != "key 'unknown' not found in the key set" {
+		t.Error("unexpected error:", e)
+	}
+	if v != nil {
+		t.Error("nil value expected")
+	}
+}
+
 func jwkEndpoint(name string) http.HandlerFunc {
 	data, err := ioutil.ReadFile("./fixtures/" + name + ".json")
 	return func(rw http.ResponseWriter, _ *http.Request) {

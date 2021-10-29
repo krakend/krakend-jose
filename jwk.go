@@ -118,7 +118,11 @@ type FileKeyCacher struct {
 }
 
 func (f *FileKeyCacher) Get(keyID string) (*jose.JSONWebKey, error) {
-	return f.keys[keyID], nil
+	v, ok := f.keys[keyID]
+	if !ok {
+		return nil, fmt.Errorf("key '%s' not found in the key set", keyID)
+	}
+	return v, nil
 }
 
 func (f *FileKeyCacher) Add(keyID string, _ []jose.JSONWebKey) (*jose.JSONWebKey, error) {
