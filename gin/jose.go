@@ -2,7 +2,7 @@ package gin
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
@@ -26,16 +26,15 @@ func TokenSigner(hf ginlura.HandlerFactory, logger logging.Logger) ginlura.Handl
 		logPrefix := "[ENDPOINT: " + cfg.Endpoint + "][JWTSigner]"
 		signerCfg, signer, err := krakendjose.NewSigner(cfg, nil)
 		if err == krakendjose.ErrNoSignerCfg {
-			logger.Info(logPrefix, "Signer disabled for this endpoint")
+			logger.Debug(logPrefix, "Signer disabled")
 			return hf(cfg, prxy)
 		}
 		if err != nil {
-			logger.Error(logPrefix, "Unable to create the signer for the endpoint")
-			logger.Error(logPrefix, err.Error())
+			logger.Error(logPrefix, "Unable to create the signer:", err.Error())
 			return hf(cfg, prxy)
 		}
 
-		logger.Debug(logPrefix, "Signer enabled for this endpoint")
+		logger.Debug(logPrefix, "Signer enabled")
 
 		return func(c *gin.Context) {
 			proxyReq := ginlura.NewRequest(cfg.HeadersToPass)(c, cfg.QueryString)
@@ -44,18 +43,19 @@ func TokenSigner(hf ginlura.HandlerFactory, logger logging.Logger) ginlura.Handl
 
 			response, err := prxy(ctx, proxyReq)
 			if err != nil {
-				logger.Error("proxy response error:", err.Error())
+				logger.Error(logPrefix, "Proxy response:", err.Error())
 				c.AbortWithStatus(http.StatusBadRequest)
 				return
 			}
 
 			if response == nil {
+				logger.Error(logPrefix, "Empty proxy response")
 				c.AbortWithStatus(http.StatusBadRequest)
 				return
 			}
 
 			if err := krakendjose.SignFields(signerCfg.KeysToSign, signer, response); err != nil {
-				logger.Error(logPrefix, err.Error())
+				logger.Error(logPrefix, "Signing fields:", err.Error())
 				c.AbortWithStatus(http.StatusBadRequest)
 				return
 			}
@@ -83,32 +83,38 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 			return handler
 		}
 		if err != nil {
-			logger.Warning(logPrefix, err.Error())
+			logger.Warning(logPrefix, "Unable to parse the configuration:", err.Error())
 			return handler
 		}
 
 		validator, err := krakendjose.NewValidator(scfg, FromCookie)
 		if err != nil {
-			log.Fatalf(logPrefix, err.Error())
+			logger.Fatal(logPrefix, "Unable to create the validator:", err.Error())
 		}
 
 		var aclCheck func(string, map[string]interface{}, []string) bool
 
 		if scfg.RolesKeyIsNested && strings.Contains(scfg.RolesKey, ".") && scfg.RolesKey[:4] != "http" {
+			logger.Debug(logPrefix, "Roles matcher assigned: nested")
 			aclCheck = krakendjose.CanAccessNested
 		} else {
+			logger.Debug(logPrefix, "Roles matcher assigned: regular")
 			aclCheck = krakendjose.CanAccess
 		}
 
 		var scopesMatcher func(string, map[string]interface{}, []string) bool
 
+		logger.Debug(logPrefix, fmt.Sprintf("Required scopes: %v, scopes key: '%s'", scfg.Scopes, scfg.ScopesKey))
 		if len(scfg.Scopes) > 0 && scfg.ScopesKey != "" {
 			if scfg.ScopesMatcher == "all" {
+				logger.Debug(logPrefix, "Scopes matcher assigned: all")
 				scopesMatcher = krakendjose.ScopesAllMatcher
 			} else {
+				logger.Debug(logPrefix, "Scopes matcher assigned: any")
 				scopesMatcher = krakendjose.ScopesAnyMatcher
 			}
 		} else {
+			logger.Debug(logPrefix, "Scopes matcher assigned: default")
 			scopesMatcher = krakendjose.ScopesDefaultMatcher
 		}
 
@@ -119,28 +125,33 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 		return func(c *gin.Context) {
 			token, err := validator.ValidateRequest(c.Request)
 			if err != nil {
-				c.AbortWithError(http.StatusUnauthorized, err)
+				logger.Error(logPrefix, "Unable to validate the token:", err.Error())
+				c.AbortWithStatus(http.StatusUnauthorized)
 				return
 			}
 
 			claims := map[string]interface{}{}
 			err = validator.Claims(c.Request, token, &claims)
 			if err != nil {
-				c.AbortWithError(http.StatusUnauthorized, err)
+				logger.Error(logPrefix, "Wrong claims:", err.Error())
+				c.AbortWithStatus(http.StatusUnauthorized)
 				return
 			}
 
 			if rejecter.Reject(claims) {
+				logger.Error(logPrefix, "Token rejected")
 				c.AbortWithStatus(http.StatusUnauthorized)
 				return
 			}
 
 			if !aclCheck(scfg.RolesKey, claims, scfg.Roles) {
+				logger.Error(logPrefix, "Insuficient roles")
 				c.AbortWithStatus(http.StatusForbidden)
 				return
 			}
 
 			if !scopesMatcher(scfg.ScopesKey, claims, scfg.Scopes) {
+				logger.Error(logPrefix, "Insuficient scopes")
 				c.AbortWithStatus(http.StatusForbidden)
 				return
 			}
