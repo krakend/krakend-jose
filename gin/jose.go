@@ -95,37 +95,42 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 		var aclCheck func(string, map[string]interface{}, []string) bool
 
 		if scfg.RolesKeyIsNested && strings.Contains(scfg.RolesKey, ".") && scfg.RolesKey[:4] != "http" {
-			logger.Debug(logPrefix, "Roles matcher assigned: nested")
+			logger.Debug(logPrefix, fmt.Sprintf("Roles will be matched against the nested key: '%s'", scfg.RolesKey))
 			aclCheck = krakendjose.CanAccessNested
 		} else {
-			logger.Debug(logPrefix, "Roles matcher assigned: regular")
+			logger.Debug(logPrefix, fmt.Sprintf("Roles will be matched against the key: '%s'", scfg.RolesKey))
 			aclCheck = krakendjose.CanAccess
 		}
 
 		var scopesMatcher func(string, map[string]interface{}, []string) bool
 
-		logger.Debug(logPrefix, fmt.Sprintf("Required scopes: %v, scopes key: '%s'", scfg.Scopes, scfg.ScopesKey))
 		if len(scfg.Scopes) > 0 && scfg.ScopesKey != "" {
 			if scfg.ScopesMatcher == "all" {
-				logger.Debug(logPrefix, "Scopes matcher assigned: all")
+				logger.Debug(logPrefix, fmt.Sprintf("Constraint added: tokens must contain a claim '%s' with all these scopes: %v", scfg.ScopesKey, scfg.Scopes))
 				scopesMatcher = krakendjose.ScopesAllMatcher
 			} else {
-				logger.Debug(logPrefix, "Scopes matcher assigned: any")
+				logger.Debug(logPrefix, fmt.Sprintf("Constraint added: tokens must contain a claim '%s' with any these scopes: %v", scfg.ScopesKey, scfg.Scopes))
 				scopesMatcher = krakendjose.ScopesAnyMatcher
 			}
 		} else {
-			logger.Debug(logPrefix, "Scopes matcher assigned: default")
+			logger.Debug(logPrefix, "No scope validation required")
 			scopesMatcher = krakendjose.ScopesDefaultMatcher
 		}
 
-		logger.Debug(logPrefix, "Validator enabled for this endpoint")
+		if scfg.OperationDebug {
+			logger.Debug(logPrefix, "Validator enabled for this endpoint. Operation debug is enabled")
+		} else {
+			logger.Debug(logPrefix, "Validator enabled for this endpoint")
+		}
 
 		paramExtractor := extractRequiredJWTClaims(cfg)
 
 		return func(c *gin.Context) {
 			token, err := validator.ValidateRequest(c.Request)
 			if err != nil {
-				logger.Error(logPrefix, "Unable to validate the token:", err.Error())
+				if scfg.OperationDebug {
+					logger.Error(logPrefix, "Unable to validate the token:", err.Error())
+				}
 				c.AbortWithStatus(http.StatusUnauthorized)
 				return
 			}
@@ -133,25 +138,33 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 			claims := map[string]interface{}{}
 			err = validator.Claims(c.Request, token, &claims)
 			if err != nil {
-				logger.Error(logPrefix, "Wrong claims:", err.Error())
+				if scfg.OperationDebug {
+					logger.Error(logPrefix, "Token sent by client is invalid:", err.Error())
+				}
 				c.AbortWithStatus(http.StatusUnauthorized)
 				return
 			}
 
 			if rejecter.Reject(claims) {
-				logger.Error(logPrefix, "Token rejected")
+				if scfg.OperationDebug {
+					logger.Error(logPrefix, "Token sent by client rejected")
+				}
 				c.AbortWithStatus(http.StatusUnauthorized)
 				return
 			}
 
 			if !aclCheck(scfg.RolesKey, claims, scfg.Roles) {
-				logger.Error(logPrefix, "Insuficient roles")
+				if scfg.OperationDebug {
+					logger.Error(logPrefix, "Token sent by client does not have sufficient roles")
+				}
 				c.AbortWithStatus(http.StatusForbidden)
 				return
 			}
 
 			if !scopesMatcher(scfg.ScopesKey, claims, scfg.Scopes) {
-				logger.Error(logPrefix, "Insuficient scopes")
+				if scfg.OperationDebug {
+					logger.Error(logPrefix, "Token sent by client does not have the required scopes")
+				}
 				c.AbortWithStatus(http.StatusForbidden)
 				return
 			}
