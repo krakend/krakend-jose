@@ -109,7 +109,7 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 				logger.Debug(logPrefix, fmt.Sprintf("Constraint added: tokens must contain a claim '%s' with all these scopes: %v", scfg.ScopesKey, scfg.Scopes))
 				scopesMatcher = krakendjose.ScopesAllMatcher
 			} else {
-				logger.Debug(logPrefix, fmt.Sprintf("Constraint added: tokens must contain a claim '%s' with any these scopes: %v", scfg.ScopesKey, scfg.Scopes))
+				logger.Debug(logPrefix, fmt.Sprintf("Constraint added: tokens must contain a claim '%s' with any of these scopes: %v", scfg.ScopesKey, scfg.Scopes))
 				scopesMatcher = krakendjose.ScopesAnyMatcher
 			}
 		} else {
