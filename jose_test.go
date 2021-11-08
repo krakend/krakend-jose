@@ -150,6 +150,71 @@ func TestScopesAllMatcher(t *testing.T) {
 		expected       bool
 	}{
 		{
+			name:           "all_simple_success_for_scope_slice",
+			scopesKey:      "scope",
+			claims:         map[string]interface{}{"scope": []interface{}{"a", "b"}},
+			requiredScopes: []string{"a", "b"},
+			expected:       true,
+		},
+		{
+			name:           "all_simple_fail_for_scope_slice",
+			scopesKey:      "scope",
+			claims:         map[string]interface{}{"scope": []interface{}{"a", "b"}},
+			requiredScopes: []string{"c"},
+			expected:       false,
+		},
+		{
+			name:           "all_missingone_fail_for_scope_slice",
+			scopesKey:      "scope",
+			claims:         map[string]interface{}{"scope": []interface{}{"a", "b"}},
+			requiredScopes: []string{"a", "b", "c"},
+			expected:       false,
+		},
+		{
+			name:           "all_one_simple_success_for_scope_slice",
+			scopesKey:      "scope",
+			claims:         map[string]interface{}{"scope": []interface{}{"a", "b"}},
+			requiredScopes: []string{"b"},
+			expected:       true,
+		},
+		{
+			name:           "all_no_req_scopes_success_for_scope_slice",
+			scopesKey:      "scope",
+			claims:         map[string]interface{}{"scope": []interface{}{"a", "b"}},
+			requiredScopes: []string{},
+			expected:       true,
+		},
+		{
+			name:           "all_struct_success_for_scope_slice",
+			scopesKey:      "data.scope",
+			claims:         map[string]interface{}{"data": map[string]interface{}{"scope": []interface{}{"a", "b"}}},
+			requiredScopes: []string{"a", "b"},
+			expected:       true,
+		},
+		{
+			name:      "all_deep_struct_success_for_scope_slice",
+			scopesKey: "data.data.data.data.data.data.data.scope",
+			claims: map[string]interface{}{
+				"data": map[string]interface{}{
+					"data": map[string]interface{}{
+						"data": map[string]interface{}{
+							"data": map[string]interface{}{
+								"data": map[string]interface{}{
+									"data": map[string]interface{}{
+										"data": map[string]interface{}{
+											"scope": []interface{}{"a", "b"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			requiredScopes: []string{"a", "b"},
+			expected:       true,
+		},
+		{
 			name:           "all_simple_success",
 			scopesKey:      "scope",
 			claims:         map[string]interface{}{"scope": "a b"},
@@ -230,6 +295,71 @@ func TestScopesAnyMatcher(t *testing.T) {
 		requiredScopes []string
 		expected       bool
 	}{
+		{
+			name:           "any_simple_success_for_scope_slice",
+			scopesKey:      "scope",
+			claims:         map[string]interface{}{"scope": []interface{}{"a", "b"}},
+			requiredScopes: []string{"a", "b"},
+			expected:       true,
+		},
+		{
+			name:           "any_simple_fail_for_scope_slice",
+			scopesKey:      "scope",
+			claims:         map[string]interface{}{"scope": []interface{}{"a", "b"}},
+			requiredScopes: []string{"c"},
+			expected:       false,
+		},
+		{
+			name:           "any_missingone_success_for_scope_slice",
+			scopesKey:      "scope",
+			claims:         map[string]interface{}{"scope": []interface{}{"a"}},
+			requiredScopes: []string{"a", "b"},
+			expected:       true,
+		},
+		{
+			name:           "any_one_simple_success_for_scope_slice",
+			scopesKey:      "scope",
+			claims:         map[string]interface{}{"scope": []interface{}{"a", "b"}},
+			requiredScopes: []string{"b"},
+			expected:       true,
+		},
+		{
+			name:           "any_no_req_scopes_success_for_scope_slice",
+			scopesKey:      "scope",
+			claims:         map[string]interface{}{"scope": []interface{}{"a", "b"}},
+			requiredScopes: []string{},
+			expected:       true,
+		},
+		{
+			name:           "any_struct_success_for_scope_slice",
+			scopesKey:      "data.scope",
+			claims:         map[string]interface{}{"data": map[string]interface{}{"scope": []interface{}{"a"}}},
+			requiredScopes: []string{"a", "b"},
+			expected:       true,
+		},
+		{
+			name:      "any_deep_struct_success_for_scope_slice",
+			scopesKey: "data.data.data.data.data.data.data.scope",
+			claims: map[string]interface{}{
+				"data": map[string]interface{}{
+					"data": map[string]interface{}{
+						"data": map[string]interface{}{
+							"data": map[string]interface{}{
+								"data": map[string]interface{}{
+									"data": map[string]interface{}{
+										"data": map[string]interface{}{
+											"scope": []interface{}{"a"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			requiredScopes: []string{"a", "b"},
+			expected:       true,
+		},
 		{
 			name:           "any_simple_success",
 			scopesKey:      "scope",
