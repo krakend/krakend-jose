@@ -152,12 +152,32 @@ func ScopesAllMatcher(scopesKey string, claims map[string]interface{}, requiredS
 	if !ok {
 		return false
 	}
-	scopeClaim, ok := tmp.(string)
+
+	scopes, ok := tmp.([]interface{})
+	if ok {
+		if len(scopes) > 0 {
+			for _, rScope := range requiredScopes {
+				matched := false
+				for _, pScope := range scopes {
+					if rScope == fmt.Sprintf("%s", pScope) {
+						matched = true
+					}
+				}
+				if matched == false { // required scope was not found --> immediately return
+					return false
+				}
+			}
+			// all required scopes have been found in provided (claims) scopes
+			return true
+		}
+	}
+
+	scopeString, ok := tmp.(string)
 	if !ok {
 		return false
 	}
 
-	presentScopes := strings.Split(scopeClaim, " ")
+	presentScopes := strings.Split(scopeString, " ")
 	if len(presentScopes) > 0 {
 		for _, rScope := range requiredScopes {
 			matched := false
@@ -197,6 +217,23 @@ func ScopesAnyMatcher(scopesKey string, claims map[string]interface{}, requiredS
 	if !ok {
 		return false
 	}
+
+	scopes, ok := tmp.([]interface{})
+	if ok {
+		if len(scopes) > 0 {
+			for _, rScope := range requiredScopes {
+				for _, pScope := range scopes {
+					if rScope == fmt.Sprintf("%s", pScope) {
+						return true // found any of the required scopes --> return
+					}
+				}
+			}
+
+			// none of the scopes have been found in provided (claims) scopes
+			return false
+		}
+	}
+
 	scopeClaim, ok := tmp.(string)
 	if !ok {
 		return false
