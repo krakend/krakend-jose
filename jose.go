@@ -253,7 +253,7 @@ func (c Claims) Get(name string) (string, bool) {
 	case int:
 		normalized = fmt.Sprintf("%d", v)
 	case float64:
-		normalized = fmt.Sprintf("%f", v)
+		normalized = fmt.Sprintf("%v", v)
 	case []interface{}:
 		normalized = fmt.Sprintf("%v", v[0])
 		for _, elem := range v[1:] {

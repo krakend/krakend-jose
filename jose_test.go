@@ -1,6 +1,7 @@
 package jose
 
 import (
+	"encoding/json"
 	"net/http"
 	"reflect"
 	"testing"
@@ -333,6 +334,58 @@ func TestCalculateHeadersToPropagate(t *testing.T) {
 
 		if !reflect.DeepEqual(tc.expected, res) {
 			t.Errorf("tc-%d: unexpected response: %v", i, res)
+		}
+	}
+}
+
+func TestUnmarshalDataTypesGetClaim(t *testing.T) {
+	var c Claims
+	json.Unmarshal([]byte(`{
+		"t0_int": 42,
+		"t1_int": 0,
+		"t2_int": -42,
+		"t3_float": -42.42,
+		"t4_string": "string val",
+		"t5_string": "d0052a8b-6b35-4cb4-af69-b95e241e7208",
+		"t6_array": ["item 1", "item-2", 1, -2, 2.99, -3.01]
+	}`), &c)
+
+	for i, tc := range []struct {
+		key      string
+		expected string
+	}{
+		{
+			key:      "t0_int",
+			expected: "42",
+		},
+		{
+			key:      "t1_int",
+			expected: "0",
+		},
+		{
+			key:      "t2_int",
+			expected: "-42",
+		},
+		{
+			key:      "t3_float",
+			expected: "-42.42",
+		},
+		{
+			key:      "t4_string",
+			expected: "string val",
+		},
+		{
+			key:      "t5_string",
+			expected: "d0052a8b-6b35-4cb4-af69-b95e241e7208",
+		},
+		{
+			key:      "t6_array",
+			expected: "item 1,item-2,1,-2,2.99,-3.01",
+		},
+	} {
+		res, ok := c.Get(tc.key)
+		if !ok || !reflect.DeepEqual(tc.expected, res) {
+			t.Errorf("Test %d - Claim %s: unexpected value: %v", i, tc.key, res)
 		}
 	}
 }
