@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	ErrNoKeyFound = errors.New("no Keys has been found")
+	ErrNoKeyFound = errors.New("no Keys have been found")
 	ErrKeyExpired = errors.New("key exists but is expired")
 
 	// Configuring with MaxKeyAgeNoCheck will skip key expiry check

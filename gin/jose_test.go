@@ -10,9 +10,9 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/luraproject/lura/logging"
-	"github.com/luraproject/lura/proxy"
-	ginlura "github.com/luraproject/lura/router/gin"
+	"github.com/luraproject/lura/v2/logging"
+	"github.com/luraproject/lura/v2/proxy"
+	ginlura "github.com/luraproject/lura/v2/router/gin"
 )
 
 func TestTokenSignatureValidator(t *testing.T) {
@@ -105,11 +105,11 @@ func TestTokenSignatureValidator(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Errorf("unexpected status code: %d", w.Code)
 	}
-	if body := w.Body.String(); body != "{\"aaaa\":{\"bar\":\"b\",\"foo\":\"a\"},\"bbbb\":true,\"cccc\":1234567890}\n" {
+	if body := w.Body.String(); body != "{\"aaaa\":{\"bar\":\"b\",\"foo\":\"a\"},\"bbbb\":true,\"cccc\":1234567890}" {
 		t.Errorf("unexpected body: %s", body)
 	}
 
-	if log := buf.String(); !strings.Contains(log, "INFO: [JOSE: signer disabled for the endpoint /private]") {
+	if log := buf.String(); !strings.Contains(log, "DEBUG: [ENDPOINT: /propagateheaders][JWTSigner] Signer disabled") {
 		t.Error(log)
 		t.Fail()
 		return
@@ -137,7 +137,7 @@ func TestTokenSignatureValidator(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Errorf("unexpected status code: %d", w.Code)
 	}
-	if body := w.Body.String(); body != "{\"aaaa\":{\"bar\":\"b\",\"foo\":\"a\"},\"bbbb\":true,\"cccc\":1234567890}\n" {
+	if body := w.Body.String(); body != "{\"aaaa\":{\"bar\":\"b\",\"foo\":\"a\"},\"bbbb\":true,\"cccc\":1234567890}" {
 		t.Errorf("unexpected body: %s", body)
 	}
 
@@ -175,7 +175,7 @@ func TestTokenSignatureValidator(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Errorf("unexpected status code: %d", w.Code)
 	}
-	if body := w.Body.String(); body != "{\"aaaa\":{\"bar\":\"b\",\"foo\":\"a\"},\"bbbb\":true,\"cccc\":1234567890}\n" {
+	if body := w.Body.String(); body != "{\"aaaa\":{\"bar\":\"b\",\"foo\":\"a\"},\"bbbb\":true,\"cccc\":1234567890}" {
 		t.Errorf("unexpected body: %s", body)
 	}
 }
