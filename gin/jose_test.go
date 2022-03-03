@@ -109,7 +109,7 @@ func TestTokenSignatureValidator(t *testing.T) {
 		t.Errorf("unexpected body: %s", body)
 	}
 
-	if log := buf.String(); !strings.Contains(log, "DEBUG: [[ENDPOINT: /propagateheaders][JWTSigner] Signer disabled]") {
+	if log := buf.String(); !strings.Contains(log, "DEBUG: [ENDPOINT: /propagateheaders][JWTSigner] Signer disabled") {
 		t.Error(log)
 		t.Fail()
 		return
