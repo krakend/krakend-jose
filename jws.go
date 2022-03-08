@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/auth0-community/go-auth0"
-	"github.com/luraproject/lura/config"
+	"github.com/luraproject/lura/v2/config"
 	jose "gopkg.in/square/go-jose.v2"
 )
 
@@ -19,13 +19,13 @@ const (
 
 type SignatureConfig struct {
 	Alg                     string     `json:"alg"`
-	URI                     string     `json:"jwk-url"`
+	URI                     string     `json:"jwk_url"`
 	CacheEnabled            bool       `json:"cache,omitempty"`
 	CacheDuration           uint32     `json:"cache_duration,omitempty"`
 	Issuer                  string     `json:"issuer,omitempty"`
 	Audience                []string   `json:"audience,omitempty"`
 	Roles                   []string   `json:"roles,omitempty"`
-	PropagateClaimsToHeader [][]string `json:"propagate-claims,omitempty"`
+	PropagateClaimsToHeader [][]string `json:"propagate_claims,omitempty"`
 	RolesKey                string     `json:"roles_key,omitempty"`
 	RolesKeyIsNested        bool       `json:"roles_key_is_nested,omitempty"`
 	CookieKey               string     `json:"cookie_key,omitempty"`
@@ -40,14 +40,15 @@ type SignatureConfig struct {
 	ScopesKey               string     `json:"scopes_key,omitempty"`
 	ScopesMatcher           string     `json:"scopes_matcher,omitempty"`
 	KeyIdentifyStrategy     string     `json:"key_identify_strategy"`
+	OperationDebug          bool       `json:"operation_debug,omitempty"`
 }
 
 type SignerConfig struct {
 	Alg                string   `json:"alg"`
 	KeyID              string   `json:"kid"`
-	URI                string   `json:"jwk-url"`
+	URI                string   `json:"jwk_url"`
 	FullSerialization  bool     `json:"full,omitempty"`
-	KeysToSign         []string `json:"keys-to-sign,omitempty"`
+	KeysToSign         []string `json:"keys_to_sign,omitempty"`
 	CipherSuites       []uint16 `json:"cipher_suites,omitempty"`
 	DisableJWKSecurity bool     `json:"disable_jwk_security"`
 	Fingerprints       []string `json:"jwk_fingerprints,omitempty"`
@@ -58,8 +59,8 @@ type SignerConfig struct {
 }
 
 var (
-	ErrNoValidatorCfg = errors.New("JOSE: no validator config")
-	ErrNoSignerCfg    = errors.New("JOSE: no signer config")
+	ErrNoValidatorCfg = errors.New("no validator config")
+	ErrNoSignerCfg    = errors.New("no signer config")
 )
 
 func GetSignatureConfig(cfg *config.EndpointConfig) (*SignatureConfig, error) {

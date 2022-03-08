@@ -10,11 +10,11 @@ import (
 	"os"
 	"time"
 
-	krakendjose "github.com/devopsfaith/krakend-jose"
-	"github.com/luraproject/lura/config"
-	"github.com/luraproject/lura/logging"
-	"github.com/luraproject/lura/proxy"
-	muxlura "github.com/luraproject/lura/router/mux"
+	krakendjose "github.com/devopsfaith/krakend-jose/v2"
+	"github.com/luraproject/lura/v2/config"
+	"github.com/luraproject/lura/v2/logging"
+	"github.com/luraproject/lura/v2/proxy"
+	muxlura "github.com/luraproject/lura/v2/router/mux"
 )
 
 func Example_RS256() {
@@ -240,8 +240,8 @@ func newSignerEndpointCfg(alg, ID, URL string) *config.EndpointConfig {
 			krakendjose.SignerNamespace: map[string]interface{}{
 				"alg":                  alg,
 				"kid":                  ID,
-				"jwk-url":              URL,
-				"keys-to-sign":         []string{"access_token", "refresh_token"},
+				"jwk_url":              URL,
+				"keys_to_sign":         []string{"access_token", "refresh_token"},
 				"disable_jwk_security": true,
 				"cache":                true,
 			},
@@ -264,11 +264,11 @@ func newVerifierEndpointCfg(alg, URL string, roles []string) *config.EndpointCon
 		ExtraConfig: config.ExtraConfig{
 			krakendjose.ValidatorNamespace: map[string]interface{}{
 				"alg":                  alg,
-				"jwk-url":              URL,
+				"jwk_url":              URL,
 				"audience":             []string{"http://api.example.com"},
 				"issuer":               "http://example.com",
 				"roles":                roles,
-				"propagate-claims":     [][]string{{"jti", "x-krakend-jti"}, {"sub", "x-krakend-sub"}, {"nonexistent", "x-krakend-ne"}, {"sub", "x-krakend-replace"}},
+				"propagate_claims":     [][]string{{"jti", "x-krakend-jti"}, {"sub", "x-krakend-sub"}, {"nonexistent", "x-krakend-ne"}, {"sub", "x-krakend-replace"}},
 				"disable_jwk_security": true,
 				"cache":                true,
 			},
