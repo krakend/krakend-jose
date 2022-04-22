@@ -12,7 +12,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/devopsfaith/krakend-jose/secrets"
+	"github.com/devopsfaith/krakend-jose/v2/secrets"
 )
 
 func TestJWK(t *testing.T) {
@@ -323,6 +323,26 @@ func TestNewFileKeyCacher(t *testing.T) {
 		if _, err := kc.Get(tc.ID); err != nil {
 			t.Error(err)
 		}
+	}
+}
+
+func TestNewFileKeyCacher_unknownKey(t *testing.T) {
+	b, err := ioutil.ReadFile("./fixtures/symmetric.json")
+	if err != nil {
+		t.Error(err)
+	}
+	kc, err := NewFileKeyCacher(b, "")
+	if err != nil {
+		t.Error(err)
+	}
+	v, err := kc.Get("unknown")
+	if err == nil {
+		t.Error("error expected")
+	} else if e := err.Error(); e != "key 'unknown' not found in the key set" {
+		t.Error("unexpected error:", e)
+	}
+	if v != nil {
+		t.Error("nil value expected")
 	}
 }
 

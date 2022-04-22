@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/luraproject/lura/logging"
-	"github.com/luraproject/lura/proxy"
-	muxlura "github.com/luraproject/lura/router/mux"
+	"github.com/luraproject/lura/v2/logging"
+	"github.com/luraproject/lura/v2/proxy"
+	muxlura "github.com/luraproject/lura/v2/router/mux"
 )
 
 func TestTokenSignatureValidator(t *testing.T) {
@@ -84,7 +84,7 @@ func TestTokenSignatureValidator(t *testing.T) {
 		t.Errorf("unexpected body: %s", body)
 	}
 
-	if log := buf.String(); !strings.Contains(log, "INFO: [JOSE: signer disabled for the endpoint /private]") {
+	if log := buf.String(); !strings.Contains(log, "INFO: JOSE: signer disabled for the endpoint /private") {
 		t.Error(log)
 	}
 
