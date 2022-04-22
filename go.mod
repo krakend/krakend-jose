@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/auth0-community/go-auth0 v1.0.0
 	github.com/gin-gonic/gin v1.7.7
-	github.com/luraproject/lura/v2 v2.0.0
+	github.com/luraproject/lura/v2 v2.0.2
 	gocloud.dev v0.20.0
 	gocloud.dev/secrets/hashivault v0.20.0
 	gopkg.in/square/go-jose.v2 v2.5.1
@@ -75,3 +75,5 @@ require (
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
+
+replace github.com/auth0-community/go-auth0 v1.0.0 => github.com/devopsfaith/go-auth0 v0.0.0-20220422124632-a1358a81b559
