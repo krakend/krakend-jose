@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/auth0-community/go-auth0 v1.0.0
 	github.com/gin-gonic/gin v1.7.7
-	github.com/luraproject/lura/v2 v2.0.2
+	github.com/luraproject/lura/v2 v2.0.4
 	gocloud.dev v0.20.0
 	gocloud.dev/secrets/hashivault v0.20.0
 	gopkg.in/square/go-jose.v2 v2.5.1
@@ -63,7 +63,6 @@ require (
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110 // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20211004093028-2c5d950f24ef // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
