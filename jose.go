@@ -3,6 +3,7 @@ package jose
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"strings"
 
@@ -239,6 +240,8 @@ func SignFields(keys []string, signer Signer, response *proxy.Response) error {
 
 type Claims map[string]interface{}
 
+const epsilon = 1e-6
+
 func (c Claims) Get(name string) (string, bool) {
 	tmp, ok := c[name]
 	if !ok {
@@ -253,7 +256,10 @@ func (c Claims) Get(name string) (string, bool) {
 	case int:
 		normalized = fmt.Sprintf("%d", v)
 	case float64:
-		normalized = fmt.Sprintf("%v", v)
+		if r := math.Round(v); math.Abs(v-r) <= epsilon {
+			return fmt.Sprintf("%d", int(r)), ok
+		}
+		normalized = fmt.Sprintf("%f", v)
 	case []interface{}:
 		normalized = fmt.Sprintf("%v", v[0])
 		for _, elem := range v[1:] {

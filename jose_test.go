@@ -347,7 +347,11 @@ func TestUnmarshalDataTypesGetClaim(t *testing.T) {
 		"t3_float": -42.42,
 		"t4_string": "string val",
 		"t5_string": "d0052a8b-6b35-4cb4-af69-b95e241e7208",
-		"t6_array": ["item 1", "item-2", 1, -2, 2.99, -3.01]
+		"t6_array": ["item 1", "item-2", 1, -2, 2.99, -3.01],
+		"t7_big_int": 1000001,
+		"t8_float_round": 4.000001,
+		"t9_float_round": 4.0000001,
+		"t10_timestamp": 1651529725
 	}`), &c)
 
 	for i, tc := range []struct {
@@ -368,7 +372,7 @@ func TestUnmarshalDataTypesGetClaim(t *testing.T) {
 		},
 		{
 			key:      "t3_float",
-			expected: "-42.42",
+			expected: "-42.420000",
 		},
 		{
 			key:      "t4_string",
@@ -382,10 +386,28 @@ func TestUnmarshalDataTypesGetClaim(t *testing.T) {
 			key:      "t6_array",
 			expected: "item 1,item-2,1,-2,2.99,-3.01",
 		},
+		{
+			key:      "t7_big_int",
+			expected: "1000001",
+		},
+		{
+			key:      "t8_float_round",
+			expected: "4.000001",
+		},
+		{
+			key:      "t9_float_round",
+			expected: "4",
+		},
+		{
+			key:      "t10_timestamp",
+			expected: "1651529725",
+		},
 	} {
-		res, ok := c.Get(tc.key)
-		if !ok || !reflect.DeepEqual(tc.expected, res) {
-			t.Errorf("Test %d - Claim %s: unexpected value: %v", i, tc.key, res)
-		}
+		t.Run(tc.key, func(t *testing.T) {
+			res, ok := c.Get(tc.key)
+			if !ok || !reflect.DeepEqual(tc.expected, res) {
+				t.Errorf("Test %d - Claim %s: unexpected value: %v", i, tc.key, res)
+			}
+		})
 	}
 }
