@@ -24,7 +24,7 @@ require (
 	github.com/Azure/go-autorest/logger v0.1.0 // indirect
 	github.com/Azure/go-autorest/tracing v0.5.0 // indirect
 	github.com/aws/aws-sdk-go v1.31.13 // indirect
-	github.com/devopsfaith/flatmap v0.0.0-20200601181759-8521186182fc // indirect
+	github.com/krakendio/flatmap v0.0.0-20200601181759-8521186182fc // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/dimchansky/utfbom v1.1.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
