@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/auth0-community/go-auth0 v1.0.0
 	github.com/gin-gonic/gin v1.7.7
-	github.com/luraproject/lura/v2 v2.0.4
+	github.com/luraproject/lura/v2 v2.0.0-20220601150625-abb94fb9730d
 	gocloud.dev v0.20.0
 	gocloud.dev/secrets/hashivault v0.20.0
 	gopkg.in/square/go-jose.v2 v2.5.1
@@ -24,7 +24,6 @@ require (
 	github.com/Azure/go-autorest/logger v0.1.0 // indirect
 	github.com/Azure/go-autorest/tracing v0.5.0 // indirect
 	github.com/aws/aws-sdk-go v1.31.13 // indirect
-	github.com/krakendio/flatmap v0.0.0-20200601181759-8521186182fc // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/dimchansky/utfbom v1.1.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
@@ -49,6 +48,7 @@ require (
 	github.com/hashicorp/vault/sdk v0.1.8 // indirect
 	github.com/jmespath/go-jmespath v0.3.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/krakendio/flatmap v0.0.0-20220531185225-4cb0ad6fbedd // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
