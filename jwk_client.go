@@ -7,12 +7,12 @@ import (
 	"gopkg.in/square/go-jose.v2/jwt"
 )
 
-//TokenIDGetter extracts the keyID from the JSON web token
+// TokenIDGetter extracts the keyID from the JSON web token
 type TokenIDGetter interface {
 	Get(*jwt.JSONWebToken) string
 }
 
-//TokenKeyIDGetterFunc function conforming
+// TokenKeyIDGetterFunc function conforming
 // to the TokenIDGetter interface.
 type TokenKeyIDGetterFunc func(*jwt.JSONWebToken) string
 
@@ -21,12 +21,12 @@ func (f TokenKeyIDGetterFunc) Get(token *jwt.JSONWebToken) string {
 	return f(token)
 }
 
-//DefaultTokenKeyIDGetter returns the default kid as the JSONWebKey key id
+// DefaultTokenKeyIDGetter returns the default kid as the JSONWebKey key id
 func DefaultTokenKeyIDGetter(token *jwt.JSONWebToken) string {
 	return token.Headers[0].KeyID
 }
 
-//X5TTokenKeyIDGetter extracts the key id from the jSONWebToken as the x5t
+// X5TTokenKeyIDGetter extracts the key id from the jSONWebToken as the x5t
 func X5TTokenKeyIDGetter(token *jwt.JSONWebToken) string {
 	x5t, ok := token.Headers[0].ExtraHeaders["x5t"].(string)
 	if !ok {
@@ -35,15 +35,14 @@ func X5TTokenKeyIDGetter(token *jwt.JSONWebToken) string {
 	return x5t
 }
 
-//CompoundX5TTokenKeyIDGetter extracts the key id from the jSONWebToken as a compound string of the kid and x5t
+// CompoundX5TTokenKeyIDGetter extracts the key id from the jSONWebToken as a compound string of the kid and x5t
 func CompoundX5TTokenKeyIDGetter(token *jwt.JSONWebToken) string {
 	return token.Headers[0].KeyID + X5TTokenKeyIDGetter(token)
 }
 
-//TokenIDGetterFactory returns the TokenIDGetter from the keyIdentifyStrategy configuration string
+// TokenIDGetterFactory returns the TokenIDGetter from the keyIdentifyStrategy configuration string
 func TokenIDGetterFactory(keyIdentifyStrategy string) TokenIDGetter {
-
-	var supportedKeyIdentifyStrategy = map[string]TokenKeyIDGetterFunc{
+	supportedKeyIdentifyStrategy := map[string]TokenKeyIDGetterFunc{
 		"kid":     DefaultTokenKeyIDGetter,
 		"x5t":     X5TTokenKeyIDGetter,
 		"kid_x5t": CompoundX5TTokenKeyIDGetter,

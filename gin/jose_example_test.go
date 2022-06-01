@@ -64,7 +64,6 @@ func Example_RS256() {
 	//  DEBUG: [ENDPOINT: /private][JWTSigner] Signer disabled
 	//  INFO: [ENDPOINT: /private][JWTValidator] Validator disabled for this endpoint
 	//  ERROR: [ENDPOINT: /private][JWTValidator] Unable to validate the token: Token not found
-
 }
 
 func Example_HS256() {
@@ -107,7 +106,6 @@ func Example_HS256() {
 	//  DEBUG: [ENDPOINT: /refresh_token][JWTValidator] Validator enabled for this endpoint
 	//  DEBUG: [ENDPOINT: /private][JWTSigner] Signer disabled
 	//  INFO: [ENDPOINT: /private][JWTValidator] Validator disabled for this endpoint
-
 }
 
 func Example_HS256_cookie() {
@@ -171,7 +169,6 @@ func Example_HS256_cookie() {
 	//  DEBUG: [ENDPOINT: /private][JWTValidator] Roles will be matched against the key: 'roles'
 	//  DEBUG: [ENDPOINT: /private][JWTValidator] No scope validation required
 	//  DEBUG: [ENDPOINT: /private][JWTValidator] Validator enabled for this endpoint
-
 }
 
 func runValidationCycle(signerEndpointCfg, validatorEndpointCfg *config.EndpointConfig) {

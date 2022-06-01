@@ -116,7 +116,6 @@ func CanAccess(roleKey string, claims map[string]interface{}, required []string)
 		}
 	}
 	return false
-
 }
 
 func getNestedClaim(nestedKey string, claims map[string]interface{}) (string, map[string]interface{}) {
@@ -305,7 +304,6 @@ func CalculateHeadersToPropagate(propagationCfg [][]string, claims map[string]in
 	}
 
 	return propagated, nil
-
 }
 
 var supportedAlgorithms = map[string]jose.SignatureAlgorithm{

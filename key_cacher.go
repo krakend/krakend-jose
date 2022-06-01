@@ -16,12 +16,12 @@ var (
 	MaxKeyAgeNoCheck = time.Duration(-1)
 )
 
-//KeyIDGetter extracts a key id from a JSONWebKey
+// KeyIDGetter extracts a key id from a JSONWebKey
 type KeyIDGetter interface {
 	Get(*jose.JSONWebKey) string
 }
 
-//KeyIDGetterFunc function conforming to the KeyIDGetter interface.
+// KeyIDGetterFunc function conforming to the KeyIDGetter interface.
 type KeyIDGetterFunc func(*jose.JSONWebKey) string
 
 // Get calls f(r)
@@ -29,24 +29,23 @@ func (f KeyIDGetterFunc) Get(key *jose.JSONWebKey) string {
 	return f(key)
 }
 
-//DefaultKeyIDGetter returns the default kid as JSONWebKey key id
+// DefaultKeyIDGetter returns the default kid as JSONWebKey key id
 func DefaultKeyIDGetter(key *jose.JSONWebKey) string {
 	return key.KeyID
 }
 
-//X5TKeyIDGetter extracts the key id from the jSONWebKey as the x5t
+// X5TKeyIDGetter extracts the key id from the jSONWebKey as the x5t
 func X5TKeyIDGetter(key *jose.JSONWebKey) string {
 	return b64.RawURLEncoding.EncodeToString(key.CertificateThumbprintSHA1)
 }
 
-//CompoundX5TKeyIDGetter extracts the key id from the jSONWebKey as the a compound string of the kid and the x5t
+// CompoundX5TKeyIDGetter extracts the key id from the jSONWebKey as the a compound string of the kid and the x5t
 func CompoundX5TKeyIDGetter(key *jose.JSONWebKey) string {
 	return key.KeyID + X5TKeyIDGetter(key)
 }
 
 func KeyIDGetterFactory(keyIdentifyStrategy string) KeyIDGetter {
-
-	var supportedKeyIdentifyStrategy = map[string]KeyIDGetterFunc{
+	supportedKeyIdentifyStrategy := map[string]KeyIDGetterFunc{
 		"kid":     DefaultKeyIDGetter,
 		"x5t":     X5TKeyIDGetter,
 		"kid_x5t": CompoundX5TKeyIDGetter,
@@ -100,7 +99,6 @@ func (mkc *MemoryKeyCacher) Get(keyID string) (*jose.JSONWebKey, error) {
 
 // Add adds a key into the cache and handles overflow
 func (mkc *MemoryKeyCacher) Add(keyID string, downloadedKeys []jose.JSONWebKey) (*jose.JSONWebKey, error) {
-
 	var addingKey jose.JSONWebKey
 	var addingKeyID string
 	for _, key := range downloadedKeys {
@@ -142,7 +140,7 @@ func (mkc *MemoryKeyCacher) keyIsExpired(keyID string) bool {
 func (mkc *MemoryKeyCacher) handleOverflow() {
 	if mkc.maxCacheSize < len(mkc.entries) {
 		var oldestEntryKeyID string
-		var latestAddedTime = time.Now()
+		latestAddedTime := time.Now()
 		for entryKeyID, entry := range mkc.entries {
 			if entry.addedAt.Before(latestAddedTime) {
 				latestAddedTime = entry.addedAt
