@@ -223,6 +223,7 @@ func TestScopesAllMatcher(t *testing.T) {
 		})
 	}
 }
+
 func TestScopesAnyMatcher(t *testing.T) {
 	for _, v := range []struct {
 		name           string
