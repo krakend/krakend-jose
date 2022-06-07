@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	krakendjose "github.com/devopsfaith/krakend-jose/v2"
+	krakendjose "github.com/krakendio/krakend-jose/v2"
 	"github.com/luraproject/lura/v2/config"
 )
 

@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/auth0-community/go-auth0"
-	krakendjose "github.com/devopsfaith/krakend-jose/v2"
+	krakendjose "github.com/krakendio/krakend-jose/v2"
 	"github.com/luraproject/lura/v2/config"
 	"github.com/luraproject/lura/v2/logging"
 	"github.com/luraproject/lura/v2/proxy"
