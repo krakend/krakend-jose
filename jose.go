@@ -162,7 +162,7 @@ func ScopesAllMatcher(scopesKey string, claims map[string]interface{}, requiredS
 		for _, rScope := range requiredScopes {
 			matched := false
 			for _, pScope := range presentScopes {
-				if rScope == fmt.Sprintf("%s", pScope) {
+				if rScope == pScope {
 					matched = true
 				}
 			}
@@ -206,7 +206,7 @@ func ScopesAnyMatcher(scopesKey string, claims map[string]interface{}, requiredS
 	if len(presentScopes) > 0 {
 		for _, rScope := range requiredScopes {
 			for _, pScope := range presentScopes {
-				if rScope == fmt.Sprintf("%s", pScope) {
+				if rScope == pScope {
 					return true // found any of the required scopes --> return
 				}
 			}
