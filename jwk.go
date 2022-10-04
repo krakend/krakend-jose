@@ -14,6 +14,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	auth0 "github.com/auth0-community/go-auth0"
@@ -74,7 +75,7 @@ func SecretProvider(cfg SecretProviderConfig, te auth0.RequestTokenExtractor) (*
 }
 
 func newLocalSecretProvider(opts JWKClientOptions, cfg SecretProviderConfig, te auth0.RequestTokenExtractor) (*JWKClient, error) {
-	data, err := ioutil.ReadFile(cfg.LocalPath)
+	data, err := os.ReadFile(cfg.LocalPath)
 	if err != nil {
 		return nil, err
 	}
