@@ -33,6 +33,7 @@ func NewValidator(signatureConfig *SignatureConfig, ef ExtractorFactory) (*auth0
 	cfg := SecretProviderConfig{
 		URI:                 signatureConfig.URI,
 		CacheEnabled:        signatureConfig.CacheEnabled,
+		CacheDuration:       signatureConfig.CacheDuration,
 		Fingerprints:        decodedFs,
 		Cs:                  signatureConfig.CipherSuites,
 		LocalCA:             signatureConfig.LocalCA,
