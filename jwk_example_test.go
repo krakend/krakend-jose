@@ -11,7 +11,7 @@ func Example_Auth0Integration() {
 		URI:          "https://albert-test.auth0.com/.well-known/jwks.json",
 		Fingerprints: fs,
 	}
-	client := SecretProvider(cfg, nil)
+	client, _ := SecretProvider(cfg, nil)
 
 	k, err := client.GetKey("MDNGMjU2M0U3RERFQUEwOUUzQUMwQ0NBN0Y1RUY0OEIxNTRDM0IxMw")
 	fmt.Println("err:", err)
@@ -30,10 +30,10 @@ func Example_Auth0Integration_badFingerprint() {
 		URI:          "https://albert-test.auth0.com/.well-known/jwks.json",
 		Fingerprints: [][]byte{make([]byte, 32)},
 	}
-	client := SecretProvider(cfg, nil)
+	client, _ := SecretProvider(cfg, nil)
 
 	_, err := client.GetKey("MDNGMjU2M0U3RERFQUEwOUUzQUMwQ0NBN0Y1RUY0OEIxNTRDM0IxMw")
 	fmt.Println("err:", err)
 	// Output:
-	// err: Get https://albert-test.auth0.com/.well-known/jwks.json: JWK client did not find a pinned key
+	// err: Get "https://albert-test.auth0.com/.well-known/jwks.json": JWK client did not find a pinned key
 }
