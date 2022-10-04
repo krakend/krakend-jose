@@ -216,8 +216,7 @@ func extractRequiredJWTClaims(cfg *config.EndpointConfig) func(*gin.Context, map
 			if !ok {
 				continue
 			}
-			params := append(c.Params, gin.Param{Key: "JWT." + param, Value: v})
-			c.Params = params
+			c.Params = append(c.Params, gin.Param{Key: "JWT." + param, Value: v})
 		}
 	}
 }
