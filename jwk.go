@@ -232,7 +232,7 @@ func (d *Dialer) DialTLS(network, addr string) (net.Conn, error) {
 			}
 		}
 	}
-	if keyPinValid == false {
+	if !keyPinValid {
 		return nil, ErrPinnedKeyNotFound
 	}
 	return c, nil
