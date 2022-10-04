@@ -226,7 +226,7 @@ func (d *Dialer) DialTLS(network, addr string) (net.Conn, error) {
 			log.Fatal(err)
 		}
 		for _, fingerprint := range d.fingerprints {
-			if bytes.Compare(hash[0:], fingerprint) == 0 {
+			if bytes.Equal(hash[0:], fingerprint) {
 				keyPinValid = true
 				break
 			}
