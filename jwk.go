@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -143,7 +142,7 @@ func newJWKClientOptions(cfg SecretProviderConfig) (JWKClientOptions, error) {
 	}
 
 	if cfg.LocalCA != "" {
-		certs, err := ioutil.ReadFile(cfg.LocalCA)
+		certs, err := os.ReadFile(cfg.LocalCA)
 		if err != nil {
 			return JWKClientOptions{}, fmt.Errorf("Failed to append %q to RootCAs: %v", cfg.LocalCA, err)
 		}
