@@ -177,7 +177,7 @@ func ScopesAllMatcher(scopesKey string, claims map[string]interface{}, requiredS
 	return false
 }
 
-func ScopesDefaultMatcher(scopesKey string, claims map[string]interface{}, requiredScopes []string) bool {
+func ScopesDefaultMatcher(_ string, _ map[string]interface{}, _ []string) bool {
 	return true
 }
 
