@@ -10,10 +10,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	auth0 "github.com/auth0-community/go-auth0"
@@ -74,7 +74,7 @@ func SecretProvider(cfg SecretProviderConfig, te auth0.RequestTokenExtractor) (*
 }
 
 func newLocalSecretProvider(opts JWKClientOptions, cfg SecretProviderConfig, te auth0.RequestTokenExtractor) (*JWKClient, error) {
-	data, err := ioutil.ReadFile(cfg.LocalPath)
+	data, err := os.ReadFile(cfg.LocalPath)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +142,7 @@ func newJWKClientOptions(cfg SecretProviderConfig) (JWKClientOptions, error) {
 	}
 
 	if cfg.LocalCA != "" {
-		certs, err := ioutil.ReadFile(cfg.LocalCA)
+		certs, err := os.ReadFile(cfg.LocalCA)
 		if err != nil {
 			return JWKClientOptions{}, fmt.Errorf("Failed to append %q to RootCAs: %v", cfg.LocalCA, err)
 		}
@@ -226,7 +226,7 @@ func (d *Dialer) DialTLS(network, addr string) (net.Conn, error) {
 			log.Fatal(err)
 		}
 		for _, fingerprint := range d.fingerprints {
-			if bytes.Compare(hash[0:], fingerprint) == 0 {
+			if bytes.Equal(hash[0:], fingerprint) {
 				keyPinValid = true
 				break
 			}
