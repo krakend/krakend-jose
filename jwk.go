@@ -150,7 +150,7 @@ func newJWKClientOptions(cfg SecretProviderConfig) (JWKClientOptions, error) {
 	tlsConfig := &tls.Config{
 		CipherSuites:       cfg.Cs,
 		MinVersion:         tls.VersionTLS12,
-		InsecureSkipVerify: cfg.AllowInsecure,
+		InsecureSkipVerify: cfg.AllowInsecure, // skipcq: GSC-G402
 		RootCAs:            rootCAs,
 	}
 	dialer := NewDialer(cfg, tlsConfig)
