@@ -151,7 +151,7 @@ func TestJWK_cyperfile(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	ioutil.WriteFile("./fixtures/private.txt", cypherText, 0666)
+	ioutil.WriteFile("./fixtures/private.txt", cypherText, 0600)
 	defer os.Remove("./fixtures/private.txt")
 
 	for k, tc := range []struct {
