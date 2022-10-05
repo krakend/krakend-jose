@@ -165,7 +165,7 @@ func newJWKClientOptions(cfg SecretProviderConfig) (JWKClientOptions, error) {
 	}
 
 	if len(cfg.Fingerprints) > 0 {
-		transport.DialTLS = dialer.DialTLS
+		transport.DialTLSContext = dialer.DialTLSContext
 	}
 
 	return JWKClientOptions{
@@ -193,29 +193,35 @@ func DecodeFingerprints(in []string) ([][]byte, error) {
 
 func NewDialer(cfg SecretProviderConfig) *Dialer {
 	return &Dialer{
-		dialer: &net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
-			DualStack: true,
+		dialer: &tls.Dialer{
+			NetDialer: &net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+				DualStack: true,
+			},
+			Config: &tls.Config{InsecureSkipVerify: cfg.AllowInsecure},
 		},
 		fingerprints: cfg.Fingerprints,
 	}
 }
 
 type Dialer struct {
-	dialer             *net.Dialer
-	fingerprints       [][]byte
-	skipCAVerification bool
+	dialer       *tls.Dialer
+	fingerprints [][]byte
 }
 
 func (d *Dialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
-	return d.dialer.DialContext(ctx, network, address)
+	return d.dialer.NetDialer.DialContext(ctx, network, address)
 }
 
-func (d *Dialer) DialTLS(network, addr string) (net.Conn, error) {
-	c, err := tls.Dial(network, addr, &tls.Config{InsecureSkipVerify: d.skipCAVerification})
+func (d *Dialer) DialTLSContext(ctx context.Context, network, addr string) (net.Conn, error) {
+	conn, err := d.dialer.DialContext(ctx, network, addr)
 	if err != nil {
 		return nil, err
+	}
+	c, ok := conn.(*tls.Conn)
+	if !ok {
+		return conn, errors.New("wrong connection type")
 	}
 	connstate := c.ConnectionState()
 	keyPinValid := false
