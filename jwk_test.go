@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/tls"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -145,13 +144,13 @@ func TestJWK_cyperfile(t *testing.T) {
 		return
 	}
 
-	b, _ := ioutil.ReadFile("./fixtures/private.json")
+	b, _ := os.ReadFile("./fixtures/private.json")
 	cypherText, err := cypher.Encrypt(ctx, b, cypherKey)
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	ioutil.WriteFile("./fixtures/private.txt", cypherText, 0600)
+	os.WriteFile("./fixtures/private.txt", cypherText, 0600)
 	defer os.Remove("./fixtures/private.txt")
 
 	for k, tc := range []struct {
@@ -312,7 +311,7 @@ func TestNewFileKeyCacher(t *testing.T) {
 			Alg:  "HS256",
 		},
 	} {
-		b, err := ioutil.ReadFile("./fixtures/" + tc.Name + ".json")
+		b, err := os.ReadFile("./fixtures/" + tc.Name + ".json")
 		if err != nil {
 			t.Error(err)
 		}
@@ -327,7 +326,7 @@ func TestNewFileKeyCacher(t *testing.T) {
 }
 
 func TestNewFileKeyCacher_unknownKey(t *testing.T) {
-	b, err := ioutil.ReadFile("./fixtures/symmetric.json")
+	b, err := os.ReadFile("./fixtures/symmetric.json")
 	if err != nil {
 		t.Error(err)
 	}
@@ -347,7 +346,7 @@ func TestNewFileKeyCacher_unknownKey(t *testing.T) {
 }
 
 func jwkEndpoint(name string) http.HandlerFunc {
-	data, err := ioutil.ReadFile("./fixtures/" + name + ".json")
+	data, err := os.ReadFile("./fixtures/" + name + ".json")
 	return func(rw http.ResponseWriter, _ *http.Request) {
 		if err != nil {
 			rw.WriteHeader(500)
@@ -359,7 +358,7 @@ func jwkEndpoint(name string) http.HandlerFunc {
 }
 
 func jwkEndpointWithCounter(name string, hits *uint32) http.HandlerFunc {
-	data, err := ioutil.ReadFile("./fixtures/" + name + ".json")
+	data, err := os.ReadFile("./fixtures/" + name + ".json")
 	return func(rw http.ResponseWriter, _ *http.Request) {
 		if err != nil {
 			rw.WriteHeader(500)
