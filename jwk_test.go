@@ -265,7 +265,7 @@ func TestJWK_cache(t *testing.T) {
 }
 
 func TestDialer_DialTLS_ko(t *testing.T) {
-	d := NewDialer(SecretProviderConfig{})
+	d := NewDialer(SecretProviderConfig{}, nil)
 	c, err := d.DialTLSContext(context.Background(), "\t", "addr")
 	if err == nil {
 		t.Error(err)

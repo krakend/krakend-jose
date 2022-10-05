@@ -134,8 +134,6 @@ func newJWKClientOptions(cfg SecretProviderConfig) (JWKClientOptions, error) {
 		cfg.Cs = DefaultEnabledCipherSuites
 	}
 
-	dialer := NewDialer(cfg)
-
 	rootCAs, _ := x509.SystemCertPool()
 	if rootCAs == nil {
 		rootCAs = x509.NewCertPool()
@@ -149,6 +147,14 @@ func newJWKClientOptions(cfg SecretProviderConfig) (JWKClientOptions, error) {
 		rootCAs.AppendCertsFromPEM(certs)
 	}
 
+	tlsConfig := &tls.Config{
+		CipherSuites:       cfg.Cs,
+		MinVersion:         tls.VersionTLS12,
+		InsecureSkipVerify: cfg.AllowInsecure,
+		RootCAs:            rootCAs,
+	}
+	dialer := NewDialer(cfg, tlsConfig)
+
 	transport := &http.Transport{
 		Proxy:                 http.ProxyFromEnvironment,
 		DialContext:           dialer.DialContext,
@@ -156,12 +162,7 @@ func newJWKClientOptions(cfg SecretProviderConfig) (JWKClientOptions, error) {
 		IdleConnTimeout:       90 * time.Second,
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
-		TLSClientConfig: &tls.Config{
-			CipherSuites:       cfg.Cs,
-			MinVersion:         tls.VersionTLS12,
-			InsecureSkipVerify: cfg.AllowInsecure,
-			RootCAs:            rootCAs,
-		},
+		TLSClientConfig:       tlsConfig,
 	}
 
 	if len(cfg.Fingerprints) > 0 {
@@ -191,7 +192,7 @@ func DecodeFingerprints(in []string) ([][]byte, error) {
 	return out, nil
 }
 
-func NewDialer(cfg SecretProviderConfig) *Dialer {
+func NewDialer(cfg SecretProviderConfig, tlsConfig *tls.Config) *Dialer {
 	return &Dialer{
 		dialer: &tls.Dialer{
 			NetDialer: &net.Dialer{
@@ -199,7 +200,7 @@ func NewDialer(cfg SecretProviderConfig) *Dialer {
 				KeepAlive: 30 * time.Second,
 				DualStack: true,
 			},
-			Config: &tls.Config{InsecureSkipVerify: cfg.AllowInsecure},
+			Config: tlsConfig,
 		},
 		fingerprints: cfg.Fingerprints,
 	}
