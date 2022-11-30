@@ -38,11 +38,11 @@ func Example_RS256() {
 	// authorized request
 	// 200
 	// {}
-	// [application/json]
+	// application/json
 	// dummy request
 	// 200
 	// {}
-	// [application/json]
+	// application/json
 }
 
 func Example_HS256() {
@@ -64,11 +64,11 @@ func Example_HS256() {
 	// authorized request
 	// 200
 	// {}
-	// [application/json]
+	// application/json
 	// dummy request
 	// 200
 	// {}
-	// [application/json]
+	// application/json
 }
 
 func Example_HS256_cookie() {
@@ -126,7 +126,7 @@ func Example_HS256_cookie() {
 	// output:
 	// 200
 	// {}
-	// [application/json]
+	// application/json
 }
 
 func runValidationCycle(signerEndpointCfg, validatorEndpointCfg *config.EndpointConfig) {
