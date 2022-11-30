@@ -117,9 +117,9 @@ func Example_HS256_cookie() {
 	w = httptest.NewRecorder()
 	engine.ServeHTTP(w, request)
 
-	fmt.Println(w.Code)
+	fmt.Println(w.Result().StatusCode)
 	fmt.Println(w.Body.String())
-	fmt.Println(w.HeaderMap["Content-Type"])
+	fmt.Println(w.Result().Header.Get("Content-Type"))
 
 	fmt.Println(buf.String())
 
@@ -157,9 +157,9 @@ func runValidationCycle(signerEndpointCfg, validatorEndpointCfg *config.Endpoint
 	w := httptest.NewRecorder()
 	engine.ServeHTTP(w, req)
 
-	fmt.Println(w.Code)
+	fmt.Println(w.Result().StatusCode)
 	fmt.Println(w.Body.String())
-	fmt.Println(w.HeaderMap)
+	fmt.Println(w.Result().Header)
 
 	responseData := struct {
 		AccessToken  string `json:"access_token"`
@@ -173,7 +173,7 @@ func runValidationCycle(signerEndpointCfg, validatorEndpointCfg *config.Endpoint
 	w = httptest.NewRecorder()
 	engine.ServeHTTP(w, req)
 
-	fmt.Println(w.Code)
+	fmt.Println(w.Result().StatusCode)
 
 	fmt.Println("authorized request")
 	req = httptest.NewRequest("GET", validatorEndpointCfg.Endpoint, new(bytes.Buffer))
@@ -181,23 +181,23 @@ func runValidationCycle(signerEndpointCfg, validatorEndpointCfg *config.Endpoint
 	w = httptest.NewRecorder()
 	engine.ServeHTTP(w, req)
 
-	fmt.Println(w.Code)
+	fmt.Println(w.Result().StatusCode)
 	fmt.Println(w.Body.String())
-	fmt.Println(w.HeaderMap["Content-Type"])
+	fmt.Println(w.Result().Header.Get("Content-Type"))
 
 	fmt.Println("dummy request")
 	req = httptest.NewRequest("GET", "/", new(bytes.Buffer))
 	w = httptest.NewRecorder()
 	engine.ServeHTTP(w, req)
 
-	fmt.Println(w.Code)
+	fmt.Println(w.Result().StatusCode)
 	fmt.Println(w.Body.String())
-	fmt.Println(w.HeaderMap["Content-Type"])
+	fmt.Println(w.Result().Header.Get("Content-Type"))
 
 	fmt.Println(buf.String())
 }
 
-func tokenIssuer(ctx context.Context, req *proxy.Request) (*proxy.Response, error) {
+func tokenIssuer(_ context.Context, _ *proxy.Request) (*proxy.Response, error) {
 	return &proxy.Response{
 		Data: map[string]interface{}{
 			"access_token": map[string]interface{}{
