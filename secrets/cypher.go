@@ -79,7 +79,7 @@ func createHash(key []byte) string {
 }
 
 // Encrypt encrypts the received data with a passphrase using AES GCM
-func Encrypt(data []byte, passphrase []byte) ([]byte, error) {
+func Encrypt(data, passphrase []byte) ([]byte, error) {
 	block, _ := aes.NewCipher([]byte(createHash(passphrase)))
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
@@ -94,7 +94,7 @@ func Encrypt(data []byte, passphrase []byte) ([]byte, error) {
 }
 
 // Decrypt decrypts the received data with a passphrase using AES GCM
-func Decrypt(data []byte, passphrase []byte) ([]byte, error) {
+func Decrypt(data, passphrase []byte) ([]byte, error) {
 	block, err := aes.NewCipher([]byte(createHash(passphrase)))
 	if err != nil {
 		return []byte{}, err
