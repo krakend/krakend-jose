@@ -159,7 +159,7 @@ func newJWKClientOptions(cfg SecretProviderConfig) (JWKClientOptions, error) {
 	if cfg.LocalCA != "" {
 		certs, err := os.ReadFile(cfg.LocalCA)
 		if err != nil {
-			return JWKClientOptions{}, fmt.Errorf("Failed to append %q to RootCAs: %v", cfg.LocalCA, err)
+			return JWKClientOptions{}, fmt.Errorf("failed to append %q to RootCAs: %v", cfg.LocalCA, err)
 		}
 		rootCAs.AppendCertsFromPEM(certs)
 	}
