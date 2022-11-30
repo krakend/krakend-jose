@@ -101,16 +101,16 @@ func (mkc *MemoryKeyCacher) Get(keyID string) (*jose.JSONWebKey, error) {
 func (mkc *MemoryKeyCacher) Add(keyID string, downloadedKeys []jose.JSONWebKey) (*jose.JSONWebKey, error) {
 	var addingKey jose.JSONWebKey
 	var addingKeyID string
-	for _, key := range downloadedKeys {
-		cacheKey := mkc.keyIDGetter.Get(&key)
+	for i := range downloadedKeys {
+		cacheKey := mkc.keyIDGetter.Get(&downloadedKeys[i])
 		if cacheKey == keyID {
-			addingKey = key
+			addingKey = downloadedKeys[i]
 			addingKeyID = cacheKey
 		}
 		if mkc.maxCacheSize == -1 {
 			mkc.entries[cacheKey] = keyCacherEntry{
 				addedAt:    time.Now(),
-				JSONWebKey: key,
+				JSONWebKey: downloadedKeys[i],
 			}
 		}
 	}
@@ -141,9 +141,9 @@ func (mkc *MemoryKeyCacher) handleOverflow() {
 	if mkc.maxCacheSize < len(mkc.entries) {
 		var oldestEntryKeyID string
 		latestAddedTime := time.Now()
-		for entryKeyID, entry := range mkc.entries {
-			if entry.addedAt.Before(latestAddedTime) {
-				latestAddedTime = entry.addedAt
+		for entryKeyID := range mkc.entries {
+			if mkc.entries[entryKeyID].addedAt.Before(latestAddedTime) {
+				latestAddedTime = mkc.entries[entryKeyID].addedAt
 				oldestEntryKeyID = entryKeyID
 			}
 		}
