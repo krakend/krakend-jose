@@ -200,7 +200,8 @@ func propagateHeaders(cfg *config.EndpointConfig, propagationCfg [][]string, cla
 var jwtParamsPattern = regexp.MustCompile(`{{\.JWT\.([^}]*)}}`)
 
 func extractRequiredJWTClaims(cfg *config.EndpointConfig) func(*gin.Context, map[string]interface{}) {
-	required := []string{}
+	var required []string
+
 	for _, backend := range cfg.Backend {
 		for _, match := range jwtParamsPattern.FindAllStringSubmatch(backend.URLPattern, -1) {
 			if len(match) < 2 {

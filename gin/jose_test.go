@@ -3,9 +3,9 @@ package gin
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -197,7 +197,7 @@ func TestTokenSigner_error(t *testing.T) {
 	r.GET("/", ts(&config.EndpointConfig{ExtraConfig: config.ExtraConfig{jose.SignerNamespace: config.ExtraConfig{}}}, proxy.NoopProxy))
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/", http.NoBody)
 	r.ServeHTTP(w, req)
 
 	if w.Code != http.StatusUnauthorized {
@@ -221,7 +221,7 @@ func TestTokenSignatureValidator_error(t *testing.T) {
 	r.GET("/", ts(&config.EndpointConfig{ExtraConfig: config.ExtraConfig{jose.ValidatorNamespace: config.ExtraConfig{}}}, proxy.NoopProxy))
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/", http.NoBody)
 	r.ServeHTTP(w, req)
 
 	if w.Code != http.StatusUnauthorized {
@@ -230,7 +230,7 @@ func TestTokenSignatureValidator_error(t *testing.T) {
 }
 
 func jwkEndpoint(name string) http.HandlerFunc {
-	data, err := ioutil.ReadFile("../fixtures/" + name + ".json")
+	data, err := os.ReadFile("../fixtures/" + name + ".json")
 	return func(rw http.ResponseWriter, _ *http.Request) {
 		if err != nil {
 			rw.WriteHeader(500)
