@@ -31,7 +31,7 @@ func TokenSigner(hf ginlura.HandlerFactory, logger logging.Logger) ginlura.Handl
 		}
 		if err != nil {
 			logger.Error(logPrefix, "Unable to create the signer:", err.Error())
-			return hf(cfg, prxy)
+			return erroredHandler
 		}
 
 		logger.Debug(logPrefix, "Signer enabled")
@@ -84,12 +84,13 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 		}
 		if err != nil {
 			logger.Warning(logPrefix, "Unable to parse the configuration:", err.Error())
-			return handler
+			return erroredHandler
 		}
 
 		validator, err := krakendjose.NewValidator(scfg, FromCookie)
 		if err != nil {
 			logger.Fatal(logPrefix, "Unable to create the validator:", err.Error())
+			return erroredHandler
 		}
 
 		var aclCheck func(string, map[string]interface{}, []string) bool
@@ -176,6 +177,10 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 			handler(c)
 		}
 	}
+}
+
+func erroredHandler(c *gin.Context) {
+	c.AbortWithStatus(http.StatusUnauthorized)
 }
 
 func propagateHeaders(cfg *config.EndpointConfig, propagationCfg [][]string, claims map[string]interface{}, c *gin.Context, logger logging.Logger) {

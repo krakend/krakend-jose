@@ -10,6 +10,8 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	jose "github.com/krakendio/krakend-jose/v2"
+	"github.com/luraproject/lura/v2/config"
 	"github.com/luraproject/lura/v2/logging"
 	"github.com/luraproject/lura/v2/proxy"
 	ginlura "github.com/luraproject/lura/v2/router/gin"
@@ -177,6 +179,49 @@ func TestTokenSignatureValidator(t *testing.T) {
 	}
 	if body := w.Body.String(); body != "{\"aaaa\":{\"bar\":\"b\",\"foo\":\"a\"},\"bbbb\":true,\"cccc\":1234567890}" {
 		t.Errorf("unexpected body: %s", body)
+	}
+}
+
+func TestTokenSigner_error(t *testing.T) {
+	ts := TokenSigner(
+		func(_ *config.EndpointConfig, _ proxy.Proxy) gin.HandlerFunc {
+			return func(c *gin.Context) {}
+		},
+		logging.NoOp,
+	)
+
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.GET("/", ts(&config.EndpointConfig{ExtraConfig: config.ExtraConfig{jose.SignerNamespace: config.ExtraConfig{}}}, proxy.NoopProxy))
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("unexpected status code: %d", w.Code)
+	}
+}
+
+func TestTokenSignatureValidator_error(t *testing.T) {
+	ts := TokenSignatureValidator(
+		func(_ *config.EndpointConfig, _ proxy.Proxy) gin.HandlerFunc {
+			return func(c *gin.Context) {}
+		},
+		logging.NoOp,
+		nil,
+	)
+
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.GET("/", ts(&config.EndpointConfig{ExtraConfig: config.ExtraConfig{jose.ValidatorNamespace: config.ExtraConfig{}}}, proxy.NoopProxy))
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("unexpected status code: %d", w.Code)
 	}
 }
 
