@@ -313,7 +313,7 @@ func TestCalculateHeadersToPropagate(t *testing.T) {
 		expected map[string]string
 	}{
 		{
-			cfg: [][]string{{"a", "x-a"}, {"b", "x-b"}, {"c", "x-c"}, {"d", "x-d"}},
+			cfg: [][]string{{"a", "x-a"}, {"b", "x-b"}, {"c", "x-c"}, {"d", "x-d"}, {"d.c", "x-e"}},
 			claims: map[string]interface{}{
 				"a": 1,
 				"b": "foo",
