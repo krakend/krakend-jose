@@ -3,13 +3,15 @@ package gin
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	jose "github.com/krakendio/krakend-jose/v2"
+	"github.com/luraproject/lura/v2/config"
 	"github.com/luraproject/lura/v2/logging"
 	"github.com/luraproject/lura/v2/proxy"
 	ginlura "github.com/luraproject/lura/v2/router/gin"
@@ -180,8 +182,55 @@ func TestTokenSignatureValidator(t *testing.T) {
 	}
 }
 
+func TestTokenSigner_error(t *testing.T) {
+	ts := TokenSigner(
+		func(_ *config.EndpointConfig, _ proxy.Proxy) gin.HandlerFunc {
+			return func(c *gin.Context) {
+				t.Error("the injected handler should not be called")
+			}
+		},
+		logging.NoOp,
+	)
+
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.GET("/", ts(&config.EndpointConfig{ExtraConfig: config.ExtraConfig{jose.SignerNamespace: config.ExtraConfig{}}}, proxy.NoopProxy))
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/", http.NoBody)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("unexpected status code: %d", w.Code)
+	}
+}
+
+func TestTokenSignatureValidator_error(t *testing.T) {
+	ts := TokenSignatureValidator(
+		func(_ *config.EndpointConfig, _ proxy.Proxy) gin.HandlerFunc {
+			return func(c *gin.Context) {
+				t.Error("the injected handler should not be called")
+			}
+		},
+		logging.NoOp,
+		nil,
+	)
+
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.GET("/", ts(&config.EndpointConfig{ExtraConfig: config.ExtraConfig{jose.ValidatorNamespace: config.ExtraConfig{}}}, proxy.NoopProxy))
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/", http.NoBody)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("unexpected status code: %d", w.Code)
+	}
+}
+
 func jwkEndpoint(name string) http.HandlerFunc {
-	data, err := ioutil.ReadFile("../fixtures/" + name + ".json")
+	data, err := os.ReadFile("../fixtures/" + name + ".json")
 	return func(rw http.ResponseWriter, _ *http.Request) {
 		if err != nil {
 			rw.WriteHeader(500)
