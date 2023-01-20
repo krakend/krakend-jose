@@ -19,6 +19,7 @@ import (
 	"time"
 
 	auth0 "github.com/auth0-community/go-auth0"
+	"github.com/luraproject/lura/v2/core"
 	jose "gopkg.in/square/go-jose.v2"
 
 	"github.com/krakendio/krakend-jose/v2/secrets"
@@ -172,14 +173,16 @@ func newJWKClientOptions(cfg SecretProviderConfig) (JWKClientOptions, error) {
 	}
 	dialer := NewDialer(cfg, tlsConfig)
 
-	transport := &http.Transport{
-		Proxy:                 http.ProxyFromEnvironment,
-		DialContext:           dialer.DialContext,
-		MaxIdleConns:          10,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-		TLSClientConfig:       tlsConfig,
+	transport := krakendTransport{
+		Transport: &http.Transport{
+			Proxy:                 http.ProxyFromEnvironment,
+			DialContext:           dialer.DialContext,
+			MaxIdleConns:          10,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+			TLSClientConfig:       tlsConfig,
+		},
 	}
 
 	if len(cfg.Fingerprints) > 0 {
@@ -195,6 +198,15 @@ func newJWKClientOptions(cfg SecretProviderConfig) (JWKClientOptions, error) {
 		},
 		KeyIdentifyStrategy: cfg.KeyIdentifyStrategy,
 	}, nil
+}
+
+type krakendTransport struct {
+	*http.Transport
+}
+
+func (k krakendTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	req.Header.Set("User-Agent", core.KrakendUserAgent)
+	return k.Transport.RoundTrip(req)
 }
 
 func DecodeFingerprints(in []string) ([][]byte, error) {
