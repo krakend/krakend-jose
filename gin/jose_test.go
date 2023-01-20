@@ -185,7 +185,9 @@ func TestTokenSignatureValidator(t *testing.T) {
 func TestTokenSigner_error(t *testing.T) {
 	ts := TokenSigner(
 		func(_ *config.EndpointConfig, _ proxy.Proxy) gin.HandlerFunc {
-			return func(c *gin.Context) {}
+			return func(c *gin.Context) {
+				t.Error("the injected handler should not be called")
+			}
 		},
 		logging.NoOp,
 	)
@@ -206,7 +208,9 @@ func TestTokenSigner_error(t *testing.T) {
 func TestTokenSignatureValidator_error(t *testing.T) {
 	ts := TokenSignatureValidator(
 		func(_ *config.EndpointConfig, _ proxy.Proxy) gin.HandlerFunc {
-			return func(c *gin.Context) {}
+			return func(c *gin.Context) {
+				t.Error("the injected handler should not be called")
+			}
 		},
 		logging.NoOp,
 		nil,
