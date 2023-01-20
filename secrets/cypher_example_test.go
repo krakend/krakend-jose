@@ -1,6 +1,7 @@
 package secrets
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"fmt"
@@ -64,7 +65,7 @@ func ExampleEncrypt() {
 		return
 	}
 
-	if string(cypherMsg) == string(cypherMsg2) {
+	if bytes.Equal(cypherMsg, cypherMsg2) {
 		fmt.Println("two executions with the same input shall not generate the same output")
 	}
 
@@ -75,7 +76,7 @@ func ExampleDecrypt() {
 	msg := "zxcvbnmasdfghjklqwertyuiop1234567890"
 	passphrase := "some secret"
 
-	cypherMsg1, err := Encrypt([]byte(msg), []byte(passphrase))
+	cypherMsg, err := Encrypt([]byte(msg), []byte(passphrase))
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -87,12 +88,12 @@ func ExampleDecrypt() {
 		return
 	}
 
-	if string(cypherMsg1) == string(cypherMsg2) {
+	if bytes.Equal(cypherMsg, cypherMsg2) {
 		fmt.Println("two executions with the same input shall not generate the same output")
 		return
 	}
 
-	res1, err3 := Decrypt(cypherMsg1, []byte(passphrase))
+	res1, err3 := Decrypt(cypherMsg, []byte(passphrase))
 	if err != nil {
 		fmt.Println(err3)
 		return
@@ -104,7 +105,7 @@ func ExampleDecrypt() {
 		return
 	}
 
-	if string(res1) != string(res2) {
+	if !bytes.Equal(res1, res2) {
 		fmt.Println("results are different:", string(res1), string(res2))
 		return
 	}

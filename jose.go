@@ -167,7 +167,7 @@ func ScopesAllMatcher(scopesKey string, claims map[string]interface{}, requiredS
 					matched = true
 				}
 			}
-			if matched == false { // required scope was not found --> immediately return
+			if !matched { // required scope was not found --> immediately return
 				return false
 			}
 		}
