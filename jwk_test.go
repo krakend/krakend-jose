@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/krakendio/krakend-jose/v2/secrets"
+	"github.com/luraproject/lura/v2/core"
 )
 
 func TestJWK(t *testing.T) {
@@ -351,8 +352,12 @@ func TestNewFileKeyCacher_unknownKey(t *testing.T) {
 
 func jwkEndpoint(name string) http.HandlerFunc {
 	data, err := os.ReadFile("./fixtures/" + name + ".json")
-	return func(rw http.ResponseWriter, _ *http.Request) {
+	return func(rw http.ResponseWriter, req *http.Request) {
 		if err != nil {
+			rw.WriteHeader(500)
+			return
+		}
+		if ua := req.Header.Get("User-Agent"); ua != core.KrakendUserAgent {
 			rw.WriteHeader(500)
 			return
 		}
