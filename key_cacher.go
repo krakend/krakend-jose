@@ -166,7 +166,8 @@ func NewGlobalMemoryKeyCacher(maxKeyAge time.Duration, maxCacheSize int, keyIden
 		keyIdentifyStrategy = "kid"
 	}
 	return &GMemoryKeyCacher{
-		MemoryKeyCacher: &MemoryKeyCacher{entries: map[string]keyCacherEntry{},
+		MemoryKeyCacher: &MemoryKeyCacher{
+			entries:      map[string]keyCacherEntry{},
 			maxKeyAge:    maxKeyAge,
 			maxCacheSize: maxCacheSize,
 			keyIDGetter:  KeyIDGetterFactory(keyIdentifyStrategy),
