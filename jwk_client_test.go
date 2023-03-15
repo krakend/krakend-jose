@@ -12,8 +12,8 @@ import (
 	"github.com/luraproject/lura/v2/logging"
 )
 
-func TestJWKClient_cache(t *testing.T) {
-	jwk1 := []byte(`{ "keys": [{
+func TestJWKClient_globalCache(t *testing.T) {
+	jwk := []byte(`{ "keys": [{
 		"kty": "RSA",
 		"e": "AQAB",
 		"use": "sig",
@@ -26,7 +26,7 @@ func TestJWKClient_cache(t *testing.T) {
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
 		atomic.AddUint64(&count, 1)
-		w.Write(jwk1)
+		w.Write(jwk)
 	}))
 
 	defer backend.Close()
@@ -60,6 +60,7 @@ func TestJWKClient_cache(t *testing.T) {
 	}
 	if count != 1 {
 		t.Errorf("invalid count %d", count)
+		return
 	}
 	<-time.After(4 * time.Second)
 	for i := 0; i < 10; i++ {

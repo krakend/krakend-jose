@@ -121,27 +121,27 @@ type GMemoryKeyCacher struct {
 	strategy string
 }
 
-func (gmkc *GMemoryKeyCacher) Add(keyID string, downloadedKeys []jose.JSONWebKey) (*jose.JSONWebKey, error) {
+func (gkc *GMemoryKeyCacher) Add(keyID string, downloadedKeys []jose.JSONWebKey) (*jose.JSONWebKey, error) {
 	if len(globalKeyCacher) != 0 {
-		if kc, ok := globalKeyCacher[gmkc.strategy]; ok {
+		if kc, ok := globalKeyCacher[gkc.strategy]; ok {
 			kc.mu.Lock()
 			kc.kc.Add(keyID, downloadedKeys)
 			kc.mu.Unlock()
 		} else {
-			return nil, fmt.Errorf("invalid strategy %s", gmkc.strategy)
+			return nil, fmt.Errorf("invalid strategy %s", gkc.strategy)
 		}
 	}
 
-	return gmkc.MemoryKeyCacher.Add(keyID, downloadedKeys)
+	return gkc.MemoryKeyCacher.Add(keyID, downloadedKeys)
 }
 
 // Get obtains a key from the cache, and checks if the key is expired
-func (gmkc *GMemoryKeyCacher) Get(keyID string) (*jose.JSONWebKey, error) {
-	k, err := gmkc.MemoryKeyCacher.Get(keyID)
+func (gkc *GMemoryKeyCacher) Get(keyID string) (*jose.JSONWebKey, error) {
+	k, err := gkc.MemoryKeyCacher.Get(keyID)
 	if err != nil && len(globalKeyCacher) != 0 {
-		kc, ok := globalKeyCacher[gmkc.strategy]
+		kc, ok := globalKeyCacher[gkc.strategy]
 		if !ok {
-			return nil, fmt.Errorf("invalid strategy %s", gmkc.strategy)
+			return nil, fmt.Errorf("invalid strategy %s", gkc.strategy)
 		}
 		kc.mu.RLock()
 		defer kc.mu.RUnlock()
@@ -161,18 +161,18 @@ func NewMemoryKeyCacher(maxKeyAge time.Duration, maxCacheSize int, keyIdentifySt
 	}
 }
 
-func NewGlobalMemoryKeyCacher(maxKeyAge time.Duration, maxCacheSize int, keyIdentifyStrategy string) *GMemoryKeyCacher {
+func NewGlobalMemoryKeyCacher(maxKeyAge time.Duration, maxCacheSize int, keyIdentifyStrategy string) KeyCacher {
 	if keyIdentifyStrategy == "" {
 		keyIdentifyStrategy = "kid"
 	}
 	return &GMemoryKeyCacher{
+		strategy: keyIdentifyStrategy,
 		MemoryKeyCacher: &MemoryKeyCacher{
 			entries:      map[string]keyCacherEntry{},
 			maxKeyAge:    maxKeyAge,
 			maxCacheSize: maxCacheSize,
 			keyIDGetter:  KeyIDGetterFactory(keyIdentifyStrategy),
 		},
-		strategy: keyIdentifyStrategy,
 	}
 }
 
