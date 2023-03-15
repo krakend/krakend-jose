@@ -3,18 +3,60 @@ package jose
 import (
 	b64 "encoding/base64"
 	"errors"
+	"fmt"
+	"sync"
 	"time"
 
+	"github.com/luraproject/lura/v2/config"
+	"github.com/luraproject/lura/v2/logging"
 	"gopkg.in/square/go-jose.v2"
 )
 
 var (
-	ErrNoKeyFound = errors.New("no Keys have been found")
-	ErrKeyExpired = errors.New("key exists but is expired")
+	ErrNoKeyFound            = errors.New("no Keys have been found")
+	ErrKeyExpired            = errors.New("key exists but is expired")
+	defaultGlobalCacheMaxAge = 15 * time.Minute
 
 	// Configuring with MaxKeyAgeNoCheck will skip key expiry check
-	MaxKeyAgeNoCheck = time.Duration(-1)
+	MaxKeyAgeNoCheck    = time.Duration(-1)
+	globalKeyCacher     = map[string]GlobalCacher{}
+	globalKeyCacherOnce = new(sync.Once)
 )
+
+type GlobalCacher struct {
+	kc KeyCacher
+	mu *sync.RWMutex
+}
+
+func SetGlobalCacher(l logging.Logger, cfg config.ExtraConfig) error {
+	duration, err := configGetter(cfg)
+	if err != nil {
+		if err != ErrNoValidatorCfg {
+			l.Error("[SERVICE: JWTValidator]", err.Error())
+		}
+		return err
+	}
+	globalKeyCacherOnce.Do(func() {
+		globalKeyCacher = map[string]GlobalCacher{
+			"kid":     {kc: NewMemoryKeyCacher(duration, -1, "kid"), mu: new(sync.RWMutex)},
+			"x5t":     {kc: NewMemoryKeyCacher(duration, -1, "x5t"), mu: new(sync.RWMutex)},
+			"kid_x5t": {kc: NewMemoryKeyCacher(duration, -1, "kid_x5t"), mu: new(sync.RWMutex)},
+		}
+	})
+	return nil
+}
+
+func configGetter(cfg config.ExtraConfig) (time.Duration, error) {
+	e, ok := cfg[ValidatorNamespace].(map[string]interface{})
+	if !ok {
+		return defaultGlobalCacheMaxAge, fmt.Errorf("no config")
+	}
+	duration, ok := e["cache_duration"].(string)
+	if !ok {
+		return defaultGlobalCacheMaxAge, fmt.Errorf("no duration")
+	}
+	return time.ParseDuration(duration)
+}
 
 // KeyIDGetter extracts a key id from a JSONWebKey
 type KeyIDGetter interface {
@@ -74,6 +116,40 @@ type keyCacherEntry struct {
 	jose.JSONWebKey
 }
 
+type GMemoryKeyCacher struct {
+	*MemoryKeyCacher
+	strategy string
+}
+
+func (gmkc *GMemoryKeyCacher) Add(keyID string, downloadedKeys []jose.JSONWebKey) (*jose.JSONWebKey, error) {
+	if len(globalKeyCacher) != 0 {
+		if kc, ok := globalKeyCacher[gmkc.strategy]; ok {
+			kc.mu.Lock()
+			kc.kc.Add(keyID, downloadedKeys)
+			kc.mu.Unlock()
+		} else {
+			return nil, fmt.Errorf("invalid strategy %s", gmkc.strategy)
+		}
+	}
+
+	return gmkc.MemoryKeyCacher.Add(keyID, downloadedKeys)
+}
+
+// Get obtains a key from the cache, and checks if the key is expired
+func (gmkc *GMemoryKeyCacher) Get(keyID string) (*jose.JSONWebKey, error) {
+	k, err := gmkc.MemoryKeyCacher.Get(keyID)
+	if err != nil && len(globalKeyCacher) != 0 {
+		kc, ok := globalKeyCacher[gmkc.strategy]
+		if !ok {
+			return nil, fmt.Errorf("invalid strategy %s", gmkc.strategy)
+		}
+		kc.mu.RLock()
+		defer kc.mu.RUnlock()
+		return kc.kc.Get(keyID)
+	}
+	return k, err
+}
+
 // NewMemoryKeyCacher creates a new Keycacher interface with option
 // to set max age of cached keys and max size of the cache.
 func NewMemoryKeyCacher(maxKeyAge time.Duration, maxCacheSize int, keyIdentifyStrategy string) KeyCacher {
@@ -82,6 +158,20 @@ func NewMemoryKeyCacher(maxKeyAge time.Duration, maxCacheSize int, keyIdentifySt
 		maxKeyAge:    maxKeyAge,
 		maxCacheSize: maxCacheSize,
 		keyIDGetter:  KeyIDGetterFactory(keyIdentifyStrategy),
+	}
+}
+
+func NewGlobalMemoryKeyCacher(maxKeyAge time.Duration, maxCacheSize int, keyIdentifyStrategy string) *GMemoryKeyCacher {
+	if keyIdentifyStrategy == "" {
+		keyIdentifyStrategy = "kid"
+	}
+	return &GMemoryKeyCacher{
+		MemoryKeyCacher: &MemoryKeyCacher{entries: map[string]keyCacherEntry{},
+			maxKeyAge:    maxKeyAge,
+			maxCacheSize: maxCacheSize,
+			keyIDGetter:  KeyIDGetterFactory(keyIdentifyStrategy),
+		},
+		strategy: keyIdentifyStrategy,
 	}
 }
 
