@@ -40,7 +40,7 @@ func TestJWKClient_globalCache(t *testing.T) {
 	)
 	cfg := config.ExtraConfig{
 		ValidatorNamespace: map[string]interface{}{
-			"cache_duration": "3s",
+			"shared_cache_duration": 3,
 		},
 	}
 	if err := SetGlobalCacher(logging.NoOp, cfg); err != nil {
