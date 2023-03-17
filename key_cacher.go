@@ -137,7 +137,6 @@ type GMemoryKeyCacher struct {
 }
 
 func (gkc *GMemoryKeyCacher) Add(keyID string, downloadedKeys []jose.JSONWebKey) (*jose.JSONWebKey, error) {
-
 	if gkc.Global.kc != nil {
 		gkc.Global.mu.Lock()
 		gkc.Global.kc.Add(keyID, downloadedKeys)
