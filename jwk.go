@@ -61,6 +61,9 @@ func SecretProvider(cfg SecretProviderConfig, te auth0.RequestTokenExtractor) (*
 		return newLocalSecretProvider(opts, cfg, te)
 	}
 
+	if cfg.LocalPath != "" {
+		return nil, fmt.Errorf("cache could not be used with jwk_local_path")
+	}
 	var cacheDuration time.Duration
 	cacheDuration = time.Duration(cfg.CacheDuration) * time.Second
 	// Set default duration to 15 minute
