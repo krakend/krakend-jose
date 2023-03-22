@@ -149,15 +149,17 @@ func (gkc *GMemoryKeyCacher) Add(keyID string, downloadedKeys []jose.JSONWebKey)
 // Get obtains a key from the cache, and checks if the key is expired
 func (gkc *GMemoryKeyCacher) Get(keyID string) (*jose.JSONWebKey, error) {
 	k, err := gkc.MemoryKeyCacher.Get(keyID)
-	if err != nil {
-		if gkc.Global.kc != nil {
-			gkc.Global.mu.RLock()
-			v, err := gkc.Global.kc.Get(keyID)
-			gkc.Global.mu.RUnlock()
-			return v, err
-		}
+	if err == nil || gkc.Global.kc == nil {
+		return k, err
 	}
-	return k, err
+
+	gkc.Global.mu.RLock()
+	v, err := gkc.Global.kc.Get(keyID)
+	gkc.Global.mu.RUnlock()
+	if err == nil {
+		gkc.MemoryKeyCacher.Add(keyID, []jose.JSONWebKey{*v})
+	}
+	return v, err
 }
 
 // NewMemoryKeyCacher creates a new Keycacher interface with option
