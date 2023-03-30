@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	auth0 "github.com/auth0-community/go-auth0"
+	"github.com/auth0-community/go-auth0"
 	"github.com/gin-gonic/gin"
 	krakendjose "github.com/krakendio/krakend-jose/v2"
 	"github.com/luraproject/lura/v2/config"
@@ -129,6 +129,10 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 		return func(c *gin.Context) {
 			token, err := validator.ValidateRequest(c.Request)
 			if err != nil {
+				if scfg.Optional && err == auth0.ErrTokenNotFound {
+					handler(c)
+					return
+				}
 				if scfg.OperationDebug {
 					logger.Error(logPrefix, "Unable to validate the token:", err.Error())
 				}

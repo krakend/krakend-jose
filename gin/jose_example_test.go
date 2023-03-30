@@ -24,7 +24,7 @@ func Example_RS256() {
 	publicServer := httptest.NewServer(jwkEndpoint("public"))
 	defer publicServer.Close()
 
-	verifierCfg := newVerifierEndpointCfg("RS256", publicServer.URL, []string{"role_a"})
+	verifierCfg := newVerifierEndpointCfg("RS256", publicServer.URL, []string{"role_a"}, false)
 	verifierCfg.ExtraConfig[krakendjose.ValidatorNamespace].(map[string]interface{})["operation_debug"] = true
 
 	runValidationCycle(
@@ -72,7 +72,7 @@ func Example_HS256() {
 
 	runValidationCycle(
 		newSignerEndpointCfg("HS256", "sim2", server.URL),
-		newVerifierEndpointCfg("HS256", server.URL, []string{"role_a"}),
+		newVerifierEndpointCfg("HS256", server.URL, []string{"role_a"}, false),
 	)
 
 	// output:
@@ -114,7 +114,7 @@ func Example_HS256_cookie() {
 
 	sCfg := newSignerEndpointCfg("HS256", "sim2", server.URL)
 	_, signer, _ := krakendjose.NewSigner(sCfg, nil)
-	verifierCfg := newVerifierEndpointCfg("HS256", server.URL, []string{"role_a"})
+	verifierCfg := newVerifierEndpointCfg("HS256", server.URL, []string{"role_a"}, false)
 
 	externalTokenIssuer := func(rw http.ResponseWriter, req *http.Request) {
 		resp, _ := tokenIssuer(context.Background(), new(proxy.Request))
@@ -313,7 +313,7 @@ func newSignerEndpointCfg(alg, ID, URL string) *config.EndpointConfig {
 	}
 }
 
-func newVerifierEndpointCfg(alg, URL string, roles []string) *config.EndpointConfig {
+func newVerifierEndpointCfg(alg, URL string, roles []string, optional bool) *config.EndpointConfig {
 	return &config.EndpointConfig{
 		Timeout:  time.Second,
 		Endpoint: "/private",
@@ -334,6 +334,7 @@ func newVerifierEndpointCfg(alg, URL string, roles []string) *config.EndpointCon
 				"propagate_claims":     [][]string{{"jti", "x-krakend-jti"}, {"sub", "x-krakend-sub"}, {"nonexistent", "x-krakend-ne"}, {"sub", "x-krakend-replace"}},
 				"disable_jwk_security": true,
 				"cache":                true,
+				"optional":             optional,
 			},
 		},
 	}

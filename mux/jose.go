@@ -139,6 +139,10 @@ func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, r
 		return func(w http.ResponseWriter, r *http.Request) {
 			token, err := validator.ValidateRequest(r)
 			if err != nil {
+				if signatureConfig.Optional && err == auth0.ErrTokenNotFound {
+					handler(w, r)
+					return
+				}
 				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
 			}
