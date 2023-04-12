@@ -68,7 +68,7 @@ func configGetter(l logging.Logger, cfg config.ExtraConfig) (serviceConfig, erro
 	}
 	if scfg.CacheDuration == 0 {
 		scfg.CacheDuration = defaultGlobalCacheMaxAge
-		l.Error("[SERVICE: JOSE] Empty shared_cache_duration, using default (15m)")
+		l.Info("[SERVICE: JOSE] Empty shared_cache_duration, using default (15m)")
 	}
 	return scfg, nil
 }
