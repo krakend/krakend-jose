@@ -2,19 +2,76 @@ package jose
 
 import (
 	b64 "encoding/base64"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"sync"
 	"time"
 
+	"github.com/luraproject/lura/v2/config"
+	"github.com/luraproject/lura/v2/logging"
 	"gopkg.in/square/go-jose.v2"
 )
 
 var (
-	ErrNoKeyFound = errors.New("no Keys have been found")
-	ErrKeyExpired = errors.New("key exists but is expired")
+	ErrNoKeyFound                   = errors.New("no Keys have been found")
+	ErrKeyExpired                   = errors.New("key exists but is expired")
+	defaultGlobalCacheMaxAge uint32 = 900
+	defaultStrategy                 = "kid"
 
 	// Configuring with MaxKeyAgeNoCheck will skip key expiry check
-	MaxKeyAgeNoCheck = time.Duration(-1)
+	MaxKeyAgeNoCheck    = time.Duration(-1)
+	globalKeyCacher     = map[string]GlobalCacher{}
+	globalKeyCacherOnce = new(sync.Once)
 )
+
+type GlobalCacher struct {
+	kc KeyCacher
+	mu *sync.RWMutex
+}
+
+func SetGlobalCacher(l logging.Logger, cfg config.ExtraConfig) error {
+	scfg, err := configGetter(l, cfg)
+	if err != nil {
+		if err != ErrNoValidatorCfg {
+			l.Error("[SERVICE: JOSE]", err.Error())
+		}
+		return err
+	}
+	duration := time.Duration(scfg.CacheDuration) * time.Second
+	globalKeyCacherOnce.Do(func() {
+		globalKeyCacher = map[string]GlobalCacher{
+			"kid":     {kc: NewMemoryKeyCacher(duration, -1, "kid"), mu: new(sync.RWMutex)},
+			"x5t":     {kc: NewMemoryKeyCacher(duration, -1, "x5t"), mu: new(sync.RWMutex)},
+			"kid_x5t": {kc: NewMemoryKeyCacher(duration, -1, "kid_x5t"), mu: new(sync.RWMutex)},
+		}
+	})
+	return nil
+}
+
+type serviceConfig struct {
+	CacheDuration uint32 `json:"shared_cache_duration"`
+}
+
+func configGetter(l logging.Logger, cfg config.ExtraConfig) (serviceConfig, error) {
+	scfg := serviceConfig{}
+	e, ok := cfg[ValidatorNamespace].(map[string]interface{})
+	if !ok {
+		return scfg, fmt.Errorf("no config")
+	}
+	tmp, err := json.Marshal(e)
+	if err != nil {
+		return scfg, err
+	}
+	if err := json.Unmarshal(tmp, &scfg); err != nil {
+		return scfg, err
+	}
+	if scfg.CacheDuration == 0 {
+		scfg.CacheDuration = defaultGlobalCacheMaxAge
+		l.Info("[SERVICE: JOSE] Empty shared_cache_duration, using default (15m)")
+	}
+	return scfg, nil
+}
 
 // KeyIDGetter extracts a key id from a JSONWebKey
 type KeyIDGetter interface {
@@ -74,6 +131,37 @@ type keyCacherEntry struct {
 	jose.JSONWebKey
 }
 
+type GMemoryKeyCacher struct {
+	*MemoryKeyCacher
+	Global GlobalCacher
+}
+
+func (gkc *GMemoryKeyCacher) Add(keyID string, downloadedKeys []jose.JSONWebKey) (*jose.JSONWebKey, error) {
+	if gkc.Global.kc != nil {
+		gkc.Global.mu.Lock()
+		gkc.Global.kc.Add(keyID, downloadedKeys)
+		gkc.Global.mu.Unlock()
+	}
+
+	return gkc.MemoryKeyCacher.Add(keyID, downloadedKeys)
+}
+
+// Get obtains a key from the cache, and checks if the key is expired
+func (gkc *GMemoryKeyCacher) Get(keyID string) (*jose.JSONWebKey, error) {
+	k, err := gkc.MemoryKeyCacher.Get(keyID)
+	if err == nil || gkc.Global.kc == nil {
+		return k, err
+	}
+
+	gkc.Global.mu.RLock()
+	v, err := gkc.Global.kc.Get(keyID)
+	gkc.Global.mu.RUnlock()
+	if err == nil {
+		gkc.MemoryKeyCacher.Add(keyID, []jose.JSONWebKey{*v})
+	}
+	return v, err
+}
+
 // NewMemoryKeyCacher creates a new Keycacher interface with option
 // to set max age of cached keys and max size of the cache.
 func NewMemoryKeyCacher(maxKeyAge time.Duration, maxCacheSize int, keyIdentifyStrategy string) KeyCacher {
@@ -83,6 +171,26 @@ func NewMemoryKeyCacher(maxKeyAge time.Duration, maxCacheSize int, keyIdentifySt
 		maxCacheSize: maxCacheSize,
 		keyIDGetter:  KeyIDGetterFactory(keyIdentifyStrategy),
 	}
+}
+
+func NewGlobalMemoryKeyCacher(maxKeyAge time.Duration, maxCacheSize int, keyIdentifyStrategy string) KeyCacher {
+	kc := &GMemoryKeyCacher{
+		MemoryKeyCacher: &MemoryKeyCacher{
+			entries:      map[string]keyCacherEntry{},
+			maxKeyAge:    maxKeyAge,
+			maxCacheSize: maxCacheSize,
+			keyIDGetter:  KeyIDGetterFactory(keyIdentifyStrategy),
+		},
+		Global: GlobalCacher{},
+	}
+	if keyIdentifyStrategy == "" {
+		keyIdentifyStrategy = defaultStrategy
+	}
+	if len(globalKeyCacher) > 0 {
+		g := globalKeyCacher[keyIdentifyStrategy]
+		kc.Global = g
+	}
+	return kc
 }
 
 // Get obtains a key from the cache, and checks if the key is expired

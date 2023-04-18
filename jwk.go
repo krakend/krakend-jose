@@ -81,7 +81,7 @@ func SecretProvider(cfg SecretProviderConfig, te auth0.RequestTokenExtractor) (*
 	client := NewJWKClientWithCache(
 		opts,
 		te,
-		NewMemoryKeyCacher(cacheDuration, auth0.MaxCacheSizeNoCheck, opts.KeyIdentifyStrategy),
+		NewGlobalMemoryKeyCacher(cacheDuration, auth0.MaxCacheSizeNoCheck, opts.KeyIdentifyStrategy),
 	)
 
 	// request an unexistent key in order to cache all the actual ones
