@@ -357,7 +357,8 @@ func TestUnmarshalDataTypesGetClaim(t *testing.T) {
 		"t7_big_int": 1000001,
 		"t8_float_round": 4.000001,
 		"t9_float_round": 4.0000001,
-		"t10_timestamp": 1651529725
+		"t10_timestamp": 1651529725,
+		"t11_array": []
 	}`), &c)
 
 	for i, tc := range []struct {
@@ -407,6 +408,10 @@ func TestUnmarshalDataTypesGetClaim(t *testing.T) {
 		{
 			key:      "t10_timestamp",
 			expected: "1651529725",
+		},
+		{
+			key:      "t11_array",
+			expected: "",
 		},
 	} {
 		t.Run(tc.key, func(t *testing.T) {
