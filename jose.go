@@ -261,9 +261,11 @@ func (c Claims) Get(name string) (string, bool) {
 		}
 		normalized = fmt.Sprintf("%f", v)
 	case []interface{}:
-		normalized = fmt.Sprintf("%v", v[0])
-		for _, elem := range v[1:] {
-			normalized += fmt.Sprintf(",%v", elem)
+		if len(v) > 0 {
+			normalized = fmt.Sprintf("%v", v[0])
+			for _, elem := range v[1:] {
+				normalized += fmt.Sprintf(",%v", elem)
+			}
 		}
 	default:
 		b, _ := json.Marshal(v)
