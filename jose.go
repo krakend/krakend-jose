@@ -277,14 +277,19 @@ func (c Claims) Get(name string) (string, bool) {
 
 func CalculateHeadersToPropagate(propagationCfg [][]string, claims map[string]interface{}) (map[string]string, error) {
 	if len(propagationCfg) == 0 {
-		return nil, fmt.Errorf("JOSE: no headers to propagate. Config size: %d", len(propagationCfg))
+		return nil, fmt.Errorf("no headers to propagate. Config size: %d", len(propagationCfg))
 	}
 
 	propagated := make(map[string]string)
 
 	c := Claims(claims)
 
+	var err error
 	for _, tuple := range propagationCfg {
+		if len(tuple) != 2 {
+			err = fmt.Errorf("invalid number of claims to propagate: %+v", tuple)
+			continue
+		}
 		fromClaim := tuple[0]
 		toHeader := tuple[1]
 
@@ -306,7 +311,7 @@ func CalculateHeadersToPropagate(propagationCfg [][]string, claims map[string]in
 		propagated[toHeader] = v
 	}
 
-	return propagated, nil
+	return propagated, err
 }
 
 var supportedAlgorithms = map[string]jose.SignatureAlgorithm{
