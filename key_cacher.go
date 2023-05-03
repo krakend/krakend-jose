@@ -4,7 +4,6 @@ import (
 	b64 "encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -33,9 +32,6 @@ type GlobalCacher struct {
 func SetGlobalCacher(l logging.Logger, cfg config.ExtraConfig) error {
 	scfg, err := configGetter(l, cfg)
 	if err != nil {
-		if err != ErrNoValidatorCfg {
-			l.Error("[SERVICE: JOSE]", err.Error())
-		}
 		return err
 	}
 	duration := time.Duration(scfg.CacheDuration) * time.Second
@@ -57,7 +53,7 @@ func configGetter(l logging.Logger, cfg config.ExtraConfig) (serviceConfig, erro
 	scfg := serviceConfig{}
 	e, ok := cfg[ValidatorNamespace].(map[string]interface{})
 	if !ok {
-		return scfg, fmt.Errorf("no config")
+		return scfg, ErrNoValidatorCfg
 	}
 	tmp, err := json.Marshal(e)
 	if err != nil {
