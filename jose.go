@@ -13,9 +13,7 @@ import (
 	"gopkg.in/square/go-jose.v2/jwt"
 )
 
-var (
-	ErrNoHeadersToPropagate = fmt.Errorf("header propagation is disabled because there is no propagate_claims attribute")
-)
+var ErrNoHeadersToPropagate = fmt.Errorf("header propagation is disabled because there is no propagate_claims attribute")
 
 type ExtractorFactory func(string) func(r *http.Request) (*jwt.JSONWebToken, error)
 
