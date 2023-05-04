@@ -13,6 +13,10 @@ import (
 	"gopkg.in/square/go-jose.v2/jwt"
 )
 
+var (
+	ErrNoHeadersToPropagate = fmt.Errorf("header propagation is disabled because there is no propagate_claims attribute")
+)
+
 type ExtractorFactory func(string) func(r *http.Request) (*jwt.JSONWebToken, error)
 
 func NewValidator(signatureConfig *SignatureConfig, ef ExtractorFactory) (*auth0.JWTValidator, error) {
@@ -277,7 +281,7 @@ func (c Claims) Get(name string) (string, bool) {
 
 func CalculateHeadersToPropagate(propagationCfg [][]string, claims map[string]interface{}) (map[string]string, error) {
 	if len(propagationCfg) == 0 {
-		return nil, fmt.Errorf("no headers to propagate. Config size: %d", len(propagationCfg))
+		return nil, ErrNoHeadersToPropagate
 	}
 
 	propagated := make(map[string]string)
