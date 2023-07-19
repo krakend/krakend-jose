@@ -46,6 +46,7 @@ type SignatureConfig struct {
 type SignerConfig struct {
 	Alg                string   `json:"alg"`
 	KeyID              string   `json:"kid"`
+	Type               string   `json:"typ"`
 	URI                string   `json:"jwk_url"`
 	FullSerialization  bool     `json:"full,omitempty"`
 	KeysToSign         []string `json:"keys_to_sign,omitempty"`
@@ -139,6 +140,7 @@ func NewSigner(cfg *config.EndpointConfig, te auth0.RequestTokenExtractor) (*Sig
 	opts := &jose.SignerOptions{
 		ExtraHeaders: map[jose.HeaderKey]interface{}{
 			jose.HeaderKey("kid"): key.KeyID,
+			jose.HeaderKey("typ"): "JWT",
 		},
 	}
 	s, err := jose.NewSigner(signingKey, opts)
