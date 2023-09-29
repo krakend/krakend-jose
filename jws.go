@@ -143,6 +143,9 @@ func NewSigner(cfg *config.EndpointConfig, te auth0.RequestTokenExtractor) (*Sig
 			jose.HeaderKey("typ"): "JWT",
 		},
 	}
+	if signerCfg.Type != "" {
+		opts.ExtraHeaders[jose.HeaderKey("typ")] = signerCfg.Type
+	}
 	s, err := jose.NewSigner(signingKey, opts)
 	if err != nil {
 		return signerCfg, nopSigner, err
