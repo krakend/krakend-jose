@@ -326,12 +326,17 @@ func newVerifierEndpointCfg(alg, URL string, roles []string) *config.EndpointCon
 		},
 		ExtraConfig: config.ExtraConfig{
 			krakendjose.ValidatorNamespace: map[string]interface{}{
-				"alg":                  alg,
-				"jwk_url":              URL,
-				"audience":             []string{"http://api.example.com"},
-				"issuer":               "http://example.com",
-				"roles":                roles,
-				"propagate_claims":     [][]string{{"jti", "x-krakend-jti"}, {"sub", "x-krakend-sub"}, {"nonexistent", "x-krakend-ne"}, {"sub", "x-krakend-replace"}},
+				"alg":      alg,
+				"jwk_url":  URL,
+				"audience": []string{"http://api.example.com"},
+				"issuer":   "http://example.com",
+				"roles":    roles,
+				"propagate_claims": [][]string{
+					{"jti", "x-krakend-jti"},
+					{"sub", "x-krakend-sub"},
+					{"nonexistent", "x-krakend-ne"},
+					{"sub", "x-krakend-replace"},
+				},
 				"disable_jwk_security": true,
 				"cache":                true,
 			},

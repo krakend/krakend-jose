@@ -147,6 +147,7 @@ func TestTokenSignatureValidator(t *testing.T) {
 	req.Header.Set("Authorization", "BEARER "+token)
 	// Check header-overwrite: it must be overwritten by a claim in the JWT!
 	req.Header.Set("x-krakend-replace", "abc")
+	req.Header.Set("x-krakend-ne", "fake_non_existing")
 
 	w = httptest.NewRecorder()
 	engine.ServeHTTP(w, req)
