@@ -281,10 +281,7 @@ func CalculateHeadersToPropagate(propagationCfg [][]string, claims map[string]in
 	if len(propagationCfg) == 0 {
 		return nil, ErrNoHeadersToPropagate
 	}
-
 	propagated := make(map[string]string)
-
-	c := Claims(claims)
 
 	var err error
 	for _, tuple := range propagationCfg {
@@ -295,21 +292,13 @@ func CalculateHeadersToPropagate(propagationCfg [][]string, claims map[string]in
 		fromClaim := tuple[0]
 		toHeader := tuple[1]
 
+		c := Claims(claims)
 		if strings.Contains(fromClaim, ".") && (len(fromClaim) < 4 || fromClaim[:4] != "http") {
-			tmpKey, tmpClaims := getNestedClaim(fromClaim, claims)
-
-			tmp, ok := Claims(tmpClaims).Get(tmpKey)
-			if !ok {
-				continue
-			}
-			propagated[toHeader] = tmp
-			continue
+			var claimsMap map[string]interface{}
+			fromClaim, claimsMap = getNestedClaim(fromClaim, claims)
+			c = Claims(claimsMap)
 		}
-
-		v, ok := c.Get(fromClaim)
-		if !ok {
-			continue
-		}
+		v, _ := c.Get(fromClaim)
 		propagated[toHeader] = v
 	}
 
