@@ -320,6 +320,7 @@ func TestCalculateHeadersToPropagate(t *testing.T) {
 				{"d.d", "x-d"},
 				{"d.d.c", "x-e"},
 				{"d.f", "x-f"},
+				{"g", "x-g"},
 			},
 			claims: map[string]interface{}{
 				"a": 1,
@@ -335,6 +336,7 @@ func TestCalculateHeadersToPropagate(t *testing.T) {
 						"c": []interface{}{"one", "two"},
 					},
 				},
+				"g": []interface{}{},
 			},
 			expected: map[string]string{
 				"x-a": "1",
@@ -343,6 +345,7 @@ func TestCalculateHeadersToPropagate(t *testing.T) {
 				"x-d": `{"a":1,"b":"foo","c":["one","two"]}`,
 				"x-e": "one,two",
 				"x-f": "",
+				"x-g": "",
 			},
 		},
 	} {
