@@ -7,8 +7,8 @@ import (
 	"regexp"
 	"strings"
 
-	auth0 "github.com/auth0-community/go-auth0"
 	"github.com/gin-gonic/gin"
+	auth0 "github.com/krakend/go-auth0"
 	krakendjose "github.com/krakendio/krakend-jose/v2"
 	"github.com/luraproject/lura/v2/config"
 	"github.com/luraproject/lura/v2/logging"

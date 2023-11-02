@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/auth0-community/go-auth0"
+	"github.com/krakend/go-auth0"
 	"github.com/luraproject/lura/v2/config"
 	"github.com/luraproject/lura/v2/logging"
 )

@@ -3,8 +3,8 @@ module github.com/krakendio/krakend-jose/v2
 go 1.17
 
 require (
-	github.com/auth0-community/go-auth0 v1.0.0
 	github.com/gin-gonic/gin v1.8.2
+	github.com/krakend/go-auth0 v1.0.0
 	github.com/luraproject/lura/v2 v2.0.5
 	gocloud.dev v0.28.0
 	gocloud.dev/secrets/hashivault v0.28.0
@@ -96,11 +96,11 @@ require (
 	github.com/valyala/fastrand v1.1.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
-	golang.org/x/crypto v0.3.0 // indirect
-	golang.org/x/net v0.4.0 // indirect
+	golang.org/x/crypto v0.9.0 // indirect
+	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/oauth2 v0.2.0 // indirect
-	golang.org/x/sys v0.3.0 // indirect
-	golang.org/x/text v0.5.0 // indirect
+	golang.org/x/sys v0.8.0 // indirect
+	golang.org/x/text v0.9.0 // indirect
 	golang.org/x/time v0.2.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/api v0.103.0 // indirect
