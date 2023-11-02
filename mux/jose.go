@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/auth0-community/go-auth0"
+	"github.com/krakend/go-auth0"
 	krakendjose "github.com/krakendio/krakend-jose/v2"
 	"github.com/luraproject/lura/v2/config"
 	"github.com/luraproject/lura/v2/logging"
@@ -75,12 +75,13 @@ var emptyResponse = []byte("{}")
 
 func jsonRender(w http.ResponseWriter, response *proxy.Response) error {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(response.Metadata.StatusCode)
 
 	if response == nil {
 		_, err := w.Write(emptyResponse)
 		return err
 	}
+
+	w.WriteHeader(response.Metadata.StatusCode)
 
 	js, err := json.Marshal(response.Data)
 	if err != nil {

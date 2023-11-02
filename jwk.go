@@ -18,7 +18,7 @@ import (
 	"sync"
 	"time"
 
-	auth0 "github.com/auth0-community/go-auth0"
+	auth0 "github.com/krakend/go-auth0"
 	"github.com/luraproject/lura/v2/core"
 	jose "gopkg.in/square/go-jose.v2"
 
