@@ -75,12 +75,13 @@ var emptyResponse = []byte("{}")
 
 func jsonRender(w http.ResponseWriter, response *proxy.Response) error {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(response.Metadata.StatusCode)
 
 	if response == nil {
 		_, err := w.Write(emptyResponse)
 		return err
 	}
+
+	w.WriteHeader(response.Metadata.StatusCode)
 
 	js, err := json.Marshal(response.Data)
 	if err != nil {
