@@ -17,7 +17,7 @@ var ErrNoHeadersToPropagate = fmt.Errorf("header propagation is disabled because
 
 type ExtractorFactory func(string) func(r *http.Request) (*jwt.JSONWebToken, error)
 
-func NewValidator(signatureConfig *SignatureConfig, cookieEf ExtractorFactory, headerEf ExtractorFactory) (*auth0.JWTValidator, error) {
+func NewValidator(signatureConfig *SignatureConfig, cookieEf, headerEf ExtractorFactory) (*auth0.JWTValidator, error) {
 	sa, ok := supportedAlgorithms[signatureConfig.Alg]
 	if !ok {
 		return nil, fmt.Errorf("JOSE: unknown algorithm %s", signatureConfig.Alg)
