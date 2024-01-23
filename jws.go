@@ -33,7 +33,7 @@ type SignatureConfig struct {
 	CipherSuites            []uint16   `json:"cipher_suites,omitempty"`
 	DisableJWKSecurity      bool       `json:"disable_jwk_security"`
 	Fingerprints            []string   `json:"jwk_fingerprints,omitempty"`
-	LocalCA                 string     `json:"jwk_local_xca,omitempty"`
+	LocalCA                 string     `json:"jwk_local_ca,omitempty"`
 	LocalPath               string     `json:"jwk_local_path,omitempty"`
 	SecretURL               string     `json:"secret_url,omitempty"`
 	CipherKey               []byte     `json:"cypher_key,omitempty"`
