@@ -186,14 +186,14 @@ func FromCookie(key string) func(r *http.Request) (*jwt.JSONWebToken, error) {
 	}
 }
 
-func FromHeader(key string) func(r *http.Request) (*jwt.JSONWebToken, error) {
-	if key == "" {
-		key = "Authorization"
+func FromHeader(header string) func(r *http.Request) (*jwt.JSONWebToken, error) {
+	if header == "" {
+		header = "Authorization"
 	}
 	return func(r *http.Request) (*jwt.JSONWebToken, error) {
-		raw := ""
-		if h := r.Header.Get(key); len(h) > 7 && strings.EqualFold(h[0:7], "BEARER ") {
-			raw = h[7:]
+		raw := r.Header.Get(header)
+		if len(raw) > 7 && strings.EqualFold(raw[0:7], "BEARER ") {
+			raw = raw[7:]
 		}
 		if raw == "" {
 			return nil, auth0.ErrTokenNotFound
