@@ -17,14 +17,14 @@ var ErrNoHeadersToPropagate = fmt.Errorf("header propagation is disabled because
 
 type ExtractorFactory func(string) func(r *http.Request) (*jwt.JSONWebToken, error)
 
-func NewValidator(signatureConfig *SignatureConfig, ef ExtractorFactory) (*auth0.JWTValidator, error) {
+func NewValidator(signatureConfig *SignatureConfig, cookieEf ExtractorFactory, headerEf ExtractorFactory) (*auth0.JWTValidator, error) {
 	sa, ok := supportedAlgorithms[signatureConfig.Alg]
 	if !ok {
 		return nil, fmt.Errorf("JOSE: unknown algorithm %s", signatureConfig.Alg)
 	}
 	te := auth0.FromMultiple(
-		auth0.RequestTokenExtractorFunc(auth0.FromHeader),
-		auth0.RequestTokenExtractorFunc(ef(signatureConfig.CookieKey)),
+		auth0.RequestTokenExtractorFunc(headerEf(signatureConfig.AuthHeaderName)),
+		auth0.RequestTokenExtractorFunc(cookieEf(signatureConfig.CookieKey)),
 	)
 
 	decodedFs, err := DecodeFingerprints(signatureConfig.Fingerprints)

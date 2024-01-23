@@ -87,7 +87,7 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 			return erroredHandler
 		}
 
-		validator, err := krakendjose.NewValidator(scfg, FromCookie)
+		validator, err := krakendjose.NewValidator(scfg, FromCookie, FromHeader)
 		if err != nil {
 			logger.Fatal(logPrefix, "Unable to create the validator:", err.Error())
 			return erroredHandler
@@ -237,5 +237,21 @@ func FromCookie(key string) func(r *http.Request) (*jwt.JSONWebToken, error) {
 			return nil, auth0.ErrTokenNotFound
 		}
 		return jwt.ParseSigned(cookie.Value)
+	}
+}
+
+func FromHeader(header string) func(r *http.Request) (*jwt.JSONWebToken, error) {
+	if header == "" {
+		header = "Authorization"
+	}
+	return func(r *http.Request) (*jwt.JSONWebToken, error) {
+		raw := ""
+		if h := r.Header.Get(header); len(h) > 7 && strings.EqualFold(h[0:7], "BEARER ") {
+			raw = h[7:]
+		}
+		if raw == "" {
+			return nil, auth0.ErrTokenNotFound
+		}
+		return jwt.ParseSigned(raw)
 	}
 }

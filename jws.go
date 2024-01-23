@@ -19,6 +19,7 @@ const (
 
 type SignatureConfig struct {
 	Alg                     string     `json:"alg"`
+	AuthHeaderName          string     `json:"auth_header_name,omitempty"`
 	URI                     string     `json:"jwk_url"`
 	CacheEnabled            bool       `json:"cache,omitempty"`
 	CacheDuration           uint32     `json:"cache_duration,omitempty"`
@@ -32,7 +33,7 @@ type SignatureConfig struct {
 	CipherSuites            []uint16   `json:"cipher_suites,omitempty"`
 	DisableJWKSecurity      bool       `json:"disable_jwk_security"`
 	Fingerprints            []string   `json:"jwk_fingerprints,omitempty"`
-	LocalCA                 string     `json:"jwk_local_ca,omitempty"`
+	LocalCA                 string     `json:"jwk_local_xca,omitempty"`
 	LocalPath               string     `json:"jwk_local_path,omitempty"`
 	SecretURL               string     `json:"secret_url,omitempty"`
 	CipherKey               []byte     `json:"cypher_key,omitempty"`

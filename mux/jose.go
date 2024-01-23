@@ -110,7 +110,7 @@ func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, r
 			return handler
 		}
 
-		validator, err := krakendjose.NewValidator(signatureConfig, FromCookie)
+		validator, err := krakendjose.NewValidator(signatureConfig, FromCookie, FromHeader)
 		if err != nil {
 			log.Fatalf("%s: %s", cfg.Endpoint, err.Error())
 		}
@@ -183,6 +183,22 @@ func FromCookie(key string) func(r *http.Request) (*jwt.JSONWebToken, error) {
 			return nil, auth0.ErrTokenNotFound
 		}
 		return jwt.ParseSigned(cookie.Value)
+	}
+}
+
+func FromHeader(key string) func(r *http.Request) (*jwt.JSONWebToken, error) {
+	if key == "" {
+		key = "Authorization"
+	}
+	return func(r *http.Request) (*jwt.JSONWebToken, error) {
+		raw := ""
+		if h := r.Header.Get(key); len(h) > 7 && strings.EqualFold(h[0:7], "BEARER ") {
+			raw = h[7:]
+		}
+		if raw == "" {
+			return nil, auth0.ErrTokenNotFound
+		}
+		return jwt.ParseSigned(raw)
 	}
 }
 
