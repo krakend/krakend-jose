@@ -256,7 +256,7 @@ func TestCustomHeaderName(t *testing.T) {
 	if body := w.Body.String(); body != "" {
 		t.Errorf("unexpected body: %s", body)
 	}
-} 
+}
 
 func TestTokenSigner_error(t *testing.T) {
 	ts := TokenSigner(
