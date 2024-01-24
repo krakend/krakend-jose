@@ -19,6 +19,7 @@ const (
 
 type SignatureConfig struct {
 	Alg                     string     `json:"alg"`
+	AuthHeaderName          string     `json:"auth_header_name,omitempty"`
 	URI                     string     `json:"jwk_url"`
 	CacheEnabled            bool       `json:"cache,omitempty"`
 	CacheDuration           uint32     `json:"cache_duration,omitempty"`

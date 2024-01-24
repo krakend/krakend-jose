@@ -16,7 +16,7 @@ func nopExtractor(_ string) func(r *http.Request) (*jwt.JSONWebToken, error) {
 func Test_NewValidator_unkownAlg(t *testing.T) {
 	_, err := NewValidator(&SignatureConfig{
 		Alg: "random",
-	}, nopExtractor)
+	}, nopExtractor, nopExtractor)
 	if err == nil || err.Error() != "JOSE: unknown algorithm random" {
 		t.Errorf("unexpected error: %v", err)
 	}
