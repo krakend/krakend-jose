@@ -155,16 +155,11 @@ func ScopesAllMatcher(scopesKey string, claims map[string]interface{}, requiredS
 	if !ok {
 		return false
 	}
-	scopeClaim, ok := tmp.(string)
-	if !ok {
-		return false
-	}
 
-	presentScopes := strings.Split(scopeClaim, " ")
-	if len(presentScopes) > 0 {
-		for _, rScope := range requiredScopes {
+	matchAll := func(required []string, given []string) bool {
+		for _, rScope := range required {
 			matched := false
-			for _, pScope := range presentScopes {
+			for _, pScope := range given {
 				if rScope == pScope {
 					matched = true
 				}
@@ -175,6 +170,23 @@ func ScopesAllMatcher(scopesKey string, claims map[string]interface{}, requiredS
 		}
 		// all required scopes have been found in provided (claims) scopes
 		return true
+	}
+
+	scopes, ok := tmp.([]interface{})
+	if ok {
+		if len(scopes) > 0 {
+			return matchAll(requiredScopes, convertToStringSlice(scopes))
+		}
+	}
+
+	scopeString, ok := tmp.(string)
+	if !ok {
+		return false
+	}
+
+	presentScopes := strings.Split(scopeString, " ")
+	if len(presentScopes) > 0 {
+		return matchAll(requiredScopes, presentScopes)
 	}
 
 	return false
@@ -200,6 +212,27 @@ func ScopesAnyMatcher(scopesKey string, claims map[string]interface{}, requiredS
 	if !ok {
 		return false
 	}
+
+	matchAny := func(required []string, given []string) bool {
+		for _, rScope := range required {
+			for _, pScope := range given {
+				if rScope == pScope {
+					return true // found any of the required scopes --> return
+				}
+			}
+		}
+
+		// none of the scopes have been found in provided (claims) scopes
+		return false
+	}
+
+	scopes, ok := tmp.([]interface{})
+	if ok {
+		if len(scopes) > 0 {
+			return matchAny(requiredScopes, convertToStringSlice(scopes))
+		}
+	}
+
 	scopeClaim, ok := tmp.(string)
 	if !ok {
 		return false
@@ -207,15 +240,7 @@ func ScopesAnyMatcher(scopesKey string, claims map[string]interface{}, requiredS
 
 	presentScopes := strings.Split(scopeClaim, " ")
 	if len(presentScopes) > 0 {
-		for _, rScope := range requiredScopes {
-			for _, pScope := range presentScopes {
-				if rScope == pScope {
-					return true // found any of the required scopes --> return
-				}
-			}
-		}
-		// none of the scopes have been found in provided (claims) scopes
-		return false
+		return matchAny(requiredScopes, presentScopes)
 	}
 
 	return false
@@ -319,4 +344,14 @@ var supportedAlgorithms = map[string]jose.SignatureAlgorithm{
 	"PS256": jose.PS256,
 	"PS384": jose.PS384,
 	"PS512": jose.PS512,
+}
+
+func convertToStringSlice(input []interface{}) []string {
+	result := make([]string, len(input))
+
+	for i, v := range input {
+		result[i] = v.(string)
+	}
+
+	return result
 }
