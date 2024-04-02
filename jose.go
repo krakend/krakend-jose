@@ -6,6 +6,7 @@ import (
 	"math"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/krakend/go-auth0"
 	"github.com/luraproject/lura/v2/proxy"
@@ -51,7 +52,12 @@ func NewValidator(signatureConfig *SignatureConfig, cookieEf, headerEf Extractor
 		return nil, err
 	}
 
-	return auth0.NewValidator(
+	leeway, err := time.ParseDuration(signatureConfig.Leeway)
+	if err != nil {
+		leeway = time.Second
+	}
+
+	return auth0.NewValidatorWithLeeway(
 		auth0.NewConfiguration(
 			sp,
 			signatureConfig.Audience,
@@ -59,6 +65,7 @@ func NewValidator(signatureConfig *SignatureConfig, cookieEf, headerEf Extractor
 			sa,
 		),
 		te,
+		leeway,
 	), nil
 }
 

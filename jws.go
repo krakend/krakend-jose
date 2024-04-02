@@ -42,6 +42,7 @@ type SignatureConfig struct {
 	ScopesMatcher           string     `json:"scopes_matcher,omitempty"`
 	KeyIdentifyStrategy     string     `json:"key_identify_strategy"`
 	OperationDebug          bool       `json:"operation_debug,omitempty"`
+	Leeway                  string     `json:"leeway"`
 }
 
 type SignerConfig struct {

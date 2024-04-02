@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/gin-gonic/gin v1.8.2
-	github.com/krakend/go-auth0 v1.0.0
+	github.com/krakend/go-auth0 v1.0.1-0.20240402170634-a8ab0691698c
 	github.com/luraproject/lura/v2 v2.0.5
 	gocloud.dev v0.28.0
 	gocloud.dev/secrets/hashivault v0.28.0
