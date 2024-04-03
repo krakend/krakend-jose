@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/textproto"
 	"strings"
 
 	"github.com/krakend/go-auth0"
@@ -82,6 +83,10 @@ func GetSignatureConfig(cfg *config.EndpointConfig) (*SignatureConfig, error) {
 	if !strings.HasPrefix(res.URI, "https://") && !res.DisableJWKSecurity {
 		return res, ErrInsecureJWKSource
 	}
+	if res.AuthHeaderName != "" {
+		res.AuthHeaderName = textproto.CanonicalMIMEHeaderKey(res.AuthHeaderName)
+	}
+
 	return res, nil
 }
 
