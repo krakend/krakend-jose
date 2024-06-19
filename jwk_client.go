@@ -82,7 +82,11 @@ func (j *JWKClient) GetSecret(r *http.Request) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	return j.SecretFromToken(token)
+}
 
+// SecretFromToken implements the GetSecret method of the SecretProvider interface.
+func (j *JWKClient) SecretFromToken(token *jwt.JSONWebToken) (interface{}, error) {
 	if len(token.Headers) < 1 {
 		return nil, auth0.ErrNoJWTHeaders
 	}

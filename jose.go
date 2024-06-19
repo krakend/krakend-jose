@@ -353,6 +353,11 @@ var supportedAlgorithms = map[string]jose.SignatureAlgorithm{
 	"PS512": jose.PS512,
 }
 
+func SupportedAlgorithm(s string) (jose.SignatureAlgorithm, bool) {
+	a, ok := supportedAlgorithms[s]
+	return a, ok
+}
+
 func convertToStringSlice(input []interface{}) []string {
 	result := make([]string, len(input))
 
