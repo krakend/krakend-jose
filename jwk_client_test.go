@@ -23,7 +23,7 @@ func TestJWKClient_globalCache(t *testing.T) {
 	}]}`)
 
 	var count uint64
-	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		// Content-Type defined in https://datatracker.ietf.org/doc/html/rfc7517#section-8.5.1
 		w.Header().Add("Content-Type", "application/jwk-set+json")
 		atomic.AddUint64(&count, 1)
