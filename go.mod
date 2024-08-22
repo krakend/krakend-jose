@@ -1,14 +1,16 @@
 module github.com/krakendio/krakend-jose/v2
 
-go 1.17
+go 1.21
+
+toolchain go1.22.6
 
 require (
 	github.com/gin-gonic/gin v1.8.2
-	github.com/krakend/go-auth0 v1.1.0
+	github.com/go-jose/go-jose/v3 v3.0.3
+	github.com/krakend/go-auth0/v2 v2.0.0
 	github.com/luraproject/lura/v2 v2.0.5
 	gocloud.dev v0.28.0
 	gocloud.dev/secrets/hashivault v0.28.0
-	gopkg.in/square/go-jose.v2 v2.6.0
 )
 
 require (
@@ -96,11 +98,11 @@ require (
 	github.com/valyala/fastrand v1.1.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
-	golang.org/x/crypto v0.9.0 // indirect
+	golang.org/x/crypto v0.19.0 // indirect
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/oauth2 v0.2.0 // indirect
-	golang.org/x/sys v0.8.0 // indirect
-	golang.org/x/text v0.9.0 // indirect
+	golang.org/x/sys v0.17.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.2.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/api v0.103.0 // indirect
@@ -108,6 +110,7 @@ require (
 	google.golang.org/genproto v0.0.0-20221201204527-e3fa12d562f3 // indirect
 	google.golang.org/grpc v1.51.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
+	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 

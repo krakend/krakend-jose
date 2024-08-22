@@ -7,9 +7,9 @@ import (
 	"net/textproto"
 	"strings"
 
-	"github.com/krakend/go-auth0"
+	jose "github.com/go-jose/go-jose/v3"
+	"github.com/krakend/go-auth0/v2"
 	"github.com/luraproject/lura/v2/config"
-	jose "gopkg.in/square/go-jose.v2"
 )
 
 const (

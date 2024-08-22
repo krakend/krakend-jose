@@ -18,9 +18,9 @@ import (
 	"sync"
 	"time"
 
-	auth0 "github.com/krakend/go-auth0"
+	jose "github.com/go-jose/go-jose/v3"
+	auth0 "github.com/krakend/go-auth0/v2"
 	"github.com/luraproject/lura/v2/core"
-	jose "gopkg.in/square/go-jose.v2"
 
 	"github.com/krakendio/krakend-jose/v2/secrets"
 )
