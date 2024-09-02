@@ -53,7 +53,10 @@ func TestJWK(t *testing.T) {
 		},
 	} {
 		server := httptest.NewUnstartedServer(jwkEndpoint(tc.Name))
-		server.TLS = &tls.Config{Certificates: []tls.Certificate{cert}}
+		server.TLS = &tls.Config{
+			Certificates: []tls.Certificate{cert},
+			MinVersion:   tls.VersionTLS13,
+		}
 		server.StartTLS()
 
 		secretProvidr, err := SecretProvider(SecretProviderConfig{URI: server.URL, LocalCA: "cert.pem"}, nil)
@@ -228,7 +231,10 @@ func TestJWK_cache(t *testing.T) {
 	} {
 		var hits uint32
 		server := httptest.NewUnstartedServer(jwkEndpointWithCounter(tc.Name, &hits))
-		server.TLS = &tls.Config{Certificates: []tls.Certificate{cert}}
+		server.TLS = &tls.Config{
+			Certificates: []tls.Certificate{cert},
+			MinVersion:   tls.VersionTLS13,
+		}
 		server.StartTLS()
 
 		cfg := SecretProviderConfig{
