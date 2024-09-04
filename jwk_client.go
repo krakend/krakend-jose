@@ -163,12 +163,12 @@ func (u *memoryMissTracker) Exists(key string) bool {
 	var found bool
 
 	for i, uk := range u.keys {
+		if now.Sub(uk.time) > u.ttl {
+			cutPosition = i
+		}
 		if uk.name == key {
 			found = true
 			break
-		}
-		if now.Sub(uk.time) > u.ttl {
-			cutPosition = i
 		}
 	}
 

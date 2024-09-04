@@ -110,15 +110,19 @@ func Test_memoryMissTracker(t *testing.T) {
 		t.Errorf("key1 should be present in list of misses %+v", uks)
 	}
 
-	if len(uks.keys) != 4 {
+	if len(uks.keys) != 3 {
 		t.Errorf("wrong size %+v", uks)
 	}
 
-	if !uks.Exists("key2") {
-		t.Errorf("key2 should be present in list of misses %+v", uks)
+	if !uks.Exists("key3") {
+		t.Errorf("key3 should be present in list of misses %+v", uks)
 	}
 
-	if len(uks.keys) != 3 {
+	if uks.Exists("key2") {
+		t.Errorf("key2 should not be present in list of misses %+v", uks)
+	}
+
+	if len(uks.keys) != 2 {
 		t.Errorf("wrong size %+v", uks)
 	}
 
