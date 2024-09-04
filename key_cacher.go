@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-jose/go-jose/v3"
 	"github.com/luraproject/lura/v2/config"
 	"github.com/luraproject/lura/v2/logging"
-	"gopkg.in/square/go-jose.v2"
 )
 
 var (

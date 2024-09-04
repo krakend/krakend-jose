@@ -8,13 +8,13 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	auth0 "github.com/krakend/go-auth0"
+	"github.com/go-jose/go-jose/v3/jwt"
+	auth0 "github.com/krakend/go-auth0/v2"
 	krakendjose "github.com/krakendio/krakend-jose/v2"
 	"github.com/luraproject/lura/v2/config"
 	"github.com/luraproject/lura/v2/logging"
 	"github.com/luraproject/lura/v2/proxy"
 	ginlura "github.com/luraproject/lura/v2/router/gin"
-	"gopkg.in/square/go-jose.v2/jwt"
 )
 
 func HandlerFactory(hf ginlura.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory) ginlura.HandlerFactory {

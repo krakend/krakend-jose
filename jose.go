@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/krakend/go-auth0"
+	jose "github.com/go-jose/go-jose/v3"
+	"github.com/go-jose/go-jose/v3/jwt"
+	"github.com/krakend/go-auth0/v2"
 	"github.com/luraproject/lura/v2/proxy"
-	jose "gopkg.in/square/go-jose.v2"
-	"gopkg.in/square/go-jose.v2/jwt"
 )
 
 var ErrNoHeadersToPropagate = fmt.Errorf("header propagation is disabled because there is no propagate_claims attribute")
