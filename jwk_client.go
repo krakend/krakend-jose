@@ -60,7 +60,7 @@ func TokenIDGetterFactory(keyIdentifyStrategy string) TokenIDGetter {
 type JWKClientOptions struct {
 	auth0.JWKClientOptions
 	KeyIdentifyStrategy string
-	EnableUnknownList   bool
+	UnknownListTTL      string
 }
 
 type JWKClient struct {
@@ -81,10 +81,11 @@ func NewJWKClientWithCache(options JWKClientOptions, extractor auth0.RequestToke
 		misses:        noTracker,
 	}
 
-	if options.EnableUnknownList {
+	if ttl, err := time.ParseDuration(options.UnknownListTTL); err == nil && ttl >= time.Second {
 		c.misses = &memoryMissTracker{
 			keys: []unknownKey{},
 			mu:   new(sync.Mutex),
+			ttl:  ttl,
 		}
 	}
 
@@ -123,21 +124,29 @@ func (j *JWKClient) GetKey(keyID string) (jose.JSONWebKey, error) {
 	return k, err
 }
 
+// missTracker is an interface defining the required signatures for tracking
+// keys missing from the received jwk
 type missTracker interface {
 	Exists(string) bool
 	Add(string)
 }
 
-var noTracker = noopMissTracker{}
-
+// noopMissTracker is a missTracker that does nothing and always allows the client
+// to contact the jwk provider
 type noopMissTracker struct{}
 
 func (noopMissTracker) Exists(_ string) bool { return false }
 func (noopMissTracker) Add(_ string)         {}
 
+var noTracker = noopMissTracker{}
+
+// memoryMissTracker is a missTracker that keeps a list of missed keys in the last TTL period.
+// When the Exists method is called, it maintain the size of the list, removing all the entries
+// stored for more than the defined TTL.
 type memoryMissTracker struct {
 	keys []unknownKey
 	mu   *sync.Mutex
+	ttl  time.Duration
 }
 
 type unknownKey struct {
@@ -158,7 +167,7 @@ func (u *memoryMissTracker) Exists(key string) bool {
 			found = true
 			break
 		}
-		if now.Sub(uk.time) > time.Minute {
+		if now.Sub(uk.time) > u.ttl {
 			cutPosition = i
 		}
 	}
