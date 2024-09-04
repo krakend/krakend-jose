@@ -103,6 +103,7 @@ func Test_memoryMissTracker(t *testing.T) {
 				time: now.Add(-time.Millisecond),
 			},
 		},
+		ttl: time.Minute,
 	}
 
 	if !uks.Exists("key1") {
