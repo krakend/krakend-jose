@@ -44,7 +44,7 @@ type SignatureConfig struct {
 	KeyIdentifyStrategy     string     `json:"key_identify_strategy"`
 	OperationDebug          bool       `json:"operation_debug,omitempty"`
 	Leeway                  string     `json:"leeway"`
-	UnknownListTTL          string     `json:"unknown_list_ttl"`
+	UnknownKeysTTL          string     `json:"unknown_keys_throttle_ttl"`
 }
 
 type SignerConfig struct {

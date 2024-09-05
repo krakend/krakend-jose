@@ -60,7 +60,7 @@ func TokenIDGetterFactory(keyIdentifyStrategy string) TokenIDGetter {
 type JWKClientOptions struct {
 	auth0.JWKClientOptions
 	KeyIdentifyStrategy string
-	UnknownListTTL      string
+	UnknownKeysTTL      string
 }
 
 type JWKClient struct {
@@ -81,7 +81,7 @@ func NewJWKClientWithCache(options JWKClientOptions, extractor auth0.RequestToke
 		misses:        noTracker,
 	}
 
-	if ttl, err := time.ParseDuration(options.UnknownListTTL); err == nil && ttl >= time.Second {
+	if ttl, err := time.ParseDuration(options.UnknownKeysTTL); err == nil && ttl >= time.Second {
 		c.misses = &memoryMissTracker{
 			keys: []unknownKey{},
 			mu:   new(sync.Mutex),
@@ -154,6 +154,8 @@ type unknownKey struct {
 	time time.Time
 }
 
+// Exists looks for the key in the list and removes all evicted entries found before the required one. If the required is evicted,
+// it removes it and returns false, so the client can try to fetch it again.
 func (u *memoryMissTracker) Exists(key string) bool {
 	u.mu.Lock()
 	defer u.mu.Unlock()
@@ -186,6 +188,7 @@ func (u *memoryMissTracker) Exists(key string) bool {
 	return found
 }
 
+// Add appends a key and a timestamp to the end of the list of keys
 func (u *memoryMissTracker) Add(key string) {
 	u.mu.Lock()
 	u.keys = append(u.keys, unknownKey{name: key, time: time.Now()})

@@ -37,7 +37,7 @@ type SecretProviderConfig struct {
 	SecretURL           string
 	CipherKey           []byte
 	KeyIdentifyStrategy string
-	UnknownListTTL      string
+	UnknownKeysTTL      string
 }
 
 var (
@@ -201,7 +201,7 @@ func newJWKClientOptions(cfg SecretProviderConfig) (JWKClientOptions, error) {
 			},
 		},
 		KeyIdentifyStrategy: cfg.KeyIdentifyStrategy,
-		UnknownListTTL:      cfg.UnknownListTTL,
+		UnknownKeysTTL:      cfg.UnknownKeysTTL,
 	}, nil
 }
 

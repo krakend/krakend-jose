@@ -45,7 +45,7 @@ func NewValidator(signatureConfig *SignatureConfig, cookieEf, headerEf Extractor
 		SecretURL:           signatureConfig.SecretURL,
 		CipherKey:           signatureConfig.CipherKey,
 		KeyIdentifyStrategy: signatureConfig.KeyIdentifyStrategy,
-		UnknownListTTL:      signatureConfig.UnknownListTTL,
+		UnknownKeysTTL:      signatureConfig.UnknownKeysTTL,
 	}
 
 	sp, err := SecretProvider(cfg, te)
