@@ -106,8 +106,8 @@ func Test_memoryMissTracker(t *testing.T) {
 		ttl: time.Minute,
 	}
 
-	if !uks.Exists("key1") {
-		t.Errorf("key1 should be present in list of misses %+v", uks)
+	if uks.Exists("key1") {
+		t.Errorf("key1 should not be present in list of misses %+v", uks)
 	}
 
 	if len(uks.keys) != 3 {

@@ -163,11 +163,12 @@ func (u *memoryMissTracker) Exists(key string) bool {
 	var found bool
 
 	for i, uk := range u.keys {
-		if now.Sub(uk.time) > u.ttl {
+		evicted := now.Sub(uk.time) >= u.ttl
+		if evicted {
 			cutPosition = i
 		}
 		if uk.name == key {
-			found = true
+			found = !evicted
 			break
 		}
 	}
