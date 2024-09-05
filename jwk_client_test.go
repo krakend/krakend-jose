@@ -3,6 +3,7 @@ package jose
 import (
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -77,5 +78,67 @@ func TestJWKClient_globalCache(t *testing.T) {
 	}
 	if count != 2 {
 		t.Errorf("invalid count %d", count)
+	}
+}
+
+func Test_memoryMissTracker(t *testing.T) {
+	now := time.Now()
+	uks := &memoryMissTracker{
+		mu: new(sync.Mutex),
+		keys: []unknownKey{
+			{
+				name: "key1",
+				time: now.Add(-time.Hour),
+			},
+			{
+				name: "key2",
+				time: now.Add(-2 * time.Minute),
+			},
+			{
+				name: "key3",
+				time: now.Add(-time.Second),
+			},
+			{
+				name: "key4",
+				time: now.Add(-time.Millisecond),
+			},
+		},
+		ttl: time.Minute,
+	}
+
+	if uks.Exists("key1") {
+		t.Errorf("key1 should not be present in list of misses %+v", uks)
+	}
+
+	if len(uks.keys) != 3 {
+		t.Errorf("wrong size %+v", uks)
+	}
+
+	if !uks.Exists("key3") {
+		t.Errorf("key3 should be present in list of misses %+v", uks)
+	}
+
+	if uks.Exists("key2") {
+		t.Errorf("key2 should not be present in list of misses %+v", uks)
+	}
+
+	if len(uks.keys) != 2 {
+		t.Errorf("wrong size %+v", uks)
+	}
+
+	if uks.Exists("key1") {
+		t.Errorf("key1 should not be present in list of misses %+v", uks)
+	}
+
+	if !uks.Exists("key4") {
+		t.Errorf("key4 should be present in list of misses %+v", uks)
+	}
+
+	if !uks.Exists("key3") {
+		t.Errorf("key3 should be present in list of misses %+v", uks)
+	}
+
+	if len(uks.keys) != 2 {
+		t.Errorf("wrong size %+v", uks)
 	}
 }
