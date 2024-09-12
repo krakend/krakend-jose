@@ -18,9 +18,9 @@ import (
 	"sync"
 	"time"
 
-	auth0 "github.com/krakend/go-auth0"
+	jose "github.com/go-jose/go-jose/v3"
+	auth0 "github.com/krakend/go-auth0/v2"
 	"github.com/luraproject/lura/v2/core"
-	jose "gopkg.in/square/go-jose.v2"
 
 	"github.com/krakendio/krakend-jose/v2/secrets"
 )
@@ -37,6 +37,7 @@ type SecretProviderConfig struct {
 	SecretURL           string
 	CipherKey           []byte
 	KeyIdentifyStrategy string
+	UnknownKeysTTL      string
 }
 
 var (
@@ -200,6 +201,7 @@ func newJWKClientOptions(cfg SecretProviderConfig) (JWKClientOptions, error) {
 			},
 		},
 		KeyIdentifyStrategy: cfg.KeyIdentifyStrategy,
+		UnknownKeysTTL:      cfg.UnknownKeysTTL,
 	}, nil
 }
 

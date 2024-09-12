@@ -3,11 +3,12 @@ package jose
 import (
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
-	"github.com/krakend/go-auth0"
+	"github.com/krakend/go-auth0/v2"
 	"github.com/luraproject/lura/v2/config"
 	"github.com/luraproject/lura/v2/logging"
 )
@@ -23,7 +24,7 @@ func TestJWKClient_globalCache(t *testing.T) {
 	}]}`)
 
 	var count uint64
-	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		// Content-Type defined in https://datatracker.ietf.org/doc/html/rfc7517#section-8.5.1
 		w.Header().Add("Content-Type", "application/jwk-set+json")
 		atomic.AddUint64(&count, 1)
@@ -77,5 +78,67 @@ func TestJWKClient_globalCache(t *testing.T) {
 	}
 	if count != 2 {
 		t.Errorf("invalid count %d", count)
+	}
+}
+
+func Test_memoryMissTracker(t *testing.T) {
+	now := time.Now()
+	uks := &memoryMissTracker{
+		mu: new(sync.Mutex),
+		keys: []unknownKey{
+			{
+				name: "key1",
+				time: now.Add(-time.Hour),
+			},
+			{
+				name: "key2",
+				time: now.Add(-2 * time.Minute),
+			},
+			{
+				name: "key3",
+				time: now.Add(-time.Second),
+			},
+			{
+				name: "key4",
+				time: now.Add(-time.Millisecond),
+			},
+		},
+		ttl: time.Minute,
+	}
+
+	if uks.Exists("key1") {
+		t.Errorf("key1 should not be present in list of misses %+v", uks)
+	}
+
+	if len(uks.keys) != 3 {
+		t.Errorf("wrong size %+v", uks)
+	}
+
+	if !uks.Exists("key3") {
+		t.Errorf("key3 should be present in list of misses %+v", uks)
+	}
+
+	if uks.Exists("key2") {
+		t.Errorf("key2 should not be present in list of misses %+v", uks)
+	}
+
+	if len(uks.keys) != 2 {
+		t.Errorf("wrong size %+v", uks)
+	}
+
+	if uks.Exists("key1") {
+		t.Errorf("key1 should not be present in list of misses %+v", uks)
+	}
+
+	if !uks.Exists("key4") {
+		t.Errorf("key4 should be present in list of misses %+v", uks)
+	}
+
+	if !uks.Exists("key3") {
+		t.Errorf("key3 should be present in list of misses %+v", uks)
+	}
+
+	if len(uks.keys) != 2 {
+		t.Errorf("wrong size %+v", uks)
 	}
 }
