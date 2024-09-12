@@ -7,7 +7,7 @@ toolchain go1.23.0
 require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/krakend/go-auth0 v1.1.0
-	github.com/luraproject/lura/v2 v2.0.5
+	github.com/luraproject/lura/v2 v2.7.0
 	gocloud.dev v0.28.0
 	gocloud.dev/secrets/hashivault v0.28.0
 	gopkg.in/square/go-jose.v2 v2.6.0
