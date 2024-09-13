@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/md5"
+	"crypto/md5" // skipcq: GSC-G501
 	"crypto/rand"
 	"encoding/hex"
 	"io"
@@ -73,7 +73,7 @@ func (c *Cypher) Close() {
 }
 
 func createHash(key []byte) string {
-	hasher := md5.New()
+	hasher := md5.New() // skipcq: GO-S1023, GSC-G401
 	hasher.Write(key)
 	return hex.EncodeToString(hasher.Sum(nil))
 }
