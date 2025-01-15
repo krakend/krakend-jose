@@ -31,7 +31,7 @@ func Example_RS256() {
 	// output:
 	// token request
 	// 201
-	// {"access_token":"eyJhbGciOiJSUzI1NiIsImtpZCI6IjIwMTEtMDQtMjkiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJodHRwOi8vYXBpLmV4YW1wbGUuY29tIiwiZXhwIjoxNzM1Njg5NjAwLCJpc3MiOiJodHRwOi8vZXhhbXBsZS5jb20iLCJqdGkiOiJtbmIyM3Zjc3J0NzU2eXVpb21uYnZjeDk4ZXJ0eXVpb3AiLCJyb2xlcyI6WyJyb2xlX2EiLCJyb2xlX2IiXSwic3ViIjoiMTIzNDU2Nzg5MHF3ZXJ0eXVpbyJ9.SFy8lloEcTMGb7twtxOPMZE1zPccGDVylsrjyvMj_DTZbKacq5WZsyvtG_InjKvRTn_xSC3JQkeCRFTCXFyQEJMyjhWgCAZ4QHXXDHyXSHnvIh1_hDQW5BrIDslWsftg3KYPFAXB2i78p1kioqQSa9NmikgRChjx-InqUM599yRaOB4Z_Xjg7DCIkgIO01JfsXU6IxEskGVuXcIV1EY44CT84I5w-Mr0fwGOyqKMmUodji2raI_SIYRb2EBTtoDBlabB19Dulv8puq4LacjQaRIuWQbA40hGOiepchJMApBaiX6QdYXTnc0f6RFE5GiX1-oYWgOQNi3OA2gJ61PLLA","exp":1735689600,"refresh_token":"eyJhbGciOiJSUzI1NiIsImtpZCI6IjIwMTEtMDQtMjkiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJodHRwOi8vYXBpLmV4YW1wbGUuY29tIiwiZXhwIjoxNzM1Njg5NjAwLCJpc3MiOiJodHRwOi8vZXhhbXBsZS5jb20iLCJqdGkiOiJtbmIyM3Zjc3J0NzU2eXVpb21uMTI4NzZidmN4OThlcnR5dWlvcCIsInN1YiI6IjEyMzQ1Njc4OTBxd2VydHl1aW8ifQ.d-2M5oC2H29qZQdEd5LE221fQZwl2L1ibMF_EeG5uOyBVlay705_aU6XRnZ4Y7Ns77C7RPz215is7aDOVydrq48cBbztoezxUvc2r5aT84quvT_QImyiDpWYrErthr9a_UpAEthIwh8AfcizW0fXrhEYifaZp2hxG24x5bQqWssFZo4UCzMzfp90NJuIQ970bl_Q0mJbOv4ao8X14MMb6j4MuqRGKPAt8rQDpcfSkbxgKofC4GrrcaaCa7Y-wrrMjurRJiYKe_y2OKSyKx5T8PsbXxrWzmRhL1nBF3Kq1wHFcz3M0yemyN2q9Af9BY-kyh5cnv_OgcSlb5RmW0O2Xg"}
+	// {"access_token":"eyJhbGciOiJSUzI1NiIsImtpZCI6IjIwMTEtMDQtMjkiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJodHRwOi8vYXBpLmV4YW1wbGUuY29tIiwiZXhwIjoyMDUxODgyNzU1LCJpc3MiOiJodHRwOi8vZXhhbXBsZS5jb20iLCJqdGkiOiJtbmIyM3Zjc3J0NzU2eXVpb21uYnZjeDk4ZXJ0eXVpb3AiLCJyb2xlcyI6WyJyb2xlX2EiLCJyb2xlX2IiXSwic3ViIjoiMTIzNDU2Nzg5MHF3ZXJ0eXVpbyJ9.u1fK05FpXctB-VkhhT3xu2WSIkEr1_VM71ald-yeKTesxhxg68TsHFEOBCgoXPuCviOP8QnUKNuVSeyMJh9z3nnrfQIjo9VZ2yicZu6ImYptSQ2DJbR80GDSPp-H7KnjaR9AAY0HZ0M-KUTaHdLABZFr307nkOeaJn_5jMpav7pqa7nrU3sI1CLX5pYVTggG6t7Zoqj2ebzzqdRxQEtdmZkD_NfH-3w3t-H0ylVdeBnPh-RvlspxC_mJzyUIJ0BwPlZpabppHm1ISySa4kwnwxEYnux0oZcb3PSoOZZZA467JySZ69PRlenNPdfGPL6E3uL1nqPHcxhte7ikSG4Q6Q","exp":2051882755,"refresh_token":"eyJhbGciOiJSUzI1NiIsImtpZCI6IjIwMTEtMDQtMjkiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJodHRwOi8vYXBpLmV4YW1wbGUuY29tIiwiZXhwIjoyMDUxODgyNzU1LCJpc3MiOiJodHRwOi8vZXhhbXBsZS5jb20iLCJqdGkiOiJtbmIyM3Zjc3J0NzU2eXVpb21uMTI4NzZidmN4OThlcnR5dWlvcCIsInN1YiI6IjEyMzQ1Njc4OTBxd2VydHl1aW8ifQ.jwmNRj7gRcAgeeG9WqB2I8mqRVFZtw3uw5uSBJD8MmCVGRGPJ83ytEbqF3A-ya9IbdL5lJZ5LDUhwkO9xnkLZPBClDYBP81h0ZU7KR3vJnH9ZNkgpUiu1XLfkpJ6tSuZXPLj5-Lxymr3Mf8PdWey5YjEfk6mN_xfBHZR_XZbwsVbiv_nWhp-qeltPkXraShEpsDFFfzjRFrGprFi1S00OFDBcObbmXtZ8GTyJgSN8vO_rU-vkt6no1phKHzuyaS5D6GdjrxDXv7pHYL-OWifBiElMs09PAd16rZy3-qSIDZS7vHo724cG9UYMgxSE86PvjGP_dOJCOf64p_wPkkBRw"}
 	// map[Content-Type:[application/json]]
 	// unauthorized request
 	// 401
@@ -57,7 +57,7 @@ func Example_HS256() {
 	// output:
 	// token request
 	// 201
-	// {"access_token":"eyJhbGciOiJIUzI1NiIsImtpZCI6InNpbTIiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJodHRwOi8vYXBpLmV4YW1wbGUuY29tIiwiZXhwIjoxNzM1Njg5NjAwLCJpc3MiOiJodHRwOi8vZXhhbXBsZS5jb20iLCJqdGkiOiJtbmIyM3Zjc3J0NzU2eXVpb21uYnZjeDk4ZXJ0eXVpb3AiLCJyb2xlcyI6WyJyb2xlX2EiLCJyb2xlX2IiXSwic3ViIjoiMTIzNDU2Nzg5MHF3ZXJ0eXVpbyJ9.89zdRo4LCHpT93JX3_Yn2LoAOUvEAiFj6X7vnCgOd5Q","exp":1735689600,"refresh_token":"eyJhbGciOiJIUzI1NiIsImtpZCI6InNpbTIiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJodHRwOi8vYXBpLmV4YW1wbGUuY29tIiwiZXhwIjoxNzM1Njg5NjAwLCJpc3MiOiJodHRwOi8vZXhhbXBsZS5jb20iLCJqdGkiOiJtbmIyM3Zjc3J0NzU2eXVpb21uMTI4NzZidmN4OThlcnR5dWlvcCIsInN1YiI6IjEyMzQ1Njc4OTBxd2VydHl1aW8ifQ.lJuO1xyI8QOTWNGxBQe2hH90Jdp5y0DEbPd44I728dA"}
+	// {"access_token":"eyJhbGciOiJIUzI1NiIsImtpZCI6InNpbTIiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJodHRwOi8vYXBpLmV4YW1wbGUuY29tIiwiZXhwIjoyMDUxODgyNzU1LCJpc3MiOiJodHRwOi8vZXhhbXBsZS5jb20iLCJqdGkiOiJtbmIyM3Zjc3J0NzU2eXVpb21uYnZjeDk4ZXJ0eXVpb3AiLCJyb2xlcyI6WyJyb2xlX2EiLCJyb2xlX2IiXSwic3ViIjoiMTIzNDU2Nzg5MHF3ZXJ0eXVpbyJ9.xG6O62h475Y-EknyLFerPOUX6ATKCoIYEq4QsQsuw-Q","exp":2051882755,"refresh_token":"eyJhbGciOiJIUzI1NiIsImtpZCI6InNpbTIiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJodHRwOi8vYXBpLmV4YW1wbGUuY29tIiwiZXhwIjoyMDUxODgyNzU1LCJpc3MiOiJodHRwOi8vZXhhbXBsZS5jb20iLCJqdGkiOiJtbmIyM3Zjc3J0NzU2eXVpb21uMTI4NzZidmN4OThlcnR5dWlvcCIsInN1YiI6IjEyMzQ1Njc4OTBxd2VydHl1aW8ifQ.8rd0w9_H7Z_0J37nKvqQNwJnP25VrQcVAAa5sc3Fsw0"}
 	// map[Content-Type:[application/json]]
 	// unauthorized request
 	// 401
@@ -79,7 +79,7 @@ func Example_HS256_cookie() {
 	_, signer, _ := krakendjose.NewSigner(sCfg, nil)
 	verifierCfg := newVerifierEndpointCfg("HS256", server.URL, []string{"role_a"})
 
-	externalTokenIssuer := func(rw http.ResponseWriter, req *http.Request) {
+	externalTokenIssuer := func(rw http.ResponseWriter, _ *http.Request) {
 		resp, _ := tokenIssuer(context.Background(), new(proxy.Request))
 		data, ok := resp.Data["access_token"]
 		if !ok {
@@ -206,16 +206,16 @@ func tokenIssuer(_ context.Context, _ *proxy.Request) (*proxy.Response, error) {
 				"sub":   "1234567890qwertyuio",
 				"jti":   "mnb23vcsrt756yuiomnbvcx98ertyuiop",
 				"roles": []string{"role_a", "role_b"},
-				"exp":   1735689600,
+				"exp":   2051882755,
 			},
 			"refresh_token": map[string]interface{}{
 				"aud": "http://api.example.com",
 				"iss": "http://example.com",
 				"sub": "1234567890qwertyuio",
 				"jti": "mnb23vcsrt756yuiomn12876bvcx98ertyuiop",
-				"exp": 1735689600,
+				"exp": 2051882755,
 			},
-			"exp": 1735689600,
+			"exp": 2051882755,
 		},
 		Metadata: proxy.Metadata{
 			StatusCode: 201,
