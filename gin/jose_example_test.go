@@ -116,7 +116,7 @@ func Example_HS256_cookie() {
 	_, signer, _ := krakendjose.NewSigner(sCfg, nil)
 	verifierCfg := newVerifierEndpointCfg("HS256", server.URL, []string{"role_a"})
 
-	externalTokenIssuer := func(rw http.ResponseWriter, req *http.Request) {
+	externalTokenIssuer := func(rw http.ResponseWriter, _ *http.Request) {
 		resp, _ := tokenIssuer(context.Background(), new(proxy.Request))
 		data, ok := resp.Data["access_token"]
 		if !ok {
