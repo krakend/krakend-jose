@@ -38,6 +38,15 @@ func X5TTokenKeyIDGetter(token *jwt.JSONWebToken) string {
 	return x5t
 }
 
+// X5TS256TokenKeyIDGetter extracts the key id from the jSONWebToken as the x5t#S256
+func X5TS256TokenKeyIDGetter(token *jwt.JSONWebToken) string {
+	x5t, ok := token.Headers[0].ExtraHeaders["x5t#S256"].(string)
+	if !ok {
+		return token.Headers[0].KeyID
+	}
+	return x5t
+}
+
 // CompoundX5TTokenKeyIDGetter extracts the key id from the jSONWebToken as a compound string of the kid and x5t
 func CompoundX5TTokenKeyIDGetter(token *jwt.JSONWebToken) string {
 	return token.Headers[0].KeyID + X5TTokenKeyIDGetter(token)
@@ -46,9 +55,10 @@ func CompoundX5TTokenKeyIDGetter(token *jwt.JSONWebToken) string {
 // TokenIDGetterFactory returns the TokenIDGetter from the keyIdentifyStrategy configuration string
 func TokenIDGetterFactory(keyIdentifyStrategy string) TokenIDGetter {
 	supportedKeyIdentifyStrategy := map[string]TokenKeyIDGetterFunc{
-		"kid":     DefaultTokenKeyIDGetter,
-		"x5t":     X5TTokenKeyIDGetter,
-		"kid_x5t": CompoundX5TTokenKeyIDGetter,
+		"kid":      DefaultTokenKeyIDGetter,
+		"x5t":      X5TTokenKeyIDGetter,
+		"x5t#S256": X5TS256TokenKeyIDGetter,
+		"kid_x5t":  CompoundX5TTokenKeyIDGetter,
 	}
 
 	if tokenGetter, ok := supportedKeyIdentifyStrategy[keyIdentifyStrategy]; ok {
