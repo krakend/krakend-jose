@@ -37,9 +37,10 @@ func SetGlobalCacher(l logging.Logger, cfg config.ExtraConfig) error {
 	duration := time.Duration(scfg.CacheDuration) * time.Second
 	globalKeyCacherOnce.Do(func() {
 		globalKeyCacher = map[string]GlobalCacher{
-			"kid":     {kc: NewMemoryKeyCacher(duration, -1, "kid"), mu: new(sync.RWMutex)},
-			"x5t":     {kc: NewMemoryKeyCacher(duration, -1, "x5t"), mu: new(sync.RWMutex)},
-			"kid_x5t": {kc: NewMemoryKeyCacher(duration, -1, "kid_x5t"), mu: new(sync.RWMutex)},
+			"kid":      {kc: NewMemoryKeyCacher(duration, -1, "kid"), mu: new(sync.RWMutex)},
+			"x5t":      {kc: NewMemoryKeyCacher(duration, -1, "x5t"), mu: new(sync.RWMutex)},
+			"x5t#S256": {kc: NewMemoryKeyCacher(duration, -1, "x5t#S256"), mu: new(sync.RWMutex)},
+			"kid_x5t":  {kc: NewMemoryKeyCacher(duration, -1, "kid_x5t"), mu: new(sync.RWMutex)},
 		}
 	})
 	return nil
@@ -92,6 +93,11 @@ func X5TKeyIDGetter(key *jose.JSONWebKey) string {
 	return b64.RawURLEncoding.EncodeToString(key.CertificateThumbprintSHA1)
 }
 
+// X5TS256KeyIDGetter extracts the key id from the jSONWebKey as the x5t#S256
+func X5TS256KeyIDGetter(key *jose.JSONWebKey) string {
+	return b64.RawURLEncoding.EncodeToString(key.CertificateThumbprintSHA256)
+}
+
 // CompoundX5TKeyIDGetter extracts the key id from the jSONWebKey as the a compound string of the kid and the x5t
 func CompoundX5TKeyIDGetter(key *jose.JSONWebKey) string {
 	return key.KeyID + X5TKeyIDGetter(key)
@@ -99,9 +105,10 @@ func CompoundX5TKeyIDGetter(key *jose.JSONWebKey) string {
 
 func KeyIDGetterFactory(keyIdentifyStrategy string) KeyIDGetter {
 	supportedKeyIdentifyStrategy := map[string]KeyIDGetterFunc{
-		"kid":     DefaultKeyIDGetter,
-		"x5t":     X5TKeyIDGetter,
-		"kid_x5t": CompoundX5TKeyIDGetter,
+		"kid":      DefaultKeyIDGetter,
+		"x5t":      X5TKeyIDGetter,
+		"x5t#S256": X5TS256KeyIDGetter,
+		"kid_x5t":  CompoundX5TKeyIDGetter,
 	}
 
 	if keyGetter, ok := supportedKeyIdentifyStrategy[keyIdentifyStrategy]; ok {
