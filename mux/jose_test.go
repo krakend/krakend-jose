@@ -16,7 +16,7 @@ import (
 	muxlura "github.com/luraproject/lura/v2/router/mux"
 )
 
-func TestTokenSignatureValidator(t *testing.T) {
+func TestTokenSignatureValidator(t *testing.T) { // skipcq: GO-R1005
 	server := httptest.NewServer(jwkEndpoint("public"))
 	defer server.Close()
 

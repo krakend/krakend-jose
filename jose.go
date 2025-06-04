@@ -389,7 +389,7 @@ func CalculateArrayHeadersToPropagate(propagationCfg [][]string, claims map[stri
 	return propagated, err
 }
 
-func parsePropagationTuple(tuple []string, claims map[string]interface{}) (c Claims, fromClaim string, toHeader string, err error) {
+func parsePropagationTuple(tuple []string, claims map[string]interface{}) (c Claims, fromClaim, toHeader string, err error) {
 	if len(tuple) != 2 {
 		err = fmt.Errorf("invalid number of claims to propagate: %+v", tuple)
 		return
