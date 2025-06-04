@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/textproto"
 	"regexp"
 	"strings"
 
@@ -170,7 +171,7 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 				return
 			}
 
-			propagateHeaders(cfg, scfg.PropagateClaimsToHeader, claims, c, logger)
+			propagateHeaders(cfg, scfg.PropagateClaimsToHeader, scfg.PropagateClaimsPreserveArray, claims, c, logger)
 
 			paramExtractor(c, claims)
 
@@ -183,16 +184,34 @@ func erroredHandler(c *gin.Context) {
 	c.AbortWithStatus(http.StatusUnauthorized)
 }
 
-func propagateHeaders(cfg *config.EndpointConfig, propagationCfg [][]string, claims map[string]interface{}, c *gin.Context, logger logging.Logger) {
+func propagateHeaders(
+	cfg *config.EndpointConfig,
+	propagationCfg [][]string,
+	propagationPreserveArrays bool,
+	claims map[string]interface{},
+	c *gin.Context,
+	logger logging.Logger,
+) {
 	logPrefix := "[ENDPOINT: " + cfg.Endpoint + "][PropagateHeaders]"
 	if len(propagationCfg) > 0 {
-		headersToPropagate, err := krakendjose.CalculateHeadersToPropagate(propagationCfg, claims)
+		if !propagationPreserveArrays {
+			headersToPropagate, err := krakendjose.CalculateHeadersToPropagate(propagationCfg, claims)
+			if err != nil {
+				logger.Warning(logPrefix, err.Error())
+			}
+			for k, v := range headersToPropagate {
+				// Set header value - replaces existing one
+				c.Request.Header.Set(k, v)
+			}
+			return
+		}
+
+		headersToPropagate, err := krakendjose.CalculateArrayHeadersToPropagate(propagationCfg, claims)
 		if err != nil {
 			logger.Warning(logPrefix, err.Error())
 		}
 		for k, v := range headersToPropagate {
-			// Set header value - replaces existing one
-			c.Request.Header.Set(k, v)
+			c.Request.Header[textproto.CanonicalMIMEHeaderKey(k)] = v
 		}
 	}
 }

@@ -310,6 +310,39 @@ func (c Claims) Get(name string) (string, bool) {
 	return normalized, ok
 }
 
+func (c Claims) List(name string) ([]string, bool) {
+	tmp, ok := c[name]
+	if !ok {
+		// if the claim is not present, return an slice with one empty element to keep compatibility
+		return []string{""}, ok
+	}
+
+	var normalized []string
+
+	switch v := tmp.(type) {
+	case string:
+		normalized = []string{v}
+	case int:
+		normalized = []string{fmt.Sprintf("%d", v)}
+	case float64:
+		if r := math.Round(v); math.Abs(v-r) <= epsilon {
+			return []string{fmt.Sprintf("%d", int(r))}, ok
+		}
+		normalized = []string{fmt.Sprintf("%f", v)}
+	case []interface{}:
+		if len(v) > 0 {
+			for _, elem := range v {
+				normalized = append(normalized, fmt.Sprintf("%v", elem))
+			}
+		}
+	default:
+		b, _ := json.Marshal(v)
+		normalized = []string{string(b)}
+	}
+
+	return normalized, ok
+}
+
 func CalculateHeadersToPropagate(propagationCfg [][]string, claims map[string]interface{}) (map[string]string, error) {
 	if len(propagationCfg) == 0 {
 		return nil, ErrNoHeadersToPropagate
@@ -318,24 +351,60 @@ func CalculateHeadersToPropagate(propagationCfg [][]string, claims map[string]in
 
 	var err error
 	for _, tuple := range propagationCfg {
-		if len(tuple) != 2 {
-			err = fmt.Errorf("invalid number of claims to propagate: %+v", tuple)
+		var c Claims
+		var fromClaim, toHeader string
+
+		c, fromClaim, toHeader, err = parsePropagationTuple(tuple, claims)
+		if err != nil {
 			continue
 		}
-		fromClaim := tuple[0]
-		toHeader := tuple[1]
 
-		c := Claims(claims)
-		if strings.Contains(fromClaim, ".") && (len(fromClaim) < 4 || fromClaim[:4] != "http") {
-			var claimsMap map[string]interface{}
-			fromClaim, claimsMap = getNestedClaim(fromClaim, claims)
-			c = Claims(claimsMap)
-		}
 		v, _ := c.Get(fromClaim)
 		propagated[toHeader] = v
 	}
 
 	return propagated, err
+}
+
+func CalculateArrayHeadersToPropagate(propagationCfg [][]string, claims map[string]interface{}) (map[string][]string, error) {
+	if len(propagationCfg) == 0 {
+		return nil, ErrNoHeadersToPropagate
+	}
+	propagated := make(map[string][]string)
+
+	var err error
+	for _, tuple := range propagationCfg {
+		var c Claims
+		var fromClaim, toHeader string
+
+		c, fromClaim, toHeader, err = parsePropagationTuple(tuple, claims)
+		if err != nil {
+			continue
+		}
+
+		v, _ := c.List(fromClaim)
+		propagated[toHeader] = v
+	}
+
+	return propagated, err
+}
+
+func parsePropagationTuple(tuple []string, claims map[string]interface{}) (c Claims, fromClaim string, toHeader string, err error) {
+	if len(tuple) != 2 {
+		err = fmt.Errorf("invalid number of claims to propagate: %+v", tuple)
+		return
+	}
+
+	fromClaim = tuple[0]
+	toHeader = tuple[1]
+
+	c = Claims(claims)
+	if strings.Contains(fromClaim, ".") && (len(fromClaim) < 4 || fromClaim[:4] != "http") {
+		var claimsMap map[string]interface{}
+		fromClaim, claimsMap = getNestedClaim(fromClaim, claims)
+		c = Claims(claimsMap)
+	}
+	return
 }
 
 var supportedAlgorithms = map[string]jose.SignatureAlgorithm{

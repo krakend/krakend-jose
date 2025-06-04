@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -19,16 +20,19 @@ func TestTokenSignatureValidator(t *testing.T) {
 	server := httptest.NewServer(jwkEndpoint("public"))
 	defer server.Close()
 
-	validatorEndpointCfg := newVerifierEndpointCfg("RS256", server.URL, []string{"role_a"})
+	validatorEndpointCfg := newVerifierEndpointCfg("RS256", server.URL, []string{"role_a"}, false)
 
-	forbidenEndpointCfg := newVerifierEndpointCfg("RS256", server.URL, []string{"role_c"})
+	forbidenEndpointCfg := newVerifierEndpointCfg("RS256", server.URL, []string{"role_c"}, false)
 	forbidenEndpointCfg.Endpoint = "/forbiden"
 
-	registeredEndpointCfg := newVerifierEndpointCfg("RS256", server.URL, []string{})
+	registeredEndpointCfg := newVerifierEndpointCfg("RS256", server.URL, []string{}, false)
 	registeredEndpointCfg.Endpoint = "/registered"
 
-	propagateHeadersEndpointCfg := newVerifierEndpointCfg("RS256", server.URL, []string{})
+	propagateHeadersEndpointCfg := newVerifierEndpointCfg("RS256", server.URL, []string{"role_a", "role_b"}, false)
 	propagateHeadersEndpointCfg.Endpoint = "/propagateheaders"
+
+	propagateArrayHeadersEndpointCfg := newVerifierEndpointCfg("RS256", server.URL, []string{"role_a", "role_b"}, true)
+	propagateArrayHeadersEndpointCfg.Endpoint = "/propagatearrayheaders"
 
 	token := "eyJhbGciOiJSUzI1NiIsImtpZCI6IjIwMTEtMDQtMjkiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJodHRwOi8vYXBpLmV4YW1wbGUuY29tIiwiZXhwIjoyMDUxODgyNzU1LCJpc3MiOiJodHRwOi8vZXhhbXBsZS5jb20iLCJqdGkiOiJtbmIyM3Zjc3J0NzU2eXVpb21uYnZjeDk4ZXJ0eXVpb3AiLCJyb2xlcyI6WyJyb2xlX2EiLCJyb2xlX2IiXSwic3ViIjoiMTIzNDU2Nzg5MHF3ZXJ0eXVpbyJ9.u1fK05FpXctB-VkhhT3xu2WSIkEr1_VM71ald-yeKTesxhxg68TsHFEOBCgoXPuCviOP8QnUKNuVSeyMJh9z3nnrfQIjo9VZ2yicZu6ImYptSQ2DJbR80GDSPp-H7KnjaR9AAY0HZ0M-KUTaHdLABZFr307nkOeaJn_5jMpav7pqa7nrU3sI1CLX5pYVTggG6t7Zoqj2ebzzqdRxQEtdmZkD_NfH-3w3t-H0ylVdeBnPh-RvlspxC_mJzyUIJ0BwPlZpabppHm1ISySa4kwnwxEYnux0oZcb3PSoOZZZA467JySZ69PRlenNPdfGPL6E3uL1nqPHcxhte7ikSG4Q6Q"
 
@@ -59,6 +63,7 @@ func TestTokenSignatureValidator(t *testing.T) {
 	engine.Handle(forbidenEndpointCfg.Endpoint, "GET", hf(forbidenEndpointCfg, dummyProxy))
 	engine.Handle(registeredEndpointCfg.Endpoint, "GET", hf(registeredEndpointCfg, dummyProxy))
 	engine.Handle(propagateHeadersEndpointCfg.Endpoint, "GET", hf(propagateHeadersEndpointCfg, dummyProxy))
+	engine.Handle(propagateArrayHeadersEndpointCfg.Endpoint, "GET", hf(propagateArrayHeadersEndpointCfg, dummyProxy))
 
 	req := httptest.NewRequest("GET", forbidenEndpointCfg.Endpoint, new(bytes.Buffer))
 
@@ -142,6 +147,56 @@ func TestTokenSignatureValidator(t *testing.T) {
 		t.Errorf("wrong JWT claim propagated for 'sub': %v", req.Header.Get("x-krakend-sub"))
 	}
 
+	if req.Header.Get("x-krakend-roles") == "" {
+		t.Error("JWT claim not propagated to header: roles")
+	} else if req.Header.Get("x-krakend-roles") != "role_a,role_b" {
+		t.Errorf("wrong JWT claim propagated for 'roles': %v", req.Header.Get("x-krakend-roles"))
+	}
+
+	if req.Header.Get("x-krakend-ne") != "" {
+		t.Error("JWT claim propagated, although it shouldn't: nonexistent")
+	}
+
+	if w.Code != http.StatusOK {
+		t.Errorf("unexpected status code: %d", w.Code)
+	}
+	if body := w.Body.String(); body != `{"aaaa":{"bar":"b","foo":"a"},"bbbb":true,"cccc":1234567890}` {
+		t.Errorf("unexpected body: %s", body)
+	}
+
+	req = httptest.NewRequest("GET", propagateArrayHeadersEndpointCfg.Endpoint, new(bytes.Buffer))
+	req.Header.Set("Authorization", "BEARER "+token)
+	// Check header-overwrite: it must be overwritten by a claim in the JWT!
+	req.Header.Set("x-krakend-replace", "abc")
+
+	w = httptest.NewRecorder()
+	engine.ServeHTTP(w, req)
+
+	if req.Header.Get("x-krakend-jti") == "" {
+		t.Error("JWT claim not propagated to header: jti")
+	} else if req.Header.Get("x-krakend-jti") != "mnb23vcsrt756yuiomnbvcx98ertyuiop" {
+		t.Errorf("wrong JWT claim propagated for 'jti': %v", req.Header.Get("x-krakend-jti"))
+	}
+
+	// Check that existing header values are overwritten
+	if req.Header.Get("x-krakend-replace") == "abc" {
+		t.Error("JWT claim not propagated to x-krakend-replace header: sub")
+	} else if req.Header.Get("x-krakend-replace") != "1234567890qwertyuio" {
+		t.Errorf("wrong JWT claim propagated for 'sub': %v", req.Header.Get("x-krakend-replace"))
+	}
+
+	if req.Header.Get("x-krakend-sub") == "" {
+		t.Error("JWT claim not propagated to header: sub")
+	} else if req.Header.Get("x-krakend-sub") != "1234567890qwertyuio" {
+		t.Errorf("wrong JWT claim propagated for 'sub': %v", req.Header.Get("x-krakend-sub"))
+	}
+
+	if req.Header.Get("x-krakend-roles") == "" {
+		t.Error("JWT claim not propagated to header: roles")
+	} else if !reflect.DeepEqual(req.Header.Values("x-krakend-roles"), []string{"role_a", "role_b"}) {
+		t.Errorf("wrong JWT claim propagated for 'roles': %v", req.Header.Get("x-krakend-roles"))
+	}
+
 	if req.Header.Get("x-krakend-ne") != "" {
 		t.Error("JWT claim propagated, although it shouldn't: nonexistent")
 	}
@@ -158,7 +213,7 @@ func TestCustomHeaderName(t *testing.T) {
 	server := httptest.NewServer(jwkEndpoint("public"))
 	defer server.Close()
 
-	nonDefaultAuthHeaderEndpointCfg := newVerifierEndpointCfg("RS256", server.URL, []string{})
+	nonDefaultAuthHeaderEndpointCfg := newVerifierEndpointCfg("RS256", server.URL, []string{}, false)
 	nonDefaultAuthHeaderEndpointCfg.Endpoint = "/custom-header"
 	nonDefaultAuthHeaderEndpointCfg.ExtraConfig[jose.ValidatorNamespace].(map[string]interface{})["auth_header_name"] = "X-Custom-Auth"
 
