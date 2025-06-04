@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/textproto"
 	"strings"
 
 	"github.com/go-jose/go-jose/v3/jwt"
@@ -166,7 +167,7 @@ func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, r
 				return
 			}
 
-			propagateHeaders(cfg, signatureConfig.PropagateClaimsToHeader, claims, r, logger)
+			propagateHeaders(cfg, signatureConfig.PropagateClaimsToHeader, signatureConfig.PropagateClaimsPreserveArray, claims, r, logger)
 
 			handler(w, r)
 		}
@@ -202,15 +203,33 @@ func FromHeader(header string) func(r *http.Request) (*jwt.JSONWebToken, error) 
 	}
 }
 
-func propagateHeaders(cfg *config.EndpointConfig, propagationCfg [][]string, claims map[string]interface{}, r *http.Request, logger logging.Logger) {
+func propagateHeaders(
+	cfg *config.EndpointConfig,
+	propagationCfg [][]string,
+	propagationPreserveArrays bool,
+	claims map[string]interface{},
+	r *http.Request,
+	logger logging.Logger,
+) {
 	if len(propagationCfg) > 0 {
-		headersToPropagate, err := krakendjose.CalculateHeadersToPropagate(propagationCfg, claims)
+		if !propagationPreserveArrays {
+			headersToPropagate, err := krakendjose.CalculateHeadersToPropagate(propagationCfg, claims)
+			if err != nil {
+				logger.Warning(fmt.Sprintf("JOSE: header propagations error for %s: %s", cfg.Endpoint, err.Error()))
+			}
+			for k, v := range headersToPropagate {
+				// Set header value - replaces existing one
+				r.Header.Set(k, v)
+			}
+			return
+		}
+
+		headersToPropagate, err := krakendjose.CalculateArrayHeadersToPropagate(propagationCfg, claims)
 		if err != nil {
 			logger.Warning(fmt.Sprintf("JOSE: header propagations error for %s: %s", cfg.Endpoint, err.Error()))
 		}
 		for k, v := range headersToPropagate {
-			// Set header value - replaces existing one
-			r.Header.Set(k, v)
+			r.Header[textproto.CanonicalMIMEHeaderKey(k)] = v
 		}
 	}
 }
