@@ -20,7 +20,7 @@ import (
 
 func TestJoseMw(t *testing.T) {
 	hf := ginlura.HandlerFactory(func(_ *config.EndpointConfig, _ proxy.Proxy) gin.HandlerFunc {
-		return func(c *gin.Context) {
+		return func(_ *gin.Context) {
 			t.Error("this handler should not be executed")
 		}
 	})
