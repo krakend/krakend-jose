@@ -10,8 +10,8 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	krakendjose "github.com/krakendio/krakend-jose/v2"
-	jose "github.com/krakendio/krakend-jose/v2/gin"
+	krakendjose "github.com/krakend/krakend-jose/v2"
+	jose "github.com/krakend/krakend-jose/v2/gin"
 	"github.com/luraproject/lura/v2/config"
 	"github.com/luraproject/lura/v2/logging"
 	"github.com/luraproject/lura/v2/proxy"

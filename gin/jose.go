@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-jose/go-jose/v3/jwt"
 	auth0 "github.com/krakend/go-auth0/v2"
-	krakendjose "github.com/krakendio/krakend-jose/v2"
+	krakendjose "github.com/krakend/krakend-jose/v2"
 	"github.com/luraproject/lura/v2/config"
 	"github.com/luraproject/lura/v2/logging"
 	"github.com/luraproject/lura/v2/proxy"
