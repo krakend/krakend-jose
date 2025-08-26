@@ -22,7 +22,7 @@ import (
 	auth0 "github.com/krakend/go-auth0/v2"
 	"github.com/luraproject/lura/v2/core"
 
-	"github.com/krakendio/krakend-jose/v2/secrets"
+	"github.com/krakend/krakend-jose/v2/secrets"
 )
 
 type SecretProviderConfig struct {
