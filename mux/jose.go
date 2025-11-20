@@ -191,9 +191,11 @@ func FromHeader(header string, tokentype string) func(r *http.Request) (*jwt.JSO
 	if header == "" {
 		header = "Authorization"
 	}
+	// Bearer is default token type
 	if tokentype == "" {
 		tokentype = "Bearer "
 	} else {
+		// token type was specified, append space separator
 		tokentype += " "
 	}
 	typelen := len(tokentype)
