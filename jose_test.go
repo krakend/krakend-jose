@@ -9,7 +9,7 @@ import (
 	"github.com/go-jose/go-jose/v3/jwt"
 )
 
-func nopExtractor(_ string) func(r *http.Request) (*jwt.JSONWebToken, error) {
+func nopExtractor(_ string, _ string) func(r *http.Request) (*jwt.JSONWebToken, error) {
 	return func(_ *http.Request) (*jwt.JSONWebToken, error) { return nil, nil }
 }
 

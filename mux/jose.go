@@ -174,7 +174,7 @@ func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, r
 	}
 }
 
-func FromCookie(key string) func(r *http.Request) (*jwt.JSONWebToken, error) {
+func FromCookie(key string, _ string) func(r *http.Request) (*jwt.JSONWebToken, error) {
 	if key == "" {
 		key = "access_token"
 	}
@@ -187,14 +187,20 @@ func FromCookie(key string) func(r *http.Request) (*jwt.JSONWebToken, error) {
 	}
 }
 
-func FromHeader(header string) func(r *http.Request) (*jwt.JSONWebToken, error) {
+func FromHeader(header string, tokentype string) func(r *http.Request) (*jwt.JSONWebToken, error) {
 	if header == "" {
 		header = "Authorization"
 	}
+	if tokentype == "" {
+		tokentype = "Bearer "
+	} else if strings.HasSuffix(tokentype, " ") {
+		tokentype = tokentype + " "
+	}
+	typelen := len(tokentype)
 	return func(r *http.Request) (*jwt.JSONWebToken, error) {
 		raw := r.Header.Get(header)
-		if len(raw) > 7 && strings.EqualFold(raw[0:7], "BEARER ") {
-			raw = raw[7:]
+		if len(raw) > typelen && strings.EqualFold(raw[0:typelen], tokentype) {
+			raw = raw[typelen:]
 		}
 		if raw == "" {
 			return nil, auth0.ErrTokenNotFound
