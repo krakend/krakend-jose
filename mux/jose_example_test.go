@@ -17,7 +17,7 @@ import (
 	muxlura "github.com/luraproject/lura/v2/router/mux"
 )
 
-func Example_RS256() {
+func Example_rs256() {
 	privateServer := httptest.NewServer(jwkEndpoint("private"))
 	defer privateServer.Close()
 	publicServer := httptest.NewServer(jwkEndpoint("public"))
@@ -45,7 +45,7 @@ func Example_RS256() {
 	// application/json
 }
 
-func Example_HS256() {
+func Example_hs256() {
 	server := httptest.NewServer(jwkEndpoint("symmetric"))
 	defer server.Close()
 
@@ -71,7 +71,7 @@ func Example_HS256() {
 	// application/json
 }
 
-func Example_HS256_cookie() {
+func Example_hs256_cookie() {
 	server := httptest.NewServer(jwkEndpoint("symmetric"))
 	defer server.Close()
 
