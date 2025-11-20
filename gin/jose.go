@@ -265,8 +265,8 @@ func FromHeader(header string, tokentype string) func(r *http.Request) (*jwt.JSO
 	}
 	if tokentype == "" {
 		tokentype = "Bearer "
-	} else if strings.HasSuffix(tokentype, " ") {
-		tokentype = tokentype + " "
+	} else {
+		tokentype += " "
 	}
 	typelen := len(tokentype)
 	return func(r *http.Request) (*jwt.JSONWebToken, error) {
