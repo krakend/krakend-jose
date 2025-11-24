@@ -88,7 +88,7 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 			return erroredHandler
 		}
 
-		validator, err := krakendjose.NewValidator(scfg, FromCookie, FromHeader)
+		validator, err := krakendjose.NewValidator(scfg, FromCookieWithType, FromHeaderWithType)
 		if err != nil {
 			logger.Fatal(logPrefix, "Unable to create the validator:", err.Error())
 			return erroredHandler
@@ -246,6 +246,10 @@ func extractRequiredJWTClaims(cfg *config.EndpointConfig) func(*gin.Context, map
 	}
 }
 
+func FromCookieWithType(key, _ string) func(r *http.Request) (*jwt.JSONWebToken, error) {
+	return FromCookie(key)
+}
+
 func FromCookie(key string) func(r *http.Request) (*jwt.JSONWebToken, error) {
 	if key == "" {
 		key = "access_token"
@@ -260,13 +264,25 @@ func FromCookie(key string) func(r *http.Request) (*jwt.JSONWebToken, error) {
 }
 
 func FromHeader(header string) func(r *http.Request) (*jwt.JSONWebToken, error) {
+	return FromHeaderWithType(header, "Bearer")
+}
+
+func FromHeaderWithType(header, tokentype string) func(r *http.Request) (*jwt.JSONWebToken, error) {
 	if header == "" {
 		header = "Authorization"
 	}
+	// Bearer is default token type
+	if tokentype == "" {
+		tokentype = "Bearer "
+	} else {
+		// token type was specified, append space separator
+		tokentype += " "
+	}
+	typelen := len(tokentype)
 	return func(r *http.Request) (*jwt.JSONWebToken, error) {
 		raw := r.Header.Get(header)
-		if len(raw) > 7 && strings.EqualFold(raw[0:7], "BEARER ") {
-			raw = raw[7:]
+		if len(raw) > typelen && strings.EqualFold(raw[0:typelen], tokentype) {
+			raw = raw[typelen:]
 		}
 		if raw == "" {
 			return nil, auth0.ErrTokenNotFound
