@@ -111,7 +111,7 @@ func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, r
 			return handler
 		}
 
-		validator, err := krakendjose.NewValidator(signatureConfig, FromCookie, FromHeader)
+		validator, err := krakendjose.NewValidator(signatureConfig, FromCookieWithType, FromHeaderWithType)
 		if err != nil {
 			log.Fatalf("%s: %s", cfg.Endpoint, err.Error())
 		}
@@ -174,7 +174,11 @@ func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, r
 	}
 }
 
-func FromCookie(key string, _ string) func(r *http.Request) (*jwt.JSONWebToken, error) {
+func FromCookieWithType(key, _ string) func(r *http.Request) (*jwt.JSONWebToken, error) {
+	return FromCookie(key)
+}
+
+func FromCookie(key string) func(r *http.Request) (*jwt.JSONWebToken, error) {
 	if key == "" {
 		key = "access_token"
 	}
@@ -187,7 +191,11 @@ func FromCookie(key string, _ string) func(r *http.Request) (*jwt.JSONWebToken, 
 	}
 }
 
-func FromHeader(header string, tokentype string) func(r *http.Request) (*jwt.JSONWebToken, error) {
+func FromHeader(header string) func(r *http.Request) (*jwt.JSONWebToken, error) {
+	return FromHeaderWithType(header, "Bearer")
+}
+
+func FromHeaderWithType(header, tokentype string) func(r *http.Request) (*jwt.JSONWebToken, error) {
 	if header == "" {
 		header = "Authorization"
 	}
