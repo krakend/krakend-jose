@@ -14,8 +14,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"runtime"
-	"sync"
 	"time"
 
 	jose "github.com/go-jose/go-jose/v3"
@@ -43,10 +41,7 @@ type SecretProviderConfig struct {
 var (
 	ErrInsecureJWKSource = errors.New("JWK client is using an insecure connection to the JWK service")
 	ErrPinnedKeyNotFound = errors.New("JWK client did not find a pinned key")
-
-	cacheWorkers   = runtime.GOMAXPROCS(-1)
-	cacheSemaphore = make(chan struct{}, cacheWorkers)
-	cacheOnce      = new(sync.Once)
+	cacheOnce            = make(map[string]struct{})
 )
 
 func SecretProvider(cfg SecretProviderConfig, te auth0.RequestTokenExtractor) (*JWKClient, error) {
@@ -72,25 +67,16 @@ func SecretProvider(cfg SecretProviderConfig, te auth0.RequestTokenExtractor) (*
 		cacheDuration = 15 * time.Minute
 	}
 
-	// init the semaphore
-	cacheOnce.Do(func() {
-		for i := 0; i < cacheWorkers; i++ {
-			cacheSemaphore <- struct{}{}
-		}
-	})
-
 	client := NewJWKClientWithCache(
 		opts,
 		te,
 		NewGlobalMemoryKeyCacher(cacheDuration, auth0.MaxCacheSizeNoCheck, opts.KeyIdentifyStrategy),
 	)
 
-	// request an unexistent key in order to cache all the actual ones
-	<-cacheSemaphore
-	go func() {
-		client.GetKey("unknown")
-		cacheSemaphore <- struct{}{}
-	}()
+	if _, ok := cacheOnce[cfg.URI]; !ok {
+		go client.GetKey("unknown")
+		cacheOnce[cfg.URI] = struct{}{}
+	}
 
 	return client, nil
 }
