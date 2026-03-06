@@ -17,10 +17,6 @@ import (
 	_ "gocloud.dev/secrets/localsecrets"
 )
 
-// OpenCensusViews are predefined views for OpenCensus metrics.
-// The views include counts and latency distributions for API method calls.
-var OpenCensusViews = secrets.OpenCensusViews
-
 // New returns a Cypher wrapping a secrets.Keeper accesing the secret stored at the given
 // url. The url depends on the secrets driver required (awskms, azurekeyvault, gcpkms,
 // hashivault and localsecrets).
