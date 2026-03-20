@@ -116,12 +116,16 @@ func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, r
 			log.Fatalf("%s: %s", cfg.Endpoint, err.Error())
 		}
 
-		var aclCheck func(string, map[string]interface{}, []string) bool
+		var aclCheck func(map[string]interface{}) bool
 
 		if signatureConfig.RolesKeyIsNested && strings.Contains(signatureConfig.RolesKey, ".") && signatureConfig.RolesKey[:4] != "http" {
-			aclCheck = krakendjose.CanAccessNested
+			aclCheck, err = krakendjose.AccessNestedCheck(signatureConfig.RolesKey, signatureConfig.Roles)
+			if err != nil {
+				logger.Warning(fmt.Sprintf("error preparing nested acl check on endpoint %s: %s", cfg.Endpoint, err.Error()))
+				return handler
+			}
 		} else {
-			aclCheck = krakendjose.CanAccess
+			aclCheck = krakendjose.AccessCheck(signatureConfig.RolesKey, signatureConfig.Roles)
 		}
 
 		var scopesMatcher func(string, map[string]interface{}, []string) bool
@@ -157,7 +161,7 @@ func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, r
 				return
 			}
 
-			if !aclCheck(signatureConfig.RolesKey, claims, signatureConfig.Roles) {
+			if !aclCheck(claims) {
 				http.Error(w, "", http.StatusForbidden)
 				return
 			}

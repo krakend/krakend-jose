@@ -94,14 +94,18 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 			return erroredHandler
 		}
 
-		var aclCheck func(string, map[string]interface{}, []string) bool
+		var aclCheck func(map[string]interface{}) bool
 
 		if scfg.RolesKeyIsNested && strings.Contains(scfg.RolesKey, ".") && scfg.RolesKey[:4] != "http" {
 			logger.Debug(logPrefix, fmt.Sprintf("Roles will be matched against the nested key: '%s'", scfg.RolesKey))
-			aclCheck = krakendjose.CanAccessNested
+			aclCheck, err = krakendjose.AccessNestedCheck(scfg.RolesKey, scfg.Roles)
+			if err != nil {
+				logger.Warning(logPrefix, fmt.Sprintf("error preparing nested acl check: %s", err.Error()))
+				return erroredHandler
+			}
 		} else {
 			logger.Debug(logPrefix, fmt.Sprintf("Roles will be matched against the key: '%s'", scfg.RolesKey))
-			aclCheck = krakendjose.CanAccess
+			aclCheck = krakendjose.AccessCheck(scfg.RolesKey, scfg.Roles)
 		}
 
 		var scopesMatcher func(string, map[string]interface{}, []string) bool
@@ -155,7 +159,7 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 				return
 			}
 
-			if !aclCheck(scfg.RolesKey, claims, scfg.Roles) {
+			if !aclCheck(claims) {
 				if scfg.OperationDebug {
 					logger.Error(logPrefix, "Token sent by client does not have sufficient roles")
 				}

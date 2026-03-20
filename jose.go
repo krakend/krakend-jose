@@ -10,6 +10,7 @@ import (
 
 	jose "github.com/go-jose/go-jose/v3"
 	"github.com/go-jose/go-jose/v3/jwt"
+	"github.com/krakend/dotnotation"
 	"github.com/krakend/go-auth0/v2"
 	"github.com/luraproject/lura/v2/proxy"
 )
@@ -70,37 +71,58 @@ func NewValidator(signatureConfig *SignatureConfig, cookieEf, headerEf Extractor
 	), nil
 }
 
-func CanAccessNested(roleKey string, claims map[string]interface{}, required []string) bool {
+var (
+	successAclCheck = func(map[string]interface{}) bool { return true }
+	failAclCheck    = func(map[string]interface{}) bool { return false }
+)
+
+func AccessNestedCheck(roleKey string, required []string) (func(map[string]interface{}) bool, error) {
 	if len(required) == 0 {
-		return true
+		return successAclCheck, nil
 	}
 
-	tmp := claims
-	keys := strings.Split(roleKey, ".")
-
-	for _, key := range keys[:len(keys)-1] {
-		v, ok := tmp[key]
-		if !ok {
-			return false
-		}
-		tmp, ok = v.(map[string]interface{})
-		if !ok {
-			return false
-		}
+	ex, err := dotnotation.CompileExtractor(roleKey)
+	if err != nil {
+		return failAclCheck, err
 	}
-	return CanAccess(keys[len(keys)-1], tmp, required)
+
+	return func(claims map[string]interface{}) bool {
+		res := ex.Extract(claims)
+		if len(res) != 1 {
+			return false
+		}
+
+		return checkRequired(res[0], required)
+	}, nil
 }
 
+// Deprecated: use AccessNestedCheck
+func CanAccessNested(roleKey string, claims map[string]interface{}, required []string) bool {
+	f, _ := AccessNestedCheck(roleKey, required)
+	return f(claims)
+}
+
+// Deprecated: use AclCheck
 func CanAccess(roleKey string, claims map[string]interface{}, required []string) bool {
+	return AccessCheck(roleKey, required)(claims)
+}
+
+func AccessCheck(roleKey string, required []string) func(map[string]interface{}) bool {
 	if len(required) == 0 {
-		return true
+		return successAclCheck
 	}
 
-	tmp, ok := claims[roleKey]
-	if !ok {
-		return false
-	}
+	return func(claims map[string]interface{}) bool {
+		tmp, ok := claims[roleKey]
+		if !ok {
+			return false
+		}
 
+		return checkRequired(tmp, required)
+	}
+}
+
+func checkRequired(tmp interface{}, required []string) bool {
 	roles, ok := tmp.([]interface{})
 	if ok {
 		for _, role := range required {

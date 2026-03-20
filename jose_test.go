@@ -66,8 +66,13 @@ func TestCanAccess(t *testing.T) {
 			expected:     true,
 		},
 	} {
-		t.Run(v.name, func(t *testing.T) {
+		t.Run("CanAccess "+v.name, func(t *testing.T) {
 			if res := CanAccess(v.roleKey, v.claims, v.requirements); res != v.expected {
+				t.Errorf("'%s' have %v, want %v", v.name, res, v.expected)
+			}
+		})
+		t.Run("Acl check "+v.name, func(t *testing.T) {
+			if res := AccessCheck(v.roleKey, v.requirements)(v.claims); res != v.expected {
 				t.Errorf("'%s' have %v, want %v", v.name, res, v.expected)
 			}
 		})
@@ -134,8 +139,17 @@ func TestCanAccessNested(t *testing.T) {
 			expected:     true,
 		},
 	} {
-		t.Run(v.name, func(t *testing.T) {
+		t.Run("CanAccessNested "+v.name, func(t *testing.T) {
 			if res := CanAccessNested(v.roleKey, v.claims, v.requirements); res != v.expected {
+				t.Errorf("'%s' have %v, want %v", v.name, res, v.expected)
+			}
+		})
+		t.Run("NestedAclCheck "+v.name, func(t *testing.T) {
+			ac, err := AccessNestedCheck(v.roleKey, v.requirements)
+			if err != nil {
+				t.Error(err)
+			}
+			if res := ac(v.claims); res != v.expected {
 				t.Errorf("'%s' have %v, want %v", v.name, res, v.expected)
 			}
 		})
