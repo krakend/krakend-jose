@@ -295,8 +295,17 @@ func TestScopesAllMatcher(t *testing.T) {
 			expected:       true,
 		},
 	} {
-		t.Run(v.name, func(t *testing.T) {
+		t.Run("ScopesAllMatcher "+v.name, func(t *testing.T) {
 			if res := ScopesAllMatcher(v.scopesKey, v.claims, v.requiredScopes); res != v.expected {
+				t.Errorf("'%s' have %v, want %v", v.name, res, v.expected)
+			}
+		})
+		t.Run(v.name, func(t *testing.T) {
+			m, err := AllScopesMatcher(v.scopesKey, v.requiredScopes)
+			if err != nil {
+				t.Errorf("'%s' error: %v", v.name, err)
+			}
+			if res := m(v.claims); res != v.expected {
 				t.Errorf("'%s' have %v, want %v", v.name, res, v.expected)
 			}
 		})
@@ -442,8 +451,17 @@ func TestScopesAnyMatcher(t *testing.T) {
 			expected:       true,
 		},
 	} {
-		t.Run(v.name, func(t *testing.T) {
+		t.Run("ScopesAnyMatcher "+v.name, func(t *testing.T) {
 			if res := ScopesAnyMatcher(v.scopesKey, v.claims, v.requiredScopes); res != v.expected {
+				t.Errorf("'%s' have %v, want %v", v.name, res, v.expected)
+			}
+		})
+		t.Run(v.name, func(t *testing.T) {
+			m, err := AnyScopesMatcher(v.scopesKey, v.requiredScopes)
+			if err != nil {
+				t.Errorf("'%s' error: %v", v.name, err)
+			}
+			if res := m(v.claims); res != v.expected {
 				t.Errorf("'%s' have %v, want %v", v.name, res, v.expected)
 			}
 		})

@@ -108,19 +108,27 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 			aclCheck = krakendjose.AccessCheck(scfg.RolesKey, scfg.Roles)
 		}
 
-		var scopesMatcher func(string, map[string]interface{}, []string) bool
+		var scopesMatcher func(map[string]interface{}) bool
 
 		if len(scfg.Scopes) > 0 && scfg.ScopesKey != "" {
 			if scfg.ScopesMatcher == "all" {
 				logger.Debug(logPrefix, fmt.Sprintf("Constraint added: tokens must contain a claim '%s' with all these scopes: %v", scfg.ScopesKey, scfg.Scopes))
-				scopesMatcher = krakendjose.ScopesAllMatcher
+				scopesMatcher, err = krakendjose.AllScopesMatcher(scfg.ScopesKey, scfg.Scopes)
+				if err != nil {
+					logger.Warning(logPrefix, fmt.Sprintf("error preparing all scopes matcher: %s", err.Error()))
+					return erroredHandler
+				}
 			} else {
 				logger.Debug(logPrefix, fmt.Sprintf("Constraint added: tokens must contain a claim '%s' with any of these scopes: %v", scfg.ScopesKey, scfg.Scopes))
-				scopesMatcher = krakendjose.ScopesAnyMatcher
+				scopesMatcher, err = krakendjose.AnyScopesMatcher(scfg.ScopesKey, scfg.Scopes)
+				if err != nil {
+					logger.Warning(logPrefix, fmt.Sprintf("error preparing any scopes matcher: %s", err.Error()))
+					return erroredHandler
+				}
 			}
 		} else {
 			logger.Debug(logPrefix, "No scope validation required")
-			scopesMatcher = krakendjose.ScopesDefaultMatcher
+			scopesMatcher = krakendjose.DefaultScopesMatcher(scfg.ScopesKey, scfg.Scopes)
 		}
 
 		if scfg.OperationDebug {
@@ -167,7 +175,7 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 				return
 			}
 
-			if !scopesMatcher(scfg.ScopesKey, claims, scfg.Scopes) {
+			if !scopesMatcher(claims) {
 				if scfg.OperationDebug {
 					logger.Error(logPrefix, "Token sent by client does not have the required scopes")
 				}

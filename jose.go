@@ -72,18 +72,18 @@ func NewValidator(signatureConfig *SignatureConfig, cookieEf, headerEf Extractor
 }
 
 var (
-	successAclCheck = func(map[string]interface{}) bool { return true }
-	failAclCheck    = func(map[string]interface{}) bool { return false }
+	successCheck = func(map[string]interface{}) bool { return true }
+	failCheck    = func(map[string]interface{}) bool { return false }
 )
 
 func AccessNestedCheck(roleKey string, required []string) (func(map[string]interface{}) bool, error) {
 	if len(required) == 0 {
-		return successAclCheck, nil
+		return successCheck, nil
 	}
 
 	ex, err := dotnotation.CompileExtractor(roleKey)
 	if err != nil {
-		return failAclCheck, err
+		return failCheck, err
 	}
 
 	return func(claims map[string]interface{}) bool {
@@ -109,7 +109,7 @@ func CanAccess(roleKey string, claims map[string]interface{}, required []string)
 
 func AccessCheck(roleKey string, required []string) func(map[string]interface{}) bool {
 	if len(required) == 0 {
-		return successAclCheck
+		return successCheck
 	}
 
 	return func(claims map[string]interface{}) bool {
@@ -169,111 +169,98 @@ func getNestedClaim(nestedKey string, claims map[string]interface{}) (string, ma
 	return keys[len(keys)-1], tmp
 }
 
-func ScopesAllMatcher(scopesKey string, claims map[string]interface{}, requiredScopes []string) bool {
-	if len(requiredScopes) == 0 {
-		return true
-	}
-
-	tmpClaims := claims
-	tmpKey := scopesKey
-
-	if strings.Contains(scopesKey, ".") {
-		tmpKey, tmpClaims = getNestedClaim(scopesKey, claims)
-	}
-
-	tmp, ok := tmpClaims[tmpKey]
-	if !ok {
-		return false
-	}
-
-	matchAll := func(required []string, given []string) bool {
-		for _, rScope := range required {
-			matched := false
-			for _, pScope := range given {
-				if rScope == pScope {
-					matched = true
-				}
-			}
-			if !matched { // required scope was not found --> immediately return
-				return false
-			}
-		}
-		// all required scopes have been found in provided (claims) scopes
-		return true
-	}
-
-	scopes, ok := tmp.([]interface{})
-	if ok {
-		if len(scopes) > 0 {
-			return matchAll(requiredScopes, convertToStringSlice(scopes))
-		}
-	}
-
-	scopeString, ok := tmp.(string)
-	if !ok {
-		return false
-	}
-
-	presentScopes := strings.Split(scopeString, " ")
-	if len(presentScopes) > 0 {
-		return matchAll(requiredScopes, presentScopes)
-	}
-
-	return false
+func AllScopesMatcher(scopesKey string, requiredScopes []string) (func(claims map[string]interface{}) bool, error) {
+	return matcher(scopesKey, requiredScopes, allMatcher)
 }
 
-func ScopesDefaultMatcher(_ string, _ map[string]interface{}, _ []string) bool {
+func AnyScopesMatcher(scopesKey string, requiredScopes []string) (func(claims map[string]interface{}) bool, error) {
+	return matcher(scopesKey, requiredScopes, anyMatcher)
+}
+
+func DefaultScopesMatcher(_ string, _ []string) func(claims map[string]interface{}) bool {
+	return successCheck
+}
+
+func matcher(scopesKey string, requiredScopes []string, m func(required []string, given []string) bool) (func(claims map[string]interface{}) bool, error) {
+	if len(requiredScopes) == 0 {
+		return successCheck, nil
+	}
+
+	ex, err := dotnotation.CompileExtractor(scopesKey)
+	if err != nil {
+		return failCheck, err
+	}
+	return func(claims map[string]interface{}) bool {
+		v := ex.Extract(claims)
+		if len(v) != 1 {
+			return false
+		}
+		scopes, ok := v[0].([]interface{})
+		if ok {
+			if len(scopes) > 0 {
+				return m(requiredScopes, convertToStringSlice(scopes))
+			}
+			return false
+		}
+
+		scopeString, ok := v[0].(string)
+		if !ok {
+			return false
+		}
+
+		presentScopes := strings.Split(scopeString, " ")
+		if len(presentScopes) > 0 {
+			return m(requiredScopes, presentScopes)
+		}
+
+		return false
+	}, nil
+}
+
+func allMatcher(required []string, given []string) bool {
+	for _, rScope := range required {
+		matched := false
+		for _, pScope := range given {
+			if rScope == pScope {
+				matched = true
+			}
+		}
+		if !matched { // required scope was not found --> immediately return
+			return false
+		}
+	}
+	// all required scopes have been found in provided (claims) scopes
 	return true
 }
 
-func ScopesAnyMatcher(scopesKey string, claims map[string]interface{}, requiredScopes []string) bool {
-	if len(requiredScopes) == 0 {
-		return true
-	}
-
-	tmpClaims := claims
-	tmpKey := scopesKey
-
-	if strings.Contains(scopesKey, ".") {
-		tmpKey, tmpClaims = getNestedClaim(scopesKey, claims)
-	}
-
-	tmp, ok := tmpClaims[tmpKey]
-	if !ok {
-		return false
-	}
-
-	matchAny := func(required []string, given []string) bool {
-		for _, rScope := range required {
-			for _, pScope := range given {
-				if rScope == pScope {
-					return true // found any of the required scopes --> return
-				}
+func anyMatcher(required []string, given []string) bool {
+	for _, rScope := range required {
+		for _, pScope := range given {
+			if rScope == pScope {
+				return true // found any of the required scopes --> return
 			}
 		}
-
-		// none of the scopes have been found in provided (claims) scopes
-		return false
 	}
 
-	scopes, ok := tmp.([]interface{})
-	if ok {
-		if len(scopes) > 0 {
-			return matchAny(requiredScopes, convertToStringSlice(scopes))
-		}
-	}
-
-	scopeClaim, ok := tmp.(string)
-	if !ok {
-		return false
-	}
-
-	presentScopes := strings.Split(scopeClaim, " ")
-	if len(presentScopes) > 0 {
-		return matchAny(requiredScopes, presentScopes)
-	}
-
+	// none of the scopes have been found in provided (claims) scopes
 	return false
+}
+
+// Deprecated: use AnyScopesMatcher
+func ScopesAnyMatcher(scopesKey string, claims map[string]interface{}, requiredScopes []string) bool {
+	m, _ := AnyScopesMatcher(scopesKey, requiredScopes)
+	return m(claims)
+}
+
+// Deprecated: use AllScopesMatcher
+func ScopesAllMatcher(scopesKey string, claims map[string]interface{}, requiredScopes []string) bool {
+	m, _ := AllScopesMatcher(scopesKey, requiredScopes)
+	return m(claims)
+}
+
+// Deprecated: use DefaultScopesMatcher
+func ScopesDefaultMatcher(_ string, _ map[string]interface{}, _ []string) bool {
+	return true
 }
 
 func SignFields(keys []string, signer Signer, response *proxy.Response) error {

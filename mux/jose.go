@@ -128,16 +128,18 @@ func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, r
 			aclCheck = krakendjose.AccessCheck(signatureConfig.RolesKey, signatureConfig.Roles)
 		}
 
-		var scopesMatcher func(string, map[string]interface{}, []string) bool
+		var scopesMatcher func(map[string]interface{}) bool
 
 		if len(signatureConfig.Scopes) > 0 && signatureConfig.ScopesKey != "" {
 			if signatureConfig.ScopesMatcher == "all" {
-				scopesMatcher = krakendjose.ScopesAllMatcher
+				scopesMatcher, err = krakendjose.AllScopesMatcher(signatureConfig.ScopesKey, signatureConfig.Scopes)
+				logger.Warning(fmt.Sprintf("error preparing all scopes matcher on endpoint %s: %s", cfg.Endpoint, err.Error()))
 			} else {
-				scopesMatcher = krakendjose.ScopesAnyMatcher
+				scopesMatcher, err = krakendjose.AnyScopesMatcher(signatureConfig.ScopesKey, signatureConfig.Scopes)
+				logger.Warning(fmt.Sprintf("error preparing any scopes matcher on endpoint %s: %s", cfg.Endpoint, err.Error()))
 			}
 		} else {
-			scopesMatcher = krakendjose.ScopesDefaultMatcher
+			scopesMatcher = krakendjose.DefaultScopesMatcher(signatureConfig.ScopesKey, signatureConfig.Scopes)
 		}
 
 		logger.Info("JOSE: validator enabled for the endpoint", cfg.Endpoint)
@@ -166,7 +168,7 @@ func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, r
 				return
 			}
 
-			if !scopesMatcher(signatureConfig.ScopesKey, claims, signatureConfig.Scopes) {
+			if !scopesMatcher(claims) {
 				http.Error(w, "", http.StatusForbidden)
 				return
 			}
