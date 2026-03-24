@@ -69,7 +69,7 @@ func TokenSigner(hf ginlura.HandlerFactory, logger logging.Logger) ginlura.Handl
 	}
 }
 
-func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory) ginlura.HandlerFactory {
+func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory) ginlura.HandlerFactory { // skipcq: GO-R1005
 	return func(cfg *config.EndpointConfig, prxy proxy.Proxy) gin.HandlerFunc {
 		logPrefix := "[ENDPOINT: " + cfg.Endpoint + "][JWTValidator]"
 		if rejecterF == nil {

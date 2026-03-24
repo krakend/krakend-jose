@@ -93,7 +93,7 @@ func jsonRender(w http.ResponseWriter, response *proxy.Response) error {
 	return err
 }
 
-func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory) muxlura.HandlerFactory {
+func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory) muxlura.HandlerFactory { // skipcq: GO-R1005
 	return func(cfg *config.EndpointConfig, prxy proxy.Proxy) http.HandlerFunc {
 		if rejecterF == nil {
 			rejecterF = new(krakendjose.NopRejecterFactory)
