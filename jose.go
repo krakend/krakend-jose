@@ -151,24 +151,6 @@ func checkRequired(tmp interface{}, required []string) bool {
 	return false
 }
 
-func getNestedClaim(nestedKey string, claims map[string]interface{}) (string, map[string]interface{}) {
-	tmp := claims
-	keys := strings.Split(nestedKey, ".")
-
-	for _, key := range keys[:len(keys)-1] {
-		v, ok := tmp[key]
-		if !ok {
-			return nestedKey, nil
-		}
-		tmp, ok = v.(map[string]interface{})
-		if !ok {
-			return nestedKey, nil
-		}
-	}
-
-	return keys[len(keys)-1], tmp
-}
-
 func AllScopesMatcher(scopesKey string, requiredScopes []string) (func(claims map[string]interface{}) bool, error) {
 	return matcher(scopesKey, requiredScopes, allMatcher)
 }
