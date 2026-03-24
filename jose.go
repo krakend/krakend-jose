@@ -292,6 +292,46 @@ func (c Claims) Get(name string) (string, bool) {
 		return "", ok
 	}
 
+	return toString(tmp), ok
+}
+
+func (c Claims) List(name string) ([]string, bool) {
+	tmp, ok := c[name]
+	if !ok {
+		// if the claim is not present, return an slice with one empty element to keep compatibility
+		return []string{""}, ok
+	}
+
+	return toList(tmp), ok
+}
+
+type Propagator struct {
+	e *dotnotation.Extractor
+	h string
+}
+
+func NewPropagators(propagationCfg [][]string) ([]Propagator, error) {
+	if len(propagationCfg) == 0 {
+		return nil, ErrNoHeadersToPropagate
+	}
+	p := make([]Propagator, 0, len(propagationCfg))
+	for _, tuple := range propagationCfg {
+		if len(tuple) != 2 {
+			continue
+		}
+		e, err := dotnotation.CompileExtractor(tuple[0])
+		if err != nil {
+			continue
+		}
+		p = append(p, Propagator{
+			e: e,
+			h: tuple[1],
+		})
+	}
+	return p, nil
+}
+
+func toString(tmp interface{}) string {
 	var normalized string
 
 	switch v := tmp.(type) {
@@ -301,7 +341,7 @@ func (c Claims) Get(name string) (string, bool) {
 		normalized = fmt.Sprintf("%d", v)
 	case float64:
 		if r := math.Round(v); math.Abs(v-r) <= epsilon {
-			return fmt.Sprintf("%d", int(r)), ok
+			return fmt.Sprintf("%d", int(r))
 		}
 		normalized = fmt.Sprintf("%f", v)
 	case []interface{}:
@@ -316,16 +356,10 @@ func (c Claims) Get(name string) (string, bool) {
 		normalized = string(b)
 	}
 
-	return normalized, ok
+	return normalized
 }
 
-func (c Claims) List(name string) ([]string, bool) {
-	tmp, ok := c[name]
-	if !ok {
-		// if the claim is not present, return an slice with one empty element to keep compatibility
-		return []string{""}, ok
-	}
-
+func toList(tmp interface{}) []string {
 	var normalized []string
 
 	switch v := tmp.(type) {
@@ -335,7 +369,7 @@ func (c Claims) List(name string) ([]string, bool) {
 		normalized = []string{fmt.Sprintf("%d", v)}
 	case float64:
 		if r := math.Round(v); math.Abs(v-r) <= epsilon {
-			return []string{fmt.Sprintf("%d", int(r))}, ok
+			return []string{fmt.Sprintf("%d", int(r))}
 		}
 		normalized = []string{fmt.Sprintf("%f", v)}
 	case []interface{}:
@@ -349,71 +383,53 @@ func (c Claims) List(name string) ([]string, bool) {
 		normalized = []string{string(b)}
 	}
 
-	return normalized, ok
+	return normalized
 }
 
-func CalculateHeadersToPropagate(propagationCfg [][]string, claims map[string]interface{}) (map[string]string, error) {
-	if len(propagationCfg) == 0 {
-		return nil, ErrNoHeadersToPropagate
-	}
+func HeadersToPropagate(ps []Propagator, claims map[string]interface{}) map[string]string {
 	propagated := make(map[string]string)
-
-	var err error
-	for _, tuple := range propagationCfg {
-		var c Claims
-		var fromClaim, toHeader string
-
-		c, fromClaim, toHeader, err = parsePropagationTuple(tuple, claims)
-		if err != nil {
+	for _, p := range ps {
+		v := p.e.Extract(claims)
+		if len(v) != 1 {
+			propagated[p.h] = ""
 			continue
 		}
-
-		v, _ := c.Get(fromClaim)
-		propagated[toHeader] = v
+		propagated[p.h] = toString(v[0])
 	}
-
-	return propagated, err
+	return propagated
 }
 
-func CalculateArrayHeadersToPropagate(propagationCfg [][]string, claims map[string]interface{}) (map[string][]string, error) {
-	if len(propagationCfg) == 0 {
-		return nil, ErrNoHeadersToPropagate
-	}
+func ArrayHeadersToPropagate(ps []Propagator, claims map[string]interface{}) map[string][]string {
 	propagated := make(map[string][]string)
-
-	var err error
-	for _, tuple := range propagationCfg {
-		var c Claims
-		var fromClaim, toHeader string
-
-		c, fromClaim, toHeader, err = parsePropagationTuple(tuple, claims)
-		if err != nil {
+	for _, p := range ps {
+		v := p.e.Extract(claims)
+		if len(v) != 1 {
+			propagated[p.h] = []string{""}
 			continue
 		}
-
-		v, _ := c.List(fromClaim)
-		propagated[toHeader] = v
+		propagated[p.h] = toList(v[0])
 	}
-
-	return propagated, err
+	return propagated
 }
 
-func parsePropagationTuple(tuple []string, claims map[string]interface{}) (c Claims, fromClaim, toHeader string, err error) {
-	if len(tuple) != 2 {
-		err = fmt.Errorf("invalid number of claims to propagate: %+v", tuple)
-		return
+// Deprecated: use HeadersToPropagate
+func CalculateHeadersToPropagate(propagationCfg [][]string, claims map[string]interface{}) (map[string]string, error) {
+	ps, err := NewPropagators(propagationCfg)
+	if err != nil {
+		return nil, err
 	}
 
-	fromClaim = tuple[0]
-	toHeader = tuple[1]
+	return HeadersToPropagate(ps, claims), nil
+}
 
-	c = Claims(claims)
-	if strings.Contains(fromClaim, ".") && (len(fromClaim) < 4 || fromClaim[:4] != "http") {
-		var claimsMap map[string]interface{}
-		fromClaim, claimsMap = getNestedClaim(fromClaim, claims)
-		c = Claims(claimsMap)
+// Deprecated: use ArrayHeadersToPropagate
+func CalculateArrayHeadersToPropagate(propagationCfg [][]string, claims map[string]interface{}) (map[string][]string, error) {
+	ps, err := NewPropagators(propagationCfg)
+	if err != nil {
+		return nil, err
 	}
-	return
+
+	return ArrayHeadersToPropagate(ps, claims), nil
 }
 
 var supportedAlgorithms = map[string]jose.SignatureAlgorithm{

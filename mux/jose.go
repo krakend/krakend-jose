@@ -144,6 +144,11 @@ func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, r
 
 		logger.Info("JOSE: validator enabled for the endpoint", cfg.Endpoint)
 
+		ps, err := krakendjose.NewPropagators(signatureConfig.PropagateClaimsToHeader)
+		if err != nil {
+			logger.Warning(fmt.Sprintf("error preparing header propagators for endpoint %s: %s", cfg.Endpoint, err.Error()))
+		}
+
 		return func(w http.ResponseWriter, r *http.Request) {
 			token, err := validator.ValidateRequest(r)
 			if err != nil {
@@ -173,7 +178,7 @@ func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, r
 				return
 			}
 
-			propagateHeaders(cfg, signatureConfig.PropagateClaimsToHeader, signatureConfig.PropagateClaimsPreserveArray, claims, r, logger)
+			propagateHeaders(ps, signatureConfig.PropagateClaimsPreserveArray, claims, r)
 
 			handler(w, r)
 		}
@@ -210,19 +215,14 @@ func FromHeader(header string) func(r *http.Request) (*jwt.JSONWebToken, error) 
 }
 
 func propagateHeaders(
-	cfg *config.EndpointConfig,
-	propagationCfg [][]string,
+	ps []krakendjose.Propagator,
 	propagationPreserveArrays bool,
 	claims map[string]interface{},
 	r *http.Request,
-	logger logging.Logger,
 ) {
-	if len(propagationCfg) > 0 {
+	if len(ps) > 0 {
 		if !propagationPreserveArrays {
-			headersToPropagate, err := krakendjose.CalculateHeadersToPropagate(propagationCfg, claims)
-			if err != nil {
-				logger.Warning(fmt.Sprintf("JOSE: header propagations error for %s: %s", cfg.Endpoint, err.Error()))
-			}
+			headersToPropagate := krakendjose.HeadersToPropagate(ps, claims)
 			for k, v := range headersToPropagate {
 				// Set header value - replaces existing one
 				r.Header.Set(k, v)
@@ -230,10 +230,7 @@ func propagateHeaders(
 			return
 		}
 
-		headersToPropagate, err := krakendjose.CalculateArrayHeadersToPropagate(propagationCfg, claims)
-		if err != nil {
-			logger.Warning(fmt.Sprintf("JOSE: header propagations error for %s: %s", cfg.Endpoint, err.Error()))
-		}
+		headersToPropagate := krakendjose.ArrayHeadersToPropagate(ps, claims)
 		for k, v := range headersToPropagate {
 			r.Header[textproto.CanonicalMIMEHeaderKey(k)] = v
 		}

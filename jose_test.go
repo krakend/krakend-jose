@@ -517,6 +517,17 @@ func TestCalculateHeadersToPropagate(t *testing.T) {
 		if !reflect.DeepEqual(tc.expected, res) {
 			t.Errorf("tc-%d: got: %v want: %v", i, res, tc.expected)
 		}
+
+		ps, err := NewPropagators(tc.cfg)
+		if err != nil {
+			t.Errorf("tc-%d: unexpected error: %v", i, err)
+			continue
+		}
+		res = HeadersToPropagate(ps, tc.claims)
+
+		if !reflect.DeepEqual(tc.expected, res) {
+			t.Errorf("tc-%d: got: %v want: %v", i, res, tc.expected)
+		}
 	}
 }
 
@@ -565,6 +576,17 @@ func TestCalculateArrayHeadersToPropagate(t *testing.T) {
 			t.Errorf("tc-%d: unexpected error: %v", i, err)
 			continue
 		}
+
+		if !reflect.DeepEqual(tc.expected, res) {
+			t.Errorf("tc-%d: got: %v want: %v", i, res, tc.expected)
+		}
+
+		ps, err := NewPropagators(tc.cfg)
+		if err != nil {
+			t.Errorf("tc-%d: unexpected error: %v", i, err)
+			continue
+		}
+		res = ArrayHeadersToPropagate(ps, tc.claims)
 
 		if !reflect.DeepEqual(tc.expected, res) {
 			t.Errorf("tc-%d: got: %v want: %v", i, res, tc.expected)

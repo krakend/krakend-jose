@@ -139,6 +139,11 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 
 		paramExtractor := extractRequiredJWTClaims(cfg)
 
+		ps, err := krakendjose.NewPropagators(scfg.PropagateClaimsToHeader)
+		if err != nil {
+			logger.Warning(logPrefix, fmt.Sprintf("error preparing header propagators: %s", err.Error()))
+		}
+
 		return func(c *gin.Context) {
 			token, err := validator.ValidateRequest(c.Request)
 			if err != nil {
@@ -183,7 +188,7 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 				return
 			}
 
-			propagateHeaders(cfg, scfg.PropagateClaimsToHeader, scfg.PropagateClaimsPreserveArray, claims, c, logger)
+			propagateHeaders(ps, scfg.PropagateClaimsPreserveArray, claims, c)
 
 			paramExtractor(c, claims)
 
@@ -197,20 +202,14 @@ func erroredHandler(c *gin.Context) {
 }
 
 func propagateHeaders(
-	cfg *config.EndpointConfig,
-	propagationCfg [][]string,
+	ps []krakendjose.Propagator,
 	propagationPreserveArrays bool,
 	claims map[string]interface{},
 	c *gin.Context,
-	logger logging.Logger,
 ) {
-	logPrefix := "[ENDPOINT: " + cfg.Endpoint + "][PropagateHeaders]"
-	if len(propagationCfg) > 0 {
+	if len(ps) > 0 {
 		if !propagationPreserveArrays {
-			headersToPropagate, err := krakendjose.CalculateHeadersToPropagate(propagationCfg, claims)
-			if err != nil {
-				logger.Warning(logPrefix, err.Error())
-			}
+			headersToPropagate := krakendjose.HeadersToPropagate(ps, claims)
 			for k, v := range headersToPropagate {
 				// Set header value - replaces existing one
 				c.Request.Header.Set(k, v)
@@ -218,10 +217,7 @@ func propagateHeaders(
 			return
 		}
 
-		headersToPropagate, err := krakendjose.CalculateArrayHeadersToPropagate(propagationCfg, claims)
-		if err != nil {
-			logger.Warning(logPrefix, err.Error())
-		}
+		headersToPropagate := krakendjose.ArrayHeadersToPropagate(ps, claims)
 		for k, v := range headersToPropagate {
 			c.Request.Header[textproto.CanonicalMIMEHeaderKey(k)] = v
 		}
