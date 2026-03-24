@@ -1,10 +1,11 @@
 module github.com/krakend/krakend-jose/v2
 
-go 1.24.0
+go 1.25
 
 require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-jose/go-jose/v3 v3.0.4
+	github.com/krakend/dotnotation v0.2.0
 	github.com/krakend/go-auth0/v2 v2.0.1
 	github.com/luraproject/lura/v2 v2.11.0
 	gocloud.dev v0.45.0

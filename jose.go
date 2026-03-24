@@ -10,6 +10,7 @@ import (
 
 	jose "github.com/go-jose/go-jose/v3"
 	"github.com/go-jose/go-jose/v3/jwt"
+	"github.com/krakend/dotnotation"
 	"github.com/krakend/go-auth0/v2"
 	"github.com/luraproject/lura/v2/proxy"
 )
@@ -70,37 +71,58 @@ func NewValidator(signatureConfig *SignatureConfig, cookieEf, headerEf Extractor
 	), nil
 }
 
-func CanAccessNested(roleKey string, claims map[string]interface{}, required []string) bool {
+var (
+	successCheck = func(map[string]interface{}) bool { return true }
+	failCheck    = func(map[string]interface{}) bool { return false }
+)
+
+func AccessNestedCheck(roleKey string, required []string) (func(map[string]interface{}) bool, error) {
 	if len(required) == 0 {
-		return true
+		return successCheck, nil
 	}
 
-	tmp := claims
-	keys := strings.Split(roleKey, ".")
-
-	for _, key := range keys[:len(keys)-1] {
-		v, ok := tmp[key]
-		if !ok {
-			return false
-		}
-		tmp, ok = v.(map[string]interface{})
-		if !ok {
-			return false
-		}
+	ex, err := dotnotation.CompileExtractor(roleKey)
+	if err != nil {
+		return failCheck, err
 	}
-	return CanAccess(keys[len(keys)-1], tmp, required)
+
+	return func(claims map[string]interface{}) bool {
+		res := ex.Extract(claims)
+		if len(res) != 1 {
+			return false
+		}
+
+		return checkRequired(res[0], required)
+	}, nil
 }
 
+// Deprecated: use AccessNestedCheck
+func CanAccessNested(roleKey string, claims map[string]interface{}, required []string) bool {
+	f, _ := AccessNestedCheck(roleKey, required)
+	return f(claims)
+}
+
+// Deprecated: use AclCheck
 func CanAccess(roleKey string, claims map[string]interface{}, required []string) bool {
+	return AccessCheck(roleKey, required)(claims)
+}
+
+func AccessCheck(roleKey string, required []string) func(map[string]interface{}) bool {
 	if len(required) == 0 {
-		return true
+		return successCheck
 	}
 
-	tmp, ok := claims[roleKey]
-	if !ok {
-		return false
-	}
+	return func(claims map[string]interface{}) bool {
+		tmp, ok := claims[roleKey]
+		if !ok {
+			return false
+		}
 
+		return checkRequired(tmp, required)
+	}
+}
+
+func checkRequired(tmp interface{}, required []string) bool {
 	roles, ok := tmp.([]interface{})
 	if ok {
 		for _, role := range required {
@@ -129,129 +151,98 @@ func CanAccess(roleKey string, claims map[string]interface{}, required []string)
 	return false
 }
 
-func getNestedClaim(nestedKey string, claims map[string]interface{}) (string, map[string]interface{}) {
-	tmp := claims
-	keys := strings.Split(nestedKey, ".")
-
-	for _, key := range keys[:len(keys)-1] {
-		v, ok := tmp[key]
-		if !ok {
-			return nestedKey, nil
-		}
-		tmp, ok = v.(map[string]interface{})
-		if !ok {
-			return nestedKey, nil
-		}
-	}
-
-	return keys[len(keys)-1], tmp
+func AllScopesMatcher(scopesKey string, requiredScopes []string) (func(claims map[string]interface{}) bool, error) {
+	return matcher(scopesKey, requiredScopes, allMatcher)
 }
 
-func ScopesAllMatcher(scopesKey string, claims map[string]interface{}, requiredScopes []string) bool {
+func AnyScopesMatcher(scopesKey string, requiredScopes []string) (func(claims map[string]interface{}) bool, error) {
+	return matcher(scopesKey, requiredScopes, anyMatcher)
+}
+
+func DefaultScopesMatcher(_ string, _ []string) func(claims map[string]interface{}) bool {
+	return successCheck
+}
+
+func matcher(scopesKey string, requiredScopes []string, m func(required []string, given []string) bool) (func(claims map[string]interface{}) bool, error) {
 	if len(requiredScopes) == 0 {
-		return true
+		return successCheck, nil
 	}
 
-	tmpClaims := claims
-	tmpKey := scopesKey
-
-	if strings.Contains(scopesKey, ".") {
-		tmpKey, tmpClaims = getNestedClaim(scopesKey, claims)
+	ex, err := dotnotation.CompileExtractor(scopesKey)
+	if err != nil {
+		return failCheck, err
 	}
-
-	tmp, ok := tmpClaims[tmpKey]
-	if !ok {
-		return false
-	}
-
-	matchAll := func(required []string, given []string) bool {
-		for _, rScope := range required {
-			matched := false
-			for _, pScope := range given {
-				if rScope == pScope {
-					matched = true
-				}
-			}
-			if !matched { // required scope was not found --> immediately return
-				return false
-			}
+	return func(claims map[string]interface{}) bool {
+		v := ex.Extract(claims)
+		if len(v) != 1 {
+			return false
 		}
-		// all required scopes have been found in provided (claims) scopes
-		return true
-	}
-
-	scopes, ok := tmp.([]interface{})
-	if ok {
-		if len(scopes) > 0 {
-			return matchAll(requiredScopes, convertToStringSlice(scopes))
+		scopes, ok := v[0].([]interface{})
+		if ok {
+			if len(scopes) > 0 {
+				return m(requiredScopes, convertToStringSlice(scopes))
+			}
+			return false
 		}
-	}
 
-	scopeString, ok := tmp.(string)
-	if !ok {
+		scopeString, ok := v[0].(string)
+		if !ok {
+			return false
+		}
+
+		presentScopes := strings.Split(scopeString, " ")
+		if len(presentScopes) > 0 {
+			return m(requiredScopes, presentScopes)
+		}
+
 		return false
-	}
-
-	presentScopes := strings.Split(scopeString, " ")
-	if len(presentScopes) > 0 {
-		return matchAll(requiredScopes, presentScopes)
-	}
-
-	return false
+	}, nil
 }
 
-func ScopesDefaultMatcher(_ string, _ map[string]interface{}, _ []string) bool {
+func allMatcher(required []string, given []string) bool {
+	for _, rScope := range required {
+		matched := false
+		for _, pScope := range given {
+			if rScope == pScope {
+				matched = true
+			}
+		}
+		if !matched { // required scope was not found --> immediately return
+			return false
+		}
+	}
+	// all required scopes have been found in provided (claims) scopes
 	return true
 }
 
-func ScopesAnyMatcher(scopesKey string, claims map[string]interface{}, requiredScopes []string) bool {
-	if len(requiredScopes) == 0 {
-		return true
-	}
-
-	tmpClaims := claims
-	tmpKey := scopesKey
-
-	if strings.Contains(scopesKey, ".") {
-		tmpKey, tmpClaims = getNestedClaim(scopesKey, claims)
-	}
-
-	tmp, ok := tmpClaims[tmpKey]
-	if !ok {
-		return false
-	}
-
-	matchAny := func(required []string, given []string) bool {
-		for _, rScope := range required {
-			for _, pScope := range given {
-				if rScope == pScope {
-					return true // found any of the required scopes --> return
-				}
+func anyMatcher(required []string, given []string) bool {
+	for _, rScope := range required {
+		for _, pScope := range given {
+			if rScope == pScope {
+				return true // found any of the required scopes --> return
 			}
 		}
-
-		// none of the scopes have been found in provided (claims) scopes
-		return false
 	}
 
-	scopes, ok := tmp.([]interface{})
-	if ok {
-		if len(scopes) > 0 {
-			return matchAny(requiredScopes, convertToStringSlice(scopes))
-		}
-	}
-
-	scopeClaim, ok := tmp.(string)
-	if !ok {
-		return false
-	}
-
-	presentScopes := strings.Split(scopeClaim, " ")
-	if len(presentScopes) > 0 {
-		return matchAny(requiredScopes, presentScopes)
-	}
-
+	// none of the scopes have been found in provided (claims) scopes
 	return false
+}
+
+// Deprecated: use AnyScopesMatcher
+func ScopesAnyMatcher(scopesKey string, claims map[string]interface{}, requiredScopes []string) bool {
+	m, _ := AnyScopesMatcher(scopesKey, requiredScopes)
+	return m(claims)
+}
+
+// Deprecated: use AllScopesMatcher
+func ScopesAllMatcher(scopesKey string, claims map[string]interface{}, requiredScopes []string) bool {
+	m, _ := AllScopesMatcher(scopesKey, requiredScopes)
+	return m(claims)
+}
+
+// Deprecated: use DefaultScopesMatcher
+func ScopesDefaultMatcher(_ string, _ map[string]interface{}, _ []string) bool {
+	return true
 }
 
 func SignFields(keys []string, signer Signer, response *proxy.Response) error {
@@ -283,6 +274,46 @@ func (c Claims) Get(name string) (string, bool) {
 		return "", ok
 	}
 
+	return toString(tmp), ok
+}
+
+func (c Claims) List(name string) ([]string, bool) {
+	tmp, ok := c[name]
+	if !ok {
+		// if the claim is not present, return an slice with one empty element to keep compatibility
+		return []string{""}, ok
+	}
+
+	return toList(tmp), ok
+}
+
+type Propagator struct {
+	e *dotnotation.Extractor
+	h string
+}
+
+func NewPropagators(propagationCfg [][]string) ([]Propagator, error) {
+	if len(propagationCfg) == 0 {
+		return nil, ErrNoHeadersToPropagate
+	}
+	p := make([]Propagator, 0, len(propagationCfg))
+	for _, tuple := range propagationCfg {
+		if len(tuple) != 2 {
+			continue
+		}
+		e, err := dotnotation.CompileExtractor(tuple[0])
+		if err != nil {
+			continue
+		}
+		p = append(p, Propagator{
+			e: e,
+			h: tuple[1],
+		})
+	}
+	return p, nil
+}
+
+func toString(tmp interface{}) string {
 	var normalized string
 
 	switch v := tmp.(type) {
@@ -292,7 +323,7 @@ func (c Claims) Get(name string) (string, bool) {
 		normalized = fmt.Sprintf("%d", v)
 	case float64:
 		if r := math.Round(v); math.Abs(v-r) <= epsilon {
-			return fmt.Sprintf("%d", int(r)), ok
+			return fmt.Sprintf("%d", int(r))
 		}
 		normalized = fmt.Sprintf("%f", v)
 	case []interface{}:
@@ -307,16 +338,10 @@ func (c Claims) Get(name string) (string, bool) {
 		normalized = string(b)
 	}
 
-	return normalized, ok
+	return normalized
 }
 
-func (c Claims) List(name string) ([]string, bool) {
-	tmp, ok := c[name]
-	if !ok {
-		// if the claim is not present, return an slice with one empty element to keep compatibility
-		return []string{""}, ok
-	}
-
+func toList(tmp interface{}) []string {
 	var normalized []string
 
 	switch v := tmp.(type) {
@@ -326,7 +351,7 @@ func (c Claims) List(name string) ([]string, bool) {
 		normalized = []string{fmt.Sprintf("%d", v)}
 	case float64:
 		if r := math.Round(v); math.Abs(v-r) <= epsilon {
-			return []string{fmt.Sprintf("%d", int(r))}, ok
+			return []string{fmt.Sprintf("%d", int(r))}
 		}
 		normalized = []string{fmt.Sprintf("%f", v)}
 	case []interface{}:
@@ -340,71 +365,53 @@ func (c Claims) List(name string) ([]string, bool) {
 		normalized = []string{string(b)}
 	}
 
-	return normalized, ok
+	return normalized
 }
 
-func CalculateHeadersToPropagate(propagationCfg [][]string, claims map[string]interface{}) (map[string]string, error) {
-	if len(propagationCfg) == 0 {
-		return nil, ErrNoHeadersToPropagate
-	}
+func HeadersToPropagate(ps []Propagator, claims map[string]interface{}) map[string]string {
 	propagated := make(map[string]string)
-
-	var err error
-	for _, tuple := range propagationCfg {
-		var c Claims
-		var fromClaim, toHeader string
-
-		c, fromClaim, toHeader, err = parsePropagationTuple(tuple, claims)
-		if err != nil {
+	for _, p := range ps {
+		v := p.e.Extract(claims)
+		if len(v) != 1 {
+			propagated[p.h] = ""
 			continue
 		}
-
-		v, _ := c.Get(fromClaim)
-		propagated[toHeader] = v
+		propagated[p.h] = toString(v[0])
 	}
-
-	return propagated, err
+	return propagated
 }
 
-func CalculateArrayHeadersToPropagate(propagationCfg [][]string, claims map[string]interface{}) (map[string][]string, error) {
-	if len(propagationCfg) == 0 {
-		return nil, ErrNoHeadersToPropagate
-	}
+func ArrayHeadersToPropagate(ps []Propagator, claims map[string]interface{}) map[string][]string {
 	propagated := make(map[string][]string)
-
-	var err error
-	for _, tuple := range propagationCfg {
-		var c Claims
-		var fromClaim, toHeader string
-
-		c, fromClaim, toHeader, err = parsePropagationTuple(tuple, claims)
-		if err != nil {
+	for _, p := range ps {
+		v := p.e.Extract(claims)
+		if len(v) != 1 {
+			propagated[p.h] = []string{""}
 			continue
 		}
-
-		v, _ := c.List(fromClaim)
-		propagated[toHeader] = v
+		propagated[p.h] = toList(v[0])
 	}
-
-	return propagated, err
+	return propagated
 }
 
-func parsePropagationTuple(tuple []string, claims map[string]interface{}) (c Claims, fromClaim, toHeader string, err error) {
-	if len(tuple) != 2 {
-		err = fmt.Errorf("invalid number of claims to propagate: %+v", tuple)
-		return
+// Deprecated: use HeadersToPropagate
+func CalculateHeadersToPropagate(propagationCfg [][]string, claims map[string]interface{}) (map[string]string, error) {
+	ps, err := NewPropagators(propagationCfg)
+	if err != nil {
+		return nil, err
 	}
 
-	fromClaim = tuple[0]
-	toHeader = tuple[1]
+	return HeadersToPropagate(ps, claims), nil
+}
 
-	c = Claims(claims)
-	if strings.Contains(fromClaim, ".") && (len(fromClaim) < 4 || fromClaim[:4] != "http") {
-		var claimsMap map[string]interface{}
-		fromClaim, claimsMap = getNestedClaim(fromClaim, claims)
-		c = Claims(claimsMap)
+// Deprecated: use ArrayHeadersToPropagate
+func CalculateArrayHeadersToPropagate(propagationCfg [][]string, claims map[string]interface{}) (map[string][]string, error) {
+	ps, err := NewPropagators(propagationCfg)
+	if err != nil {
+		return nil, err
 	}
-	return
+
+	return ArrayHeadersToPropagate(ps, claims), nil
 }
 
 var supportedAlgorithms = map[string]jose.SignatureAlgorithm{

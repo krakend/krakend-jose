@@ -69,7 +69,7 @@ func TokenSigner(hf ginlura.HandlerFactory, logger logging.Logger) ginlura.Handl
 	}
 }
 
-func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory) ginlura.HandlerFactory {
+func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory) ginlura.HandlerFactory { // skipcq: GO-R1005
 	return func(cfg *config.EndpointConfig, prxy proxy.Proxy) gin.HandlerFunc {
 		logPrefix := "[ENDPOINT: " + cfg.Endpoint + "][JWTValidator]"
 		if rejecterF == nil {
@@ -94,29 +94,41 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 			return erroredHandler
 		}
 
-		var aclCheck func(string, map[string]interface{}, []string) bool
+		var aclCheck func(map[string]interface{}) bool
 
 		if scfg.RolesKeyIsNested && strings.Contains(scfg.RolesKey, ".") && scfg.RolesKey[:4] != "http" {
 			logger.Debug(logPrefix, fmt.Sprintf("Roles will be matched against the nested key: '%s'", scfg.RolesKey))
-			aclCheck = krakendjose.CanAccessNested
+			aclCheck, err = krakendjose.AccessNestedCheck(scfg.RolesKey, scfg.Roles)
+			if err != nil {
+				logger.Warning(logPrefix, fmt.Sprintf("error preparing nested acl check: %s", err.Error()))
+				return erroredHandler
+			}
 		} else {
 			logger.Debug(logPrefix, fmt.Sprintf("Roles will be matched against the key: '%s'", scfg.RolesKey))
-			aclCheck = krakendjose.CanAccess
+			aclCheck = krakendjose.AccessCheck(scfg.RolesKey, scfg.Roles)
 		}
 
-		var scopesMatcher func(string, map[string]interface{}, []string) bool
+		var scopesMatcher func(map[string]interface{}) bool
 
 		if len(scfg.Scopes) > 0 && scfg.ScopesKey != "" {
 			if scfg.ScopesMatcher == "all" {
 				logger.Debug(logPrefix, fmt.Sprintf("Constraint added: tokens must contain a claim '%s' with all these scopes: %v", scfg.ScopesKey, scfg.Scopes))
-				scopesMatcher = krakendjose.ScopesAllMatcher
+				scopesMatcher, err = krakendjose.AllScopesMatcher(scfg.ScopesKey, scfg.Scopes)
+				if err != nil {
+					logger.Warning(logPrefix, fmt.Sprintf("error preparing all scopes matcher: %s", err.Error()))
+					return erroredHandler
+				}
 			} else {
 				logger.Debug(logPrefix, fmt.Sprintf("Constraint added: tokens must contain a claim '%s' with any of these scopes: %v", scfg.ScopesKey, scfg.Scopes))
-				scopesMatcher = krakendjose.ScopesAnyMatcher
+				scopesMatcher, err = krakendjose.AnyScopesMatcher(scfg.ScopesKey, scfg.Scopes)
+				if err != nil {
+					logger.Warning(logPrefix, fmt.Sprintf("error preparing any scopes matcher: %s", err.Error()))
+					return erroredHandler
+				}
 			}
 		} else {
 			logger.Debug(logPrefix, "No scope validation required")
-			scopesMatcher = krakendjose.ScopesDefaultMatcher
+			scopesMatcher = krakendjose.DefaultScopesMatcher(scfg.ScopesKey, scfg.Scopes)
 		}
 
 		if scfg.OperationDebug {
@@ -126,6 +138,11 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 		}
 
 		paramExtractor := extractRequiredJWTClaims(cfg)
+
+		ps, err := krakendjose.NewPropagators(scfg.PropagateClaimsToHeader)
+		if err != nil {
+			logger.Warning(logPrefix, fmt.Sprintf("error preparing header propagators: %s", err.Error()))
+		}
 
 		return func(c *gin.Context) {
 			token, err := validator.ValidateRequest(c.Request)
@@ -155,7 +172,7 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 				return
 			}
 
-			if !aclCheck(scfg.RolesKey, claims, scfg.Roles) {
+			if !aclCheck(claims) {
 				if scfg.OperationDebug {
 					logger.Error(logPrefix, "Token sent by client does not have sufficient roles")
 				}
@@ -163,7 +180,7 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 				return
 			}
 
-			if !scopesMatcher(scfg.ScopesKey, claims, scfg.Scopes) {
+			if !scopesMatcher(claims) {
 				if scfg.OperationDebug {
 					logger.Error(logPrefix, "Token sent by client does not have the required scopes")
 				}
@@ -171,7 +188,7 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 				return
 			}
 
-			propagateHeaders(cfg, scfg.PropagateClaimsToHeader, scfg.PropagateClaimsPreserveArray, claims, c, logger)
+			propagateHeaders(ps, scfg.PropagateClaimsPreserveArray, claims, c)
 
 			paramExtractor(c, claims)
 
@@ -185,20 +202,14 @@ func erroredHandler(c *gin.Context) {
 }
 
 func propagateHeaders(
-	cfg *config.EndpointConfig,
-	propagationCfg [][]string,
+	ps []krakendjose.Propagator,
 	propagationPreserveArrays bool,
 	claims map[string]interface{},
 	c *gin.Context,
-	logger logging.Logger,
 ) {
-	logPrefix := "[ENDPOINT: " + cfg.Endpoint + "][PropagateHeaders]"
-	if len(propagationCfg) > 0 {
+	if len(ps) > 0 {
 		if !propagationPreserveArrays {
-			headersToPropagate, err := krakendjose.CalculateHeadersToPropagate(propagationCfg, claims)
-			if err != nil {
-				logger.Warning(logPrefix, err.Error())
-			}
+			headersToPropagate := krakendjose.HeadersToPropagate(ps, claims)
 			for k, v := range headersToPropagate {
 				// Set header value - replaces existing one
 				c.Request.Header.Set(k, v)
@@ -206,10 +217,7 @@ func propagateHeaders(
 			return
 		}
 
-		headersToPropagate, err := krakendjose.CalculateArrayHeadersToPropagate(propagationCfg, claims)
-		if err != nil {
-			logger.Warning(logPrefix, err.Error())
-		}
+		headersToPropagate := krakendjose.ArrayHeadersToPropagate(ps, claims)
 		for k, v := range headersToPropagate {
 			c.Request.Header[textproto.CanonicalMIMEHeaderKey(k)] = v
 		}

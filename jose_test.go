@@ -66,8 +66,13 @@ func TestCanAccess(t *testing.T) {
 			expected:     true,
 		},
 	} {
-		t.Run(v.name, func(t *testing.T) {
+		t.Run("CanAccess "+v.name, func(t *testing.T) {
 			if res := CanAccess(v.roleKey, v.claims, v.requirements); res != v.expected {
+				t.Errorf("'%s' have %v, want %v", v.name, res, v.expected)
+			}
+		})
+		t.Run("Acl check "+v.name, func(t *testing.T) {
+			if res := AccessCheck(v.roleKey, v.requirements)(v.claims); res != v.expected {
 				t.Errorf("'%s' have %v, want %v", v.name, res, v.expected)
 			}
 		})
@@ -134,8 +139,17 @@ func TestCanAccessNested(t *testing.T) {
 			expected:     true,
 		},
 	} {
-		t.Run(v.name, func(t *testing.T) {
+		t.Run("CanAccessNested "+v.name, func(t *testing.T) {
 			if res := CanAccessNested(v.roleKey, v.claims, v.requirements); res != v.expected {
+				t.Errorf("'%s' have %v, want %v", v.name, res, v.expected)
+			}
+		})
+		t.Run("NestedAclCheck "+v.name, func(t *testing.T) {
+			ac, err := AccessNestedCheck(v.roleKey, v.requirements)
+			if err != nil {
+				t.Error(err)
+			}
+			if res := ac(v.claims); res != v.expected {
 				t.Errorf("'%s' have %v, want %v", v.name, res, v.expected)
 			}
 		})
@@ -281,8 +295,17 @@ func TestScopesAllMatcher(t *testing.T) {
 			expected:       true,
 		},
 	} {
-		t.Run(v.name, func(t *testing.T) {
+		t.Run("ScopesAllMatcher "+v.name, func(t *testing.T) {
 			if res := ScopesAllMatcher(v.scopesKey, v.claims, v.requiredScopes); res != v.expected {
+				t.Errorf("'%s' have %v, want %v", v.name, res, v.expected)
+			}
+		})
+		t.Run(v.name, func(t *testing.T) {
+			m, err := AllScopesMatcher(v.scopesKey, v.requiredScopes)
+			if err != nil {
+				t.Errorf("'%s' error: %v", v.name, err)
+			}
+			if res := m(v.claims); res != v.expected {
 				t.Errorf("'%s' have %v, want %v", v.name, res, v.expected)
 			}
 		})
@@ -428,8 +451,17 @@ func TestScopesAnyMatcher(t *testing.T) {
 			expected:       true,
 		},
 	} {
-		t.Run(v.name, func(t *testing.T) {
+		t.Run("ScopesAnyMatcher "+v.name, func(t *testing.T) {
 			if res := ScopesAnyMatcher(v.scopesKey, v.claims, v.requiredScopes); res != v.expected {
+				t.Errorf("'%s' have %v, want %v", v.name, res, v.expected)
+			}
+		})
+		t.Run(v.name, func(t *testing.T) {
+			m, err := AnyScopesMatcher(v.scopesKey, v.requiredScopes)
+			if err != nil {
+				t.Errorf("'%s' error: %v", v.name, err)
+			}
+			if res := m(v.claims); res != v.expected {
 				t.Errorf("'%s' have %v, want %v", v.name, res, v.expected)
 			}
 		})
@@ -485,6 +517,17 @@ func TestCalculateHeadersToPropagate(t *testing.T) {
 		if !reflect.DeepEqual(tc.expected, res) {
 			t.Errorf("tc-%d: got: %v want: %v", i, res, tc.expected)
 		}
+
+		ps, err := NewPropagators(tc.cfg)
+		if err != nil {
+			t.Errorf("tc-%d: unexpected error: %v", i, err)
+			continue
+		}
+		res = HeadersToPropagate(ps, tc.claims)
+
+		if !reflect.DeepEqual(tc.expected, res) {
+			t.Errorf("tc-%d: got: %v want: %v", i, res, tc.expected)
+		}
 	}
 }
 
@@ -533,6 +576,17 @@ func TestCalculateArrayHeadersToPropagate(t *testing.T) {
 			t.Errorf("tc-%d: unexpected error: %v", i, err)
 			continue
 		}
+
+		if !reflect.DeepEqual(tc.expected, res) {
+			t.Errorf("tc-%d: got: %v want: %v", i, res, tc.expected)
+		}
+
+		ps, err := NewPropagators(tc.cfg)
+		if err != nil {
+			t.Errorf("tc-%d: unexpected error: %v", i, err)
+			continue
+		}
+		res = ArrayHeadersToPropagate(ps, tc.claims)
 
 		if !reflect.DeepEqual(tc.expected, res) {
 			t.Errorf("tc-%d: got: %v want: %v", i, res, tc.expected)

@@ -93,7 +93,7 @@ func jsonRender(w http.ResponseWriter, response *proxy.Response) error {
 	return err
 }
 
-func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory) muxlura.HandlerFactory {
+func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory) muxlura.HandlerFactory { // skipcq: GO-R1005
 	return func(cfg *config.EndpointConfig, prxy proxy.Proxy) http.HandlerFunc {
 		if rejecterF == nil {
 			rejecterF = new(krakendjose.NopRejecterFactory)
@@ -116,27 +116,38 @@ func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, r
 			log.Fatalf("%s: %s", cfg.Endpoint, err.Error())
 		}
 
-		var aclCheck func(string, map[string]interface{}, []string) bool
+		var aclCheck func(map[string]interface{}) bool
 
 		if signatureConfig.RolesKeyIsNested && strings.Contains(signatureConfig.RolesKey, ".") && signatureConfig.RolesKey[:4] != "http" {
-			aclCheck = krakendjose.CanAccessNested
+			aclCheck, err = krakendjose.AccessNestedCheck(signatureConfig.RolesKey, signatureConfig.Roles)
+			if err != nil {
+				logger.Warning(fmt.Sprintf("error preparing nested acl check on endpoint %s: %s", cfg.Endpoint, err.Error()))
+				return handler
+			}
 		} else {
-			aclCheck = krakendjose.CanAccess
+			aclCheck = krakendjose.AccessCheck(signatureConfig.RolesKey, signatureConfig.Roles)
 		}
 
-		var scopesMatcher func(string, map[string]interface{}, []string) bool
+		var scopesMatcher func(map[string]interface{}) bool
 
 		if len(signatureConfig.Scopes) > 0 && signatureConfig.ScopesKey != "" {
 			if signatureConfig.ScopesMatcher == "all" {
-				scopesMatcher = krakendjose.ScopesAllMatcher
+				scopesMatcher, err = krakendjose.AllScopesMatcher(signatureConfig.ScopesKey, signatureConfig.Scopes)
+				logger.Warning(fmt.Sprintf("error preparing all scopes matcher on endpoint %s: %s", cfg.Endpoint, err.Error()))
 			} else {
-				scopesMatcher = krakendjose.ScopesAnyMatcher
+				scopesMatcher, err = krakendjose.AnyScopesMatcher(signatureConfig.ScopesKey, signatureConfig.Scopes)
+				logger.Warning(fmt.Sprintf("error preparing any scopes matcher on endpoint %s: %s", cfg.Endpoint, err.Error()))
 			}
 		} else {
-			scopesMatcher = krakendjose.ScopesDefaultMatcher
+			scopesMatcher = krakendjose.DefaultScopesMatcher(signatureConfig.ScopesKey, signatureConfig.Scopes)
 		}
 
 		logger.Info("JOSE: validator enabled for the endpoint", cfg.Endpoint)
+
+		ps, err := krakendjose.NewPropagators(signatureConfig.PropagateClaimsToHeader)
+		if err != nil {
+			logger.Warning(fmt.Sprintf("error preparing header propagators for endpoint %s: %s", cfg.Endpoint, err.Error()))
+		}
 
 		return func(w http.ResponseWriter, r *http.Request) {
 			token, err := validator.ValidateRequest(r)
@@ -157,17 +168,17 @@ func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, r
 				return
 			}
 
-			if !aclCheck(signatureConfig.RolesKey, claims, signatureConfig.Roles) {
+			if !aclCheck(claims) {
 				http.Error(w, "", http.StatusForbidden)
 				return
 			}
 
-			if !scopesMatcher(signatureConfig.ScopesKey, claims, signatureConfig.Scopes) {
+			if !scopesMatcher(claims) {
 				http.Error(w, "", http.StatusForbidden)
 				return
 			}
 
-			propagateHeaders(cfg, signatureConfig.PropagateClaimsToHeader, signatureConfig.PropagateClaimsPreserveArray, claims, r, logger)
+			propagateHeaders(ps, signatureConfig.PropagateClaimsPreserveArray, claims, r)
 
 			handler(w, r)
 		}
@@ -204,19 +215,14 @@ func FromHeader(header string) func(r *http.Request) (*jwt.JSONWebToken, error) 
 }
 
 func propagateHeaders(
-	cfg *config.EndpointConfig,
-	propagationCfg [][]string,
+	ps []krakendjose.Propagator,
 	propagationPreserveArrays bool,
 	claims map[string]interface{},
 	r *http.Request,
-	logger logging.Logger,
 ) {
-	if len(propagationCfg) > 0 {
+	if len(ps) > 0 {
 		if !propagationPreserveArrays {
-			headersToPropagate, err := krakendjose.CalculateHeadersToPropagate(propagationCfg, claims)
-			if err != nil {
-				logger.Warning(fmt.Sprintf("JOSE: header propagations error for %s: %s", cfg.Endpoint, err.Error()))
-			}
+			headersToPropagate := krakendjose.HeadersToPropagate(ps, claims)
 			for k, v := range headersToPropagate {
 				// Set header value - replaces existing one
 				r.Header.Set(k, v)
@@ -224,10 +230,7 @@ func propagateHeaders(
 			return
 		}
 
-		headersToPropagate, err := krakendjose.CalculateArrayHeadersToPropagate(propagationCfg, claims)
-		if err != nil {
-			logger.Warning(fmt.Sprintf("JOSE: header propagations error for %s: %s", cfg.Endpoint, err.Error()))
-		}
+		headersToPropagate := krakendjose.ArrayHeadersToPropagate(ps, claims)
 		for k, v := range headersToPropagate {
 			r.Header[textproto.CanonicalMIMEHeaderKey(k)] = v
 		}
