@@ -16,7 +16,7 @@ import (
 
 var ErrNoHeadersToPropagate = fmt.Errorf("header propagation is disabled because there is no propagate_claims attribute")
 
-type ExtractorFactory func(string) func(r *http.Request) (*jwt.JSONWebToken, error)
+type ExtractorFactory func(string, string) func(r *http.Request) (*jwt.JSONWebToken, error)
 
 func NewValidator(signatureConfig *SignatureConfig, cookieEf, headerEf ExtractorFactory) (*auth0.JWTValidator, error) {
 	sa, ok := supportedAlgorithms[signatureConfig.Alg]
@@ -24,8 +24,8 @@ func NewValidator(signatureConfig *SignatureConfig, cookieEf, headerEf Extractor
 		return nil, fmt.Errorf("JOSE: unknown algorithm %s", signatureConfig.Alg)
 	}
 	te := auth0.FromMultiple(
-		auth0.RequestTokenExtractorFunc(headerEf(signatureConfig.AuthHeaderName)),
-		auth0.RequestTokenExtractorFunc(cookieEf(signatureConfig.CookieKey)),
+		auth0.RequestTokenExtractorFunc(headerEf(signatureConfig.AuthHeaderName, signatureConfig.TokenType)),
+		auth0.RequestTokenExtractorFunc(cookieEf(signatureConfig.CookieKey, "")),
 	)
 
 	decodedFs, err := DecodeFingerprints(signatureConfig.Fingerprints)
