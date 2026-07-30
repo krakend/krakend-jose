@@ -12,7 +12,7 @@ import (
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/krakend/dotnotation"
 	"github.com/krakend/go-auth0/v2"
-	"github.com/luraproject/lura/v2/proxy"
+	"github.com/luraproject/lura/v3/proxy"
 )
 
 var ErrNoHeadersToPropagate = fmt.Errorf("header propagation is disabled because there is no propagate_claims attribute")

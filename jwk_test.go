@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/krakend/krakend-jose/v2/secrets"
-	"github.com/luraproject/lura/v2/core"
+	"github.com/krakend/krakend-jose/v3/secrets"
+	"github.com/luraproject/lura/v3/core"
 )
 
 func TestJWK(t *testing.T) {
@@ -155,7 +155,7 @@ func TestJWK_cyperfile(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	os.WriteFile("./fixtures/private.txt", cypherText, 0600)
+	os.WriteFile("./fixtures/private.txt", cypherText, 0o600)
 	defer os.Remove("./fixtures/private.txt")
 
 	for k, tc := range []struct {

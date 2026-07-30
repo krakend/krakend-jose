@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/go-jose/go-jose/v3"
-	"github.com/luraproject/lura/v2/config"
+	"github.com/luraproject/lura/v3/config"
 )
 
 func Test_getSignatureConfig(t *testing.T) {

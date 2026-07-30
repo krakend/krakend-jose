@@ -10,10 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	jose "github.com/krakend/krakend-jose/v2"
-	"github.com/luraproject/lura/v2/logging"
-	"github.com/luraproject/lura/v2/proxy"
-	muxlura "github.com/luraproject/lura/v2/router/mux"
+	jose "github.com/krakend/krakend-jose/v3"
+	"github.com/luraproject/lura/v3/logging"
+	"github.com/luraproject/lura/v3/proxy"
+	muxlura "github.com/luraproject/lura/v3/router/mux"
 )
 
 func TestTokenSignatureValidator(t *testing.T) { // skipcq: GO-R1005
