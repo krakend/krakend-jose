@@ -12,7 +12,7 @@ import (
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/krakend/dotnotation"
 	"github.com/krakend/go-auth0/v2"
-	"github.com/luraproject/lura/v2/proxy"
+	"github.com/luraproject/lura/v3/proxy"
 )
 
 var ErrNoHeadersToPropagate = fmt.Errorf("header propagation is disabled because there is no propagate_claims attribute")
@@ -199,7 +199,7 @@ func matcher(scopesKey string, requiredScopes []string, m func(required []string
 	}, nil
 }
 
-func allMatcher(required []string, given []string) bool {
+func allMatcher(required, given []string) bool {
 	for _, rScope := range required {
 		matched := false
 		for _, pScope := range given {
@@ -215,7 +215,7 @@ func allMatcher(required []string, given []string) bool {
 	return true
 }
 
-func anyMatcher(required []string, given []string) bool {
+func anyMatcher(required, given []string) bool {
 	for _, rScope := range required {
 		for _, pScope := range given {
 			if rScope == pScope {

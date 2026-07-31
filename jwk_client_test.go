@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/krakend/go-auth0/v2"
-	"github.com/luraproject/lura/v2/config"
-	"github.com/luraproject/lura/v2/logging"
+	"github.com/luraproject/lura/v3/config"
+	"github.com/luraproject/lura/v3/logging"
 )
 
 func TestJWKClient_globalCache(t *testing.T) {

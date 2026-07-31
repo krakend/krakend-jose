@@ -5,7 +5,7 @@ name = "go"
 enabled = true
 
   [analyzers.meta]
-  import_root = "github.com/krakendio/krakend-jsonschema"
+  import_root = "github.com/krakend/krakend-jose"
 
 [[transformers]]
 name = "gofmt"
