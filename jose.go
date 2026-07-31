@@ -199,7 +199,7 @@ func matcher(scopesKey string, requiredScopes []string, m func(required []string
 	}, nil
 }
 
-func allMatcher(required []string, given []string) bool {
+func allMatcher(required, given []string) bool {
 	for _, rScope := range required {
 		matched := false
 		for _, pScope := range given {
@@ -215,7 +215,7 @@ func allMatcher(required []string, given []string) bool {
 	return true
 }
 
-func anyMatcher(required []string, given []string) bool {
+func anyMatcher(required, given []string) bool {
 	for _, rScope := range required {
 		for _, pScope := range given {
 			if rScope == pScope {
