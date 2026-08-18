@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"testing"
 
-	krakendjose "github.com/krakend/krakend-jose/v2"
-	"github.com/luraproject/lura/v2/config"
+	krakendjose "github.com/krakend/krakend-jose/v3"
+	"github.com/luraproject/lura/v3/config"
 )
 
 func BenchmarkValidation_ES256(b *testing.B) {

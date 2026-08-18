@@ -18,9 +18,9 @@ import (
 
 	jose "github.com/go-jose/go-jose/v3"
 	auth0 "github.com/krakend/go-auth0/v2"
-	"github.com/luraproject/lura/v2/core"
+	"github.com/luraproject/lura/v3/core"
 
-	"github.com/krakend/krakend-jose/v2/secrets"
+	"github.com/krakend/krakend-jose/v3/secrets"
 )
 
 type SecretProviderConfig struct {

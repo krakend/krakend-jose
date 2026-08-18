@@ -11,11 +11,11 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	krakendjose "github.com/krakend/krakend-jose/v2"
-	"github.com/luraproject/lura/v2/config"
-	"github.com/luraproject/lura/v2/logging"
-	"github.com/luraproject/lura/v2/proxy"
-	ginlura "github.com/luraproject/lura/v2/router/gin"
+	krakendjose "github.com/krakend/krakend-jose/v3"
+	"github.com/luraproject/lura/v3/config"
+	"github.com/luraproject/lura/v3/logging"
+	"github.com/luraproject/lura/v3/proxy"
+	ginlura "github.com/luraproject/lura/v3/router/gin"
 )
 
 func Example_rs256() {

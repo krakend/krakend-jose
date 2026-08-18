@@ -9,12 +9,12 @@ import (
 
 	jose "github.com/go-jose/go-jose/v3"
 	"github.com/krakend/go-auth0/v2"
-	"github.com/luraproject/lura/v2/config"
+	"github.com/luraproject/lura/v3/config"
 )
 
 const (
-	ValidatorNamespace = "github.com/devopsfaith/krakend-jose/validator"
-	SignerNamespace    = "github.com/devopsfaith/krakend-jose/signer"
+	ValidatorNamespace = "auth/validator"
+	SignerNamespace    = "auth/signer"
 	defaultRolesKey    = "roles"
 )
 
