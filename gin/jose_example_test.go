@@ -51,19 +51,19 @@ func Example_rs256() {
 	// 201
 	// {"access_token":"eyJhbGciOiJSUzI1NiIsImtpZCI6IjIwMTEtMDQtMjkiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJodHRwOi8vYXBpLmV4YW1wbGUuY29tIiwiZXhwIjoyMDUxODgyNzU1LCJpc3MiOiJodHRwOi8vZXhhbXBsZS5jb20iLCJqdGkiOiJtbmIyM3Zjc3J0NzU2eXVpb21uYnZjeDk4ZXJ0eXVpb3AiLCJyb2xlcyI6WyJyb2xlX2EiLCJyb2xlX2IiXSwic3ViIjoiMTIzNDU2Nzg5MHF3ZXJ0eXVpbyJ9.u1fK05FpXctB-VkhhT3xu2WSIkEr1_VM71ald-yeKTesxhxg68TsHFEOBCgoXPuCviOP8QnUKNuVSeyMJh9z3nnrfQIjo9VZ2yicZu6ImYptSQ2DJbR80GDSPp-H7KnjaR9AAY0HZ0M-KUTaHdLABZFr307nkOeaJn_5jMpav7pqa7nrU3sI1CLX5pYVTggG6t7Zoqj2ebzzqdRxQEtdmZkD_NfH-3w3t-H0ylVdeBnPh-RvlspxC_mJzyUIJ0BwPlZpabppHm1ISySa4kwnwxEYnux0oZcb3PSoOZZZA467JySZ69PRlenNPdfGPL6E3uL1nqPHcxhte7ikSG4Q6Q","exp":2051882755,"refresh_token":"eyJhbGciOiJSUzI1NiIsImtpZCI6IjIwMTEtMDQtMjkiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJodHRwOi8vYXBpLmV4YW1wbGUuY29tIiwiZXhwIjoyMDUxODgyNzU1LCJpc3MiOiJodHRwOi8vZXhhbXBsZS5jb20iLCJqdGkiOiJtbmIyM3Zjc3J0NzU2eXVpb21uMTI4NzZidmN4OThlcnR5dWlvcCIsInN1YiI6IjEyMzQ1Njc4OTBxd2VydHl1aW8ifQ.jwmNRj7gRcAgeeG9WqB2I8mqRVFZtw3uw5uSBJD8MmCVGRGPJ83ytEbqF3A-ya9IbdL5lJZ5LDUhwkO9xnkLZPBClDYBP81h0ZU7KR3vJnH9ZNkgpUiu1XLfkpJ6tSuZXPLj5-Lxymr3Mf8PdWey5YjEfk6mN_xfBHZR_XZbwsVbiv_nWhp-qeltPkXraShEpsDFFfzjRFrGprFi1S00OFDBcObbmXtZ8GTyJgSN8vO_rU-vkt6no1phKHzuyaS5D6GdjrxDXv7pHYL-OWifBiElMs09PAd16rZy3-qSIDZS7vHo724cG9UYMgxSE86PvjGP_dOJCOf64p_wPkkBRw"}
 	// application/json; charset=utf-8
-	//  DEBUG: [ENDPOINT: /private][JWTSigner] Signer disabled
-	//  DEBUG: [ENDPOINT: /private][JWTValidator] Roles will be matched against the key: 'roles'
-	//  DEBUG: [ENDPOINT: /private][JWTValidator] No scope validation required
-	//  DEBUG: [ENDPOINT: /private][JWTValidator] Validator enabled for this endpoint. Operation debug is enabled
-	//  DEBUG: [ENDPOINT: /token][JWTSigner] Signer enabled
-	//  INFO: [ENDPOINT: /token][JWTValidator] Validator disabled for this endpoint
-	//  DEBUG: [ENDPOINT: /refresh_token][JWTSigner] Signer enabled
-	//  DEBUG: [ENDPOINT: /refresh_token][JWTValidator] Roles will be matched against the key: 'roles'
-	//  DEBUG: [ENDPOINT: /refresh_token][JWTValidator] No scope validation required
-	//  DEBUG: [ENDPOINT: /refresh_token][JWTValidator] Validator enabled for this endpoint. Operation debug is enabled
-	//  DEBUG: [ENDPOINT: /private][JWTSigner] Signer disabled
-	//  INFO: [ENDPOINT: /private][JWTValidator] Validator disabled for this endpoint
-	//  ERROR: [ENDPOINT: /private][JWTValidator] Unable to validate the token: Token not found
+	//  DEBUG: [ENDPOINT: GET /private][JWTSigner] Signer disabled
+	//  DEBUG: [ENDPOINT: GET /private][JWTValidator] Roles will be matched against the key: 'roles'
+	//  DEBUG: [ENDPOINT: GET /private][JWTValidator] No scope validation required
+	//  DEBUG: [ENDPOINT: GET /private][JWTValidator] Validator enabled for this endpoint. Operation debug is enabled
+	//  DEBUG: [ENDPOINT: POST /token][JWTSigner] Signer enabled
+	//  INFO: [ENDPOINT: POST /token][JWTValidator] Validator disabled for this endpoint
+	//  DEBUG: [ENDPOINT: POST /refresh_token][JWTSigner] Signer enabled
+	//  DEBUG: [ENDPOINT: POST /refresh_token][JWTValidator] Roles will be matched against the key: 'roles'
+	//  DEBUG: [ENDPOINT: POST /refresh_token][JWTValidator] No scope validation required
+	//  DEBUG: [ENDPOINT: POST /refresh_token][JWTValidator] Validator enabled for this endpoint. Operation debug is enabled
+	//  DEBUG: [ENDPOINT: GET /private][JWTSigner] Signer disabled
+	//  INFO: [ENDPOINT: GET /private][JWTValidator] Validator disabled for this endpoint
+	//  ERROR: [ENDPOINT: GET /private][JWTValidator] Unable to validate the token: Token not found
 }
 
 func Example_hs256() {
@@ -94,18 +94,18 @@ func Example_hs256() {
 	// 201
 	// {"access_token":"eyJhbGciOiJIUzI1NiIsImtpZCI6InNpbTIiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJodHRwOi8vYXBpLmV4YW1wbGUuY29tIiwiZXhwIjoyMDUxODgyNzU1LCJpc3MiOiJodHRwOi8vZXhhbXBsZS5jb20iLCJqdGkiOiJtbmIyM3Zjc3J0NzU2eXVpb21uYnZjeDk4ZXJ0eXVpb3AiLCJyb2xlcyI6WyJyb2xlX2EiLCJyb2xlX2IiXSwic3ViIjoiMTIzNDU2Nzg5MHF3ZXJ0eXVpbyJ9.xG6O62h475Y-EknyLFerPOUX6ATKCoIYEq4QsQsuw-Q","exp":2051882755,"refresh_token":"eyJhbGciOiJIUzI1NiIsImtpZCI6InNpbTIiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJodHRwOi8vYXBpLmV4YW1wbGUuY29tIiwiZXhwIjoyMDUxODgyNzU1LCJpc3MiOiJodHRwOi8vZXhhbXBsZS5jb20iLCJqdGkiOiJtbmIyM3Zjc3J0NzU2eXVpb21uMTI4NzZidmN4OThlcnR5dWlvcCIsInN1YiI6IjEyMzQ1Njc4OTBxd2VydHl1aW8ifQ.8rd0w9_H7Z_0J37nKvqQNwJnP25VrQcVAAa5sc3Fsw0"}
 	// application/json; charset=utf-8
-	//  DEBUG: [ENDPOINT: /private][JWTSigner] Signer disabled
-	//  DEBUG: [ENDPOINT: /private][JWTValidator] Roles will be matched against the key: 'roles'
-	//  DEBUG: [ENDPOINT: /private][JWTValidator] No scope validation required
-	//  DEBUG: [ENDPOINT: /private][JWTValidator] Validator enabled for this endpoint
-	//  DEBUG: [ENDPOINT: /token][JWTSigner] Signer enabled
-	//  INFO: [ENDPOINT: /token][JWTValidator] Validator disabled for this endpoint
-	//  DEBUG: [ENDPOINT: /refresh_token][JWTSigner] Signer enabled
-	//  DEBUG: [ENDPOINT: /refresh_token][JWTValidator] Roles will be matched against the key: 'roles'
-	//  DEBUG: [ENDPOINT: /refresh_token][JWTValidator] No scope validation required
-	//  DEBUG: [ENDPOINT: /refresh_token][JWTValidator] Validator enabled for this endpoint
-	//  DEBUG: [ENDPOINT: /private][JWTSigner] Signer disabled
-	//  INFO: [ENDPOINT: /private][JWTValidator] Validator disabled for this endpoint
+	//  DEBUG: [ENDPOINT: GET /private][JWTSigner] Signer disabled
+	//  DEBUG: [ENDPOINT: GET /private][JWTValidator] Roles will be matched against the key: 'roles'
+	//  DEBUG: [ENDPOINT: GET /private][JWTValidator] No scope validation required
+	//  DEBUG: [ENDPOINT: GET /private][JWTValidator] Validator enabled for this endpoint
+	//  DEBUG: [ENDPOINT: POST /token][JWTSigner] Signer enabled
+	//  INFO: [ENDPOINT: POST /token][JWTValidator] Validator disabled for this endpoint
+	//  DEBUG: [ENDPOINT: POST /refresh_token][JWTSigner] Signer enabled
+	//  DEBUG: [ENDPOINT: POST /refresh_token][JWTValidator] Roles will be matched against the key: 'roles'
+	//  DEBUG: [ENDPOINT: POST /refresh_token][JWTValidator] No scope validation required
+	//  DEBUG: [ENDPOINT: POST /refresh_token][JWTValidator] Validator enabled for this endpoint
+	//  DEBUG: [ENDPOINT: GET /private][JWTSigner] Signer disabled
+	//  INFO: [ENDPOINT: GET /private][JWTValidator] Validator disabled for this endpoint
 }
 
 func Example_hs256_cookie() {
@@ -165,10 +165,10 @@ func Example_hs256_cookie() {
 	// 200
 	// {}
 	// application/json; charset=utf-8
-	//  DEBUG: [ENDPOINT: /private][JWTSigner] Signer disabled
-	//  DEBUG: [ENDPOINT: /private][JWTValidator] Roles will be matched against the key: 'roles'
-	//  DEBUG: [ENDPOINT: /private][JWTValidator] No scope validation required
-	//  DEBUG: [ENDPOINT: /private][JWTValidator] Validator enabled for this endpoint
+	//  DEBUG: [ENDPOINT: GET /private][JWTSigner] Signer disabled
+	//  DEBUG: [ENDPOINT: GET /private][JWTValidator] Roles will be matched against the key: 'roles'
+	//  DEBUG: [ENDPOINT: GET /private][JWTValidator] No scope validation required
+	//  DEBUG: [ENDPOINT: GET /private][JWTValidator] Validator enabled for this endpoint
 }
 
 func runValidationCycle(signerEndpointCfg, validatorEndpointCfg *config.EndpointConfig) {
@@ -195,9 +195,11 @@ func runValidationCycle(signerEndpointCfg, validatorEndpointCfg *config.Endpoint
 	engine.POST(mixedCfg.Endpoint, hf(mixedCfg, tokenIssuer))
 	engine.GET("/", hf(&config.EndpointConfig{
 		Timeout:  time.Second,
+		Method:   http.MethodGet,
 		Endpoint: "/private",
 		Backend: []*config.Backend{
 			{
+				Method:     http.MethodGet,
 				URLPattern: "/",
 				Host:       []string{"http://example.com/"},
 				Timeout:    time.Second,
@@ -295,6 +297,7 @@ func newSignerEndpointCfg(alg, ID, URL string) *config.EndpointConfig {
 		Method:   "POST",
 		Backend: []*config.Backend{
 			{
+				Method:     http.MethodGet,
 				URLPattern: "/token",
 				Host:       []string{"http://example.com/"},
 				Timeout:    time.Second,
@@ -316,9 +319,11 @@ func newSignerEndpointCfg(alg, ID, URL string) *config.EndpointConfig {
 func newVerifierEndpointCfg(alg, URL string, roles []string, propagatePreserveArrays bool) *config.EndpointConfig {
 	return &config.EndpointConfig{
 		Timeout:  time.Second,
+		Method:   http.MethodGet,
 		Endpoint: "/private",
 		Backend: []*config.Backend{
 			{
+				Method:     http.MethodGet,
 				URLPattern: "/",
 				Host:       []string{"http://example.com/"},
 				Timeout:    time.Second,
