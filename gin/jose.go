@@ -24,7 +24,7 @@ func HandlerFactory(hf ginlura.HandlerFactory, logger logging.Logger, rejecterF 
 
 func TokenSigner(hf ginlura.HandlerFactory, logger logging.Logger) ginlura.HandlerFactory {
 	return func(cfg *config.EndpointConfig, prxy proxy.Proxy) gin.HandlerFunc {
-		logPrefix := "[ENDPOINT: " + cfg.Endpoint + "][JWTSigner]"
+		logPrefix := fmt.Sprintf("[ENDPOINT: %s %s][JWTSigner]", cfg.Method, cfg.Endpoint)
 		signerCfg, signer, err := krakendjose.NewSigner(cfg, nil)
 		if err == krakendjose.ErrNoSignerCfg {
 			logger.Debug(logPrefix, "Signer disabled")
@@ -71,7 +71,7 @@ func TokenSigner(hf ginlura.HandlerFactory, logger logging.Logger) ginlura.Handl
 
 func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory) ginlura.HandlerFactory { // skipcq: GO-R1005
 	return func(cfg *config.EndpointConfig, prxy proxy.Proxy) gin.HandlerFunc {
-		logPrefix := "[ENDPOINT: " + cfg.Endpoint + "][JWTValidator]"
+		logPrefix := fmt.Sprintf("[ENDPOINT: %s %s][JWTValidator]", cfg.Method, cfg.Endpoint)
 		if rejecterF == nil {
 			rejecterF = new(krakendjose.NopRejecterFactory)
 		}
