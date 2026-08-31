@@ -277,6 +277,68 @@ func TestCustomHeaderName(t *testing.T) {
 	}
 }
 
+// Testing with a custom token type
+func TestCustomTokenType(t *testing.T) {
+	server := httptest.NewServer(jwkEndpoint("public"))
+	defer server.Close()
+
+	nonDefaultTokenTypeEndpointCfg := newVerifierEndpointCfg("RS256", server.URL, []string{}, false)
+	nonDefaultTokenTypeEndpointCfg.Endpoint = "/custom-token-type"
+	nonDefaultTokenTypeEndpointCfg.ExtraConfig[jose.ValidatorNamespace].(map[string]interface{})["token_type"] = "DPoP"
+
+	token := "eyJhbGciOiJSUzI1NiIsImtpZCI6IjIwMTEtMDQtMjkiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJodHRwOi8vYXBpLmV4YW1wbGUuY29tIiwiZXhwIjoyMDUxODgyNzU1LCJpc3MiOiJodHRwOi8vZXhhbXBsZS5jb20iLCJqdGkiOiJtbmIyM3Zjc3J0NzU2eXVpb21uYnZjeDk4ZXJ0eXVpb3AiLCJyb2xlcyI6WyJyb2xlX2EiLCJyb2xlX2IiXSwic3ViIjoiMTIzNDU2Nzg5MHF3ZXJ0eXVpbyJ9.u1fK05FpXctB-VkhhT3xu2WSIkEr1_VM71ald-yeKTesxhxg68TsHFEOBCgoXPuCviOP8QnUKNuVSeyMJh9z3nnrfQIjo9VZ2yicZu6ImYptSQ2DJbR80GDSPp-H7KnjaR9AAY0HZ0M-KUTaHdLABZFr307nkOeaJn_5jMpav7pqa7nrU3sI1CLX5pYVTggG6t7Zoqj2ebzzqdRxQEtdmZkD_NfH-3w3t-H0ylVdeBnPh-RvlspxC_mJzyUIJ0BwPlZpabppHm1ISySa4kwnwxEYnux0oZcb3PSoOZZZA467JySZ69PRlenNPdfGPL6E3uL1nqPHcxhte7ikSG4Q6Q"
+
+	dummyProxy := func(_ context.Context, _ *proxy.Request) (*proxy.Response, error) {
+		return &proxy.Response{
+			Data: map[string]interface{}{
+				"aaaa": map[string]interface{}{
+					"foo": "a",
+					"bar": "b",
+				},
+				"bbbb": true,
+				"cccc": 1234567890,
+			},
+			IsComplete: true,
+			Metadata: proxy.Metadata{
+				StatusCode: 200,
+			},
+		}, nil
+	}
+
+	buf := new(bytes.Buffer)
+	logger, _ := logging.NewLogger("DEBUG", buf, "")
+	hf := HandlerFactory(muxlura.EndpointHandler, dummyParamsExtractor, logger, nil)
+
+	engine := muxlura.DefaultEngine()
+
+	engine.Handle(nonDefaultTokenTypeEndpointCfg.Endpoint, "GET", hf(nonDefaultTokenTypeEndpointCfg, dummyProxy))
+
+	// test with the same token type as specified in token_type configuration, should succeed
+	req := httptest.NewRequest("GET", nonDefaultTokenTypeEndpointCfg.Endpoint, new(bytes.Buffer))
+	req.Header.Set("Authorization", "DPoP "+token)
+
+	w := httptest.NewRecorder()
+	engine.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("unexpected status code: %d", w.Code)
+	}
+	if body := w.Body.String(); body != "{\"aaaa\":{\"bar\":\"b\",\"foo\":\"a\"},\"bbbb\":true,\"cccc\":1234567890}" {
+		t.Errorf("unexpected body: %s", body)
+	}
+
+	// test with different token type than specified in token_type configuration, should not succeed
+	req = httptest.NewRequest("GET", nonDefaultTokenTypeEndpointCfg.Endpoint, new(bytes.Buffer))
+	req.Header.Set("Authorization", "BEARER "+token)
+
+	w = httptest.NewRecorder()
+	engine.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("unexpected status code: %d", w.Code)
+	}
+}
+
 func jwkEndpoint(name string) http.HandlerFunc {
 	data, err := ioutil.ReadFile("../fixtures/" + name + ".json")
 	return func(rw http.ResponseWriter, _ *http.Request) {
