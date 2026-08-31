@@ -116,8 +116,9 @@ func TestTokenSignatureValidator(t *testing.T) { // skipcq: GO-R1005
 		t.Errorf("unexpected body: %s", body)
 	}
 
-	if log := buf.String(); !strings.Contains(log, "DEBUG: [ENDPOINT: /propagateheaders][JWTSigner] Signer disabled") {
-		t.Error(log)
+	dbgStr := "DEBUG: [ENDPOINT: GET /propagateheaders][JWTSigner] Signer disabled"
+	if log := buf.String(); !strings.Contains(log, dbgStr) {
+		t.Errorf("missing: %q\noutput:\n%s", dbgStr, log)
 		t.Fail()
 		return
 	}
