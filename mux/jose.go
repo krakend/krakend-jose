@@ -145,7 +145,7 @@ func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, r
 		logger.Info("JOSE: validator enabled for the endpoint", cfg.Endpoint)
 
 		ps, err := krakendjose.NewPropagators(signatureConfig.PropagateClaimsToHeader)
-		if err != nil {
+		if err != nil && err != krakendjose.ErrNoHeadersToPropagate {
 			logger.Warning(fmt.Sprintf("error preparing header propagators for endpoint %s: %s", cfg.Endpoint, err.Error()))
 		}
 

@@ -140,7 +140,7 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 		paramExtractor := extractRequiredJWTClaims(cfg)
 
 		ps, err := krakendjose.NewPropagators(scfg.PropagateClaimsToHeader)
-		if err != nil {
+		if err != nil && err != krakendjose.ErrNoHeadersToPropagate {
 			logger.Warning(logPrefix, fmt.Sprintf("error preparing header propagators: %s", err.Error()))
 		}
 
