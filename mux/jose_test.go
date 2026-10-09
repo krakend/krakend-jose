@@ -209,6 +209,42 @@ func TestTokenSignatureValidator(t *testing.T) { // skipcq: GO-R1005
 	}
 }
 
+func TestNoPropagationDoesNotLogError(t *testing.T) {
+	server := httptest.NewServer(jwkEndpoint("public"))
+	defer server.Close()
+	dummyProxy := func(_ context.Context, _ *proxy.Request) (*proxy.Response, error) {
+		return &proxy.Response{
+			Data: map[string]interface{}{
+				"aaaa": map[string]interface{}{
+					"foo": "a",
+					"bar": "b",
+				},
+				"bbbb": true,
+				"cccc": 1234567890,
+			},
+			IsComplete: true,
+			Metadata: proxy.Metadata{
+				StatusCode: 200,
+			},
+		}, nil
+	}
+
+	buf := new(bytes.Buffer)
+	logger, _ := logging.NewLogger("DEBUG", buf, "")
+	hf := HandlerFactory(muxlura.EndpointHandler, dummyParamsExtractor, logger, nil)
+
+	engine := muxlura.DefaultEngine()
+
+	nonPropagatingEndpointCfg := newVerifierEndpointCfg("RS256", server.URL, []string{"role_a", "role_b"}, true)
+	nonPropagatingEndpointCfg.Endpoint = "/nonpropagating"
+	delete(nonPropagatingEndpointCfg.ExtraConfig[jose.ValidatorNamespace].(map[string]interface{}), "propagate_claims")
+
+	engine.Handle(nonPropagatingEndpointCfg.Endpoint, "GET", hf(nonPropagatingEndpointCfg, dummyProxy))
+	if strings.Contains(buf.String(), jose.ErrNoHeadersToPropagate.Error()) {
+		t.Errorf("output should not contain: %s", jose.ErrNoHeadersToPropagate.Error())
+	}
+}
+
 func TestCustomHeaderName(t *testing.T) {
 	server := httptest.NewServer(jwkEndpoint("public"))
 	defer server.Close()
