@@ -35,10 +35,6 @@ func TestTokenSignatureValidator(t *testing.T) { // skipcq: GO-R1005
 	propagateArrayHeadersEndpointCfg := newVerifierEndpointCfg("RS256", server.URL, []string{"role_a", "role_b"}, true)
 	propagateArrayHeadersEndpointCfg.Endpoint = "/propagatearrayheaders"
 
-	nonPropagatingEndpointCfg := newVerifierEndpointCfg("RS256", server.URL, []string{"role_a", "role_b"}, true)
-	nonPropagatingEndpointCfg.Endpoint = "/nonpropagating"
-	delete(nonPropagatingEndpointCfg.ExtraConfig[krakendjose.ValidatorNamespace].(map[string]interface{}), "propagate_claims")
-
 	token := "eyJhbGciOiJSUzI1NiIsImtpZCI6IjIwMTEtMDQtMjkiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJodHRwOi8vYXBpLmV4YW1wbGUuY29tIiwiZXhwIjoyMDUxODgyNzU1LCJpc3MiOiJodHRwOi8vZXhhbXBsZS5jb20iLCJqdGkiOiJtbmIyM3Zjc3J0NzU2eXVpb21uYnZjeDk4ZXJ0eXVpb3AiLCJyb2xlcyI6WyJyb2xlX2EiLCJyb2xlX2IiXSwic3ViIjoiMTIzNDU2Nzg5MHF3ZXJ0eXVpbyJ9.u1fK05FpXctB-VkhhT3xu2WSIkEr1_VM71ald-yeKTesxhxg68TsHFEOBCgoXPuCviOP8QnUKNuVSeyMJh9z3nnrfQIjo9VZ2yicZu6ImYptSQ2DJbR80GDSPp-H7KnjaR9AAY0HZ0M-KUTaHdLABZFr307nkOeaJn_5jMpav7pqa7nrU3sI1CLX5pYVTggG6t7Zoqj2ebzzqdRxQEtdmZkD_NfH-3w3t-H0ylVdeBnPh-RvlspxC_mJzyUIJ0BwPlZpabppHm1ISySa4kwnwxEYnux0oZcb3PSoOZZZA467JySZ69PRlenNPdfGPL6E3uL1nqPHcxhte7ikSG4Q6Q"
 
 	dummyProxy := func(_ context.Context, _ *proxy.Request) (*proxy.Response, error) {
@@ -69,12 +65,6 @@ func TestTokenSignatureValidator(t *testing.T) { // skipcq: GO-R1005
 	engine.Handle(registeredEndpointCfg.Endpoint, "GET", hf(registeredEndpointCfg, dummyProxy))
 	engine.Handle(propagateHeadersEndpointCfg.Endpoint, "GET", hf(propagateHeadersEndpointCfg, dummyProxy))
 	engine.Handle(propagateArrayHeadersEndpointCfg.Endpoint, "GET", hf(propagateArrayHeadersEndpointCfg, dummyProxy))
-	_ = buf.String()
-
-	engine.Handle(nonPropagatingEndpointCfg.Endpoint, "GET", hf(nonPropagatingEndpointCfg, dummyProxy))
-	if strings.Contains(buf.String(), krakendjose.ErrNoHeadersToPropagate.Error()) {
-		t.Errorf("output should not contain: %s", krakendjose.ErrNoHeadersToPropagate.Error())
-	}
 
 	req := httptest.NewRequest("GET", forbidenEndpointCfg.Endpoint, new(bytes.Buffer))
 
@@ -217,6 +207,42 @@ func TestTokenSignatureValidator(t *testing.T) { // skipcq: GO-R1005
 	}
 	if body := w.Body.String(); body != `{"aaaa":{"bar":"b","foo":"a"},"bbbb":true,"cccc":1234567890}` {
 		t.Errorf("unexpected body: %s", body)
+	}
+}
+
+func TestNoPropagationDoesNotLogError(t *testing.T) {
+	server := httptest.NewServer(jwkEndpoint("public"))
+	defer server.Close()
+	dummyProxy := func(_ context.Context, _ *proxy.Request) (*proxy.Response, error) {
+		return &proxy.Response{
+			Data: map[string]interface{}{
+				"aaaa": map[string]interface{}{
+					"foo": "a",
+					"bar": "b",
+				},
+				"bbbb": true,
+				"cccc": 1234567890,
+			},
+			IsComplete: true,
+			Metadata: proxy.Metadata{
+				StatusCode: 200,
+			},
+		}, nil
+	}
+
+	buf := new(bytes.Buffer)
+	logger, _ := logging.NewLogger("DEBUG", buf, "")
+	hf := HandlerFactory(muxlura.EndpointHandler, dummyParamsExtractor, logger, nil)
+
+	engine := muxlura.DefaultEngine()
+
+	nonPropagatingEndpointCfg := newVerifierEndpointCfg("RS256", server.URL, []string{"role_a", "role_b"}, true)
+	nonPropagatingEndpointCfg.Endpoint = "/nonpropagating"
+	delete(nonPropagatingEndpointCfg.ExtraConfig[krakendjose.ValidatorNamespace].(map[string]interface{}), "propagate_claims")
+
+	engine.Handle(nonPropagatingEndpointCfg.Endpoint, "GET", hf(nonPropagatingEndpointCfg, dummyProxy))
+	if strings.Contains(buf.String(), krakendjose.ErrNoHeadersToPropagate.Error()) {
+		t.Errorf("output should not contain: %s", krakendjose.ErrNoHeadersToPropagate.Error())
 	}
 }
 
