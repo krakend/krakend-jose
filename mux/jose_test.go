@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	jose "github.com/krakend/krakend-jose/v3"
-	krakendjose "github.com/krakend/krakend-jose/v3"
 	"github.com/luraproject/lura/v3/logging"
 	"github.com/luraproject/lura/v3/proxy"
 	muxlura "github.com/luraproject/lura/v3/router/mux"
@@ -238,11 +237,11 @@ func TestNoPropagationDoesNotLogError(t *testing.T) {
 
 	nonPropagatingEndpointCfg := newVerifierEndpointCfg("RS256", server.URL, []string{"role_a", "role_b"}, true)
 	nonPropagatingEndpointCfg.Endpoint = "/nonpropagating"
-	delete(nonPropagatingEndpointCfg.ExtraConfig[krakendjose.ValidatorNamespace].(map[string]interface{}), "propagate_claims")
+	delete(nonPropagatingEndpointCfg.ExtraConfig[jose.ValidatorNamespace].(map[string]interface{}), "propagate_claims")
 
 	engine.Handle(nonPropagatingEndpointCfg.Endpoint, "GET", hf(nonPropagatingEndpointCfg, dummyProxy))
-	if strings.Contains(buf.String(), krakendjose.ErrNoHeadersToPropagate.Error()) {
-		t.Errorf("output should not contain: %s", krakendjose.ErrNoHeadersToPropagate.Error())
+	if strings.Contains(buf.String(), jose.ErrNoHeadersToPropagate.Error()) {
+		t.Errorf("output should not contain: %s", jose.ErrNoHeadersToPropagate.Error())
 	}
 }
 
