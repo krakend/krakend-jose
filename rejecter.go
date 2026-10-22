@@ -43,10 +43,10 @@ func (NopRejecterFactory) New(_ logging.Logger, _ *config.EndpointConfig) Reject
 	return FixedRejecter(false)
 }
 
-// ChainedRejecterFactory returns rejecters chaining every rejecter contained in tne collection
+// ChainedRejecterFactory returns rejecters chaining every rejecter contained in the collection
 type ChainedRejecterFactory []RejecterFactory
 
-// New returns a chainned rejected that evaluates all the rejecters until v is rejected or the chain
+// New returns a chained rejecter that evaluates all the rejecters until v is rejected or the chain
 // is finished
 func (c ChainedRejecterFactory) New(l logging.Logger, cfg *config.EndpointConfig) Rejecter {
 	rejecters := []Rejecter{}

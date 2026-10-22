@@ -15,10 +15,22 @@ import (
 	"github.com/luraproject/lura/v3/proxy"
 )
 
+// ErrNoHeadersToPropagate is returned by NewPropagators when the configuration
+// does not declare any claim to be propagated as a header.
 var ErrNoHeadersToPropagate = fmt.Errorf("header propagation is disabled because there is no propagate_claims attribute")
 
+// ExtractorFactory builds a function that extracts a JSON web token from a request.
+// The string argument is the name of the header or cookie holding the token.
 type ExtractorFactory func(string) func(r *http.Request) (*jwt.JSONWebToken, error)
 
+// NewValidator returns a JWT validator for the given signature config. The token is
+// looked up first in the header built by headerEf (using AuthHeaderName) and then in
+// the cookie built by cookieEf (using CookieKey). The keys are obtained from the
+// SecretProvider configured with the JWK settings of signatureConfig.
+//
+// It returns an error if the algorithm is not supported, the fingerprints cannot be
+// decoded or the secret provider cannot be created. An invalid or empty Leeway
+// defaults to one second.
 func NewValidator(signatureConfig *SignatureConfig, cookieEf, headerEf ExtractorFactory) (*auth0.JWTValidator, error) {
 	sa, ok := supportedAlgorithms[signatureConfig.Alg]
 	if !ok {
@@ -76,6 +88,19 @@ var (
 	failCheck    = func(map[string]interface{}) bool { return false }
 )
 
+// ShouldExtractNested reports whether the roles key of the config must be resolved
+// as a nested path in dot notation. That requires RolesKeyIsNested to be enabled and a
+// RolesKey containing a dot that is not a URL (some identity providers name their
+// claims after URLs, and those must be used as plain keys).
+func ShouldExtractNested(sc *SignatureConfig) bool {
+	return sc.RolesKeyIsNested && strings.Contains(sc.RolesKey, ".") && !strings.HasPrefix(sc.RolesKey, "http://") && !strings.HasPrefix(sc.RolesKey, "https://")
+}
+
+// AccessNestedCheck returns a function that reports whether the claims hold at least
+// one of the required roles under roleKey, a path in dot notation. The roles claim
+// can be an array of strings or a space-separated string. If no roles are required,
+// the returned function always grants access. It returns an error if roleKey is not a
+// valid dot notation expression.
 func AccessNestedCheck(roleKey string, required []string) (func(map[string]interface{}) bool, error) {
 	if len(required) == 0 {
 		return successCheck, nil
@@ -96,17 +121,27 @@ func AccessNestedCheck(roleKey string, required []string) (func(map[string]inter
 	}, nil
 }
 
+// CanAccessNested reports whether the claims hold at least one of the required roles
+// under roleKey, a path in dot notation.
+//
 // Deprecated: use AccessNestedCheck
 func CanAccessNested(roleKey string, claims map[string]interface{}, required []string) bool {
 	f, _ := AccessNestedCheck(roleKey, required)
 	return f(claims)
 }
 
-// Deprecated: use AclCheck
+// CanAccess reports whether the claims hold at least one of the required roles under
+// the top-level claim roleKey.
+//
+// Deprecated: use AccessCheck
 func CanAccess(roleKey string, claims map[string]interface{}, required []string) bool {
 	return AccessCheck(roleKey, required)(claims)
 }
 
+// AccessCheck returns a function that reports whether the claims hold at least one of
+// the required roles under the top-level claim roleKey. The roles claim can be an array
+// of strings or a space-separated string. If no roles are required, the returned
+// function always grants access.
 func AccessCheck(roleKey string, required []string) func(map[string]interface{}) bool {
 	if len(required) == 0 {
 		return successCheck
@@ -151,14 +186,26 @@ func checkRequired(tmp interface{}, required []string) bool {
 	return false
 }
 
+// AllScopesMatcher returns a function that reports whether the claims hold all the
+// required scopes under scopesKey, a path in dot notation. The scopes claim can be an
+// array of strings or a space-separated string. If no scopes are required, the
+// returned function always matches. It returns an error if scopesKey is not a valid
+// dot notation expression.
 func AllScopesMatcher(scopesKey string, requiredScopes []string) (func(claims map[string]interface{}) bool, error) {
 	return matcher(scopesKey, requiredScopes, allMatcher)
 }
 
+// AnyScopesMatcher returns a function that reports whether the claims hold at least
+// one of the required scopes under scopesKey, a path in dot notation. The scopes claim
+// can be an array of strings or a space-separated string. If no scopes are required,
+// the returned function always matches. It returns an error if scopesKey is not a
+// valid dot notation expression.
 func AnyScopesMatcher(scopesKey string, requiredScopes []string) (func(claims map[string]interface{}) bool, error) {
 	return matcher(scopesKey, requiredScopes, anyMatcher)
 }
 
+// DefaultScopesMatcher returns a function that matches any set of claims. It is used
+// when no scope validation is configured.
 func DefaultScopesMatcher(_ string, _ []string) func(claims map[string]interface{}) bool {
 	return successCheck
 }
@@ -228,23 +275,34 @@ func anyMatcher(required, given []string) bool {
 	return false
 }
 
+// ScopesAnyMatcher reports whether the claims hold at least one of the required scopes
+// under scopesKey.
+//
 // Deprecated: use AnyScopesMatcher
 func ScopesAnyMatcher(scopesKey string, claims map[string]interface{}, requiredScopes []string) bool {
 	m, _ := AnyScopesMatcher(scopesKey, requiredScopes)
 	return m(claims)
 }
 
+// ScopesAllMatcher reports whether the claims hold all the required scopes under
+// scopesKey.
+//
 // Deprecated: use AllScopesMatcher
 func ScopesAllMatcher(scopesKey string, claims map[string]interface{}, requiredScopes []string) bool {
 	m, _ := AllScopesMatcher(scopesKey, requiredScopes)
 	return m(claims)
 }
 
+// ScopesDefaultMatcher always returns true.
+//
 // Deprecated: use DefaultScopesMatcher
 func ScopesDefaultMatcher(_ string, _ map[string]interface{}, _ []string) bool {
 	return true
 }
 
+// SignFields replaces, for every key in keys, the object stored under that key in the
+// response data with the token produced by the signer. Keys that are missing or do not
+// hold an object are skipped. It stops at the first signing error.
 func SignFields(keys []string, signer Signer, response *proxy.Response) error {
 	for _, key := range keys {
 		tmp, ok := response.Data[key]
@@ -264,10 +322,14 @@ func SignFields(keys []string, signer Signer, response *proxy.Response) error {
 	return nil
 }
 
+// Claims is a set of JWT claims with helpers to read them as strings.
 type Claims map[string]interface{}
 
 const epsilon = 1e-6
 
+// Get returns the claim name as a string and whether it was present. Integral numbers
+// are rendered without decimals, arrays as comma-separated values and any other
+// non-string value as JSON.
 func (c Claims) Get(name string) (string, bool) {
 	tmp, ok := c[name]
 	if !ok {
@@ -277,6 +339,9 @@ func (c Claims) Get(name string) (string, bool) {
 	return toString(tmp), ok
 }
 
+// List returns the claim name as a list of strings and whether it was present. Arrays
+// return one element per item and scalars a single element. If the claim is missing,
+// the returned slice holds a single empty string.
 func (c Claims) List(name string) ([]string, bool) {
 	tmp, ok := c[name]
 	if !ok {
@@ -287,11 +352,16 @@ func (c Claims) List(name string) ([]string, bool) {
 	return toList(tmp), ok
 }
 
+// Propagator copies the value of a claim, selected with a dot notation path, into a
+// request header.
 type Propagator struct {
 	e *dotnotation.Extractor
 	h string
 }
 
+// NewPropagators builds a Propagator for every [claim, header] pair in propagationCfg.
+// Pairs with a different number of elements or an invalid claim path are skipped. It
+// returns ErrNoHeadersToPropagate if propagationCfg is empty.
 func NewPropagators(propagationCfg [][]string) ([]Propagator, error) {
 	if len(propagationCfg) == 0 {
 		return nil, ErrNoHeadersToPropagate
@@ -368,6 +438,9 @@ func toList(tmp interface{}) []string {
 	return normalized
 }
 
+// HeadersToPropagate returns the headers to add to the request, indexed by name, with
+// the values of the claims selected by the propagators. Values are normalized as in
+// Claims.Get and missing claims are propagated as empty strings.
 func HeadersToPropagate(ps []Propagator, claims map[string]interface{}) map[string]string {
 	propagated := make(map[string]string)
 	for _, p := range ps {
@@ -381,6 +454,8 @@ func HeadersToPropagate(ps []Propagator, claims map[string]interface{}) map[stri
 	return propagated
 }
 
+// ArrayHeadersToPropagate is like HeadersToPropagate but keeps array claims as lists
+// of values, as in Claims.List. Missing claims are propagated as a single empty string.
 func ArrayHeadersToPropagate(ps []Propagator, claims map[string]interface{}) map[string][]string {
 	propagated := make(map[string][]string)
 	for _, p := range ps {
@@ -394,7 +469,10 @@ func ArrayHeadersToPropagate(ps []Propagator, claims map[string]interface{}) map
 	return propagated
 }
 
-// Deprecated: use HeadersToPropagate
+// CalculateHeadersToPropagate builds the propagators described by propagationCfg and
+// returns the headers to propagate for the given claims.
+//
+// Deprecated: use NewPropagators and HeadersToPropagate
 func CalculateHeadersToPropagate(propagationCfg [][]string, claims map[string]interface{}) (map[string]string, error) {
 	ps, err := NewPropagators(propagationCfg)
 	if err != nil {
@@ -404,7 +482,10 @@ func CalculateHeadersToPropagate(propagationCfg [][]string, claims map[string]in
 	return HeadersToPropagate(ps, claims), nil
 }
 
-// Deprecated: use ArrayHeadersToPropagate
+// CalculateArrayHeadersToPropagate builds the propagators described by propagationCfg
+// and returns the headers to propagate for the given claims, keeping arrays as lists.
+//
+// Deprecated: use NewPropagators and ArrayHeadersToPropagate
 func CalculateArrayHeadersToPropagate(propagationCfg [][]string, claims map[string]interface{}) (map[string][]string, error) {
 	ps, err := NewPropagators(propagationCfg)
 	if err != nil {
@@ -430,6 +511,8 @@ var supportedAlgorithms = map[string]jose.SignatureAlgorithm{
 	"PS512": jose.PS512,
 }
 
+// SupportedAlgorithm returns the signature algorithm named s and whether the validator
+// supports it.
 func SupportedAlgorithm(s string) (jose.SignatureAlgorithm, bool) {
 	a, ok := supportedAlgorithms[s]
 	return a, ok

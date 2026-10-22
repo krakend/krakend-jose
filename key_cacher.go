@@ -13,22 +13,30 @@ import (
 )
 
 var (
-	ErrNoKeyFound                   = errors.New("no Keys have been found")
+	// ErrNoKeyFound is returned when the requested key is not available
+	ErrNoKeyFound = errors.New("no Keys have been found")
+	// ErrKeyExpired is returned when the requested key is cached but older than the max key age
 	ErrKeyExpired                   = errors.New("key exists but is expired")
 	defaultGlobalCacheMaxAge uint32 = 900
 	defaultStrategy                 = "kid"
 
-	// Configuring with MaxKeyAgeNoCheck will skip key expiry check
+	// MaxKeyAgeNoCheck disables the expiration of the cached keys when used as max key age
 	MaxKeyAgeNoCheck    = time.Duration(-1)
 	globalKeyCacher     = map[string]GlobalCacher{}
 	globalKeyCacherOnce = new(sync.Once)
 )
 
+// GlobalCacher is a KeyCacher shared by all the validators using the same key identify
+// strategy, guarded by a mutex.
 type GlobalCacher struct {
 	kc KeyCacher
 	mu *sync.RWMutex
 }
 
+// SetGlobalCacher initializes the shared key caches, one per key identify strategy, with
+// the shared_cache_duration (in seconds, 900 by default) declared under the
+// ValidatorNamespace of the service extra config. Only the first successful call has any
+// effect. It returns ErrNoValidatorCfg if the namespace is missing.
 func SetGlobalCacher(l logging.Logger, cfg config.ExtraConfig) error {
 	scfg, err := configGetter(l, cfg)
 	if err != nil {
@@ -103,6 +111,8 @@ func CompoundX5TKeyIDGetter(key *jose.JSONWebKey) string {
 	return key.KeyID + X5TKeyIDGetter(key)
 }
 
+// KeyIDGetterFactory returns the KeyIDGetter for the given key identify strategy:
+// "kid", "x5t", "x5t#S256" or "kid_x5t". Unknown strategies fall back to "kid".
 func KeyIDGetterFactory(keyIdentifyStrategy string) KeyIDGetter {
 	supportedKeyIdentifyStrategy := map[string]KeyIDGetterFunc{
 		"kid":      DefaultKeyIDGetter,
@@ -117,11 +127,14 @@ func KeyIDGetterFactory(keyIdentifyStrategy string) KeyIDGetter {
 	return KeyIDGetterFunc(DefaultKeyIDGetter)
 }
 
+// KeyCacher stores the keys downloaded from a JWK.
 type KeyCacher interface {
 	Get(keyID string) (*jose.JSONWebKey, error)
 	Add(keyID string, webKeys []jose.JSONWebKey) (*jose.JSONWebKey, error)
 }
 
+// MemoryKeyCacher is an in-memory KeyCacher with optional limits on the age of the keys
+// and on the number of keys stored.
 type MemoryKeyCacher struct {
 	entries      map[string]keyCacherEntry
 	maxKeyAge    time.Duration
@@ -135,11 +148,14 @@ type keyCacherEntry struct {
 	jose.JSONWebKey
 }
 
+// GMemoryKeyCacher is a MemoryKeyCacher backed by a GlobalCacher. Keys are stored in
+// both, and the keys missing in the local cache are looked up in the global one.
 type GMemoryKeyCacher struct {
 	*MemoryKeyCacher
 	Global GlobalCacher
 }
 
+// Add adds the keys to the global cache, if any, and to the local one.
 func (gkc *GMemoryKeyCacher) Add(keyID string, downloadedKeys []jose.JSONWebKey) (*jose.JSONWebKey, error) {
 	if gkc.Global.kc != nil {
 		gkc.Global.mu.Lock()
@@ -150,7 +166,8 @@ func (gkc *GMemoryKeyCacher) Add(keyID string, downloadedKeys []jose.JSONWebKey)
 	return gkc.MemoryKeyCacher.Add(keyID, downloadedKeys)
 }
 
-// Get obtains a key from the cache, and checks if the key is expired
+// Get obtains a key from the local cache, falling back to the global one, if any. Keys
+// found in the global cache are copied to the local one.
 func (gkc *GMemoryKeyCacher) Get(keyID string) (*jose.JSONWebKey, error) {
 	k, err := gkc.MemoryKeyCacher.Get(keyID)
 	if err == nil || gkc.Global.kc == nil {
@@ -166,8 +183,10 @@ func (gkc *GMemoryKeyCacher) Get(keyID string) (*jose.JSONWebKey, error) {
 	return v, err
 }
 
-// NewMemoryKeyCacher creates a new Keycacher interface with option
-// to set max age of cached keys and max size of the cache.
+// NewMemoryKeyCacher creates a new MemoryKeyCacher with the max age of the cached keys
+// (MaxKeyAgeNoCheck disables the expiration) and the max size of the cache. A max size of
+// -1 stores every downloaded key without limits; otherwise, only the requested key is
+// stored and the oldest entry is evicted when the size is exceeded.
 func NewMemoryKeyCacher(maxKeyAge time.Duration, maxCacheSize int, keyIdentifyStrategy string) *MemoryKeyCacher {
 	return &MemoryKeyCacher{
 		entries:      map[string]keyCacherEntry{},
@@ -178,6 +197,9 @@ func NewMemoryKeyCacher(maxKeyAge time.Duration, maxCacheSize int, keyIdentifySt
 	}
 }
 
+// NewGlobalMemoryKeyCacher creates a GMemoryKeyCacher backed by the global cache of the
+// key identify strategy, if SetGlobalCacher was called. Otherwise, it behaves as a
+// MemoryKeyCacher.
 func NewGlobalMemoryKeyCacher(maxKeyAge time.Duration, maxCacheSize int, keyIdentifyStrategy string) *GMemoryKeyCacher {
 	kc := &GMemoryKeyCacher{
 		MemoryKeyCacher: NewMemoryKeyCacher(maxKeyAge, maxCacheSize, keyIdentifyStrategy),
@@ -207,7 +229,8 @@ func (mkc *MemoryKeyCacher) Get(keyID string) (*jose.JSONWebKey, error) {
 	return nil, ErrNoKeyFound
 }
 
-// Add adds a key into the cache and handles overflow
+// Add adds the downloaded keys into the cache, handles the overflow and returns the key
+// with the given id, or ErrNoKeyFound if it is not among the downloaded keys.
 func (mkc *MemoryKeyCacher) Add(keyID string, downloadedKeys []jose.JSONWebKey) (*jose.JSONWebKey, error) {
 	var addingKey jose.JSONWebKey
 	var addingKeyID string
