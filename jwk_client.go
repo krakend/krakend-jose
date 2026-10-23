@@ -10,26 +10,27 @@ import (
 	"github.com/krakend/go-auth0/v2"
 )
 
-// TokenIDGetter extracts the keyID from the JSON web token
+// TokenIDGetter extracts the key id from a JSON web token, used to select the key that
+// verifies its signature.
 type TokenIDGetter interface {
 	Get(*jwt.JSONWebToken) string
 }
 
-// TokenKeyIDGetterFunc function conforming
-// to the TokenIDGetter interface.
+// TokenKeyIDGetterFunc is an adapter to use functions as TokenIDGetter.
 type TokenKeyIDGetterFunc func(*jwt.JSONWebToken) string
 
-// Extract calls f(r)
+// Get calls f(token)
 func (f TokenKeyIDGetterFunc) Get(token *jwt.JSONWebToken) string {
 	return f(token)
 }
 
-// DefaultTokenKeyIDGetter returns the default kid as the JSONWebKey key id
+// DefaultTokenKeyIDGetter returns the kid header of the token.
 func DefaultTokenKeyIDGetter(token *jwt.JSONWebToken) string {
 	return token.Headers[0].KeyID
 }
 
-// X5TTokenKeyIDGetter extracts the key id from the jSONWebToken as the x5t
+// X5TTokenKeyIDGetter returns the x5t header of the token, falling back to the kid
+// header when it is missing.
 func X5TTokenKeyIDGetter(token *jwt.JSONWebToken) string {
 	x5t, ok := token.Headers[0].ExtraHeaders["x5t"].(string)
 	if !ok {
@@ -38,7 +39,8 @@ func X5TTokenKeyIDGetter(token *jwt.JSONWebToken) string {
 	return x5t
 }
 
-// X5TS256TokenKeyIDGetter extracts the key id from the jSONWebToken as the x5t#S256
+// X5TS256TokenKeyIDGetter returns the x5t#S256 header of the token, falling back to the
+// kid header when it is missing.
 func X5TS256TokenKeyIDGetter(token *jwt.JSONWebToken) string {
 	x5t, ok := token.Headers[0].ExtraHeaders["x5t#S256"].(string)
 	if !ok {
@@ -47,12 +49,14 @@ func X5TS256TokenKeyIDGetter(token *jwt.JSONWebToken) string {
 	return x5t
 }
 
-// CompoundX5TTokenKeyIDGetter extracts the key id from the jSONWebToken as a compound string of the kid and x5t
+// CompoundX5TTokenKeyIDGetter returns the concatenation of the kid and the x5t headers
+// of the token.
 func CompoundX5TTokenKeyIDGetter(token *jwt.JSONWebToken) string {
 	return token.Headers[0].KeyID + X5TTokenKeyIDGetter(token)
 }
 
-// TokenIDGetterFactory returns the TokenIDGetter from the keyIdentifyStrategy configuration string
+// TokenIDGetterFactory returns the TokenIDGetter for the given key identify strategy:
+// "kid", "x5t", "x5t#S256" or "kid_x5t". Unknown strategies fall back to "kid".
 func TokenIDGetterFactory(keyIdentifyStrategy string) TokenIDGetter {
 	supportedKeyIdentifyStrategy := map[string]TokenKeyIDGetterFunc{
 		"kid":      DefaultTokenKeyIDGetter,
@@ -67,12 +71,20 @@ func TokenIDGetterFactory(keyIdentifyStrategy string) TokenIDGetter {
 	return TokenKeyIDGetterFunc(DefaultTokenKeyIDGetter)
 }
 
+// JWKClientOptions extends the auth0.JWKClientOptions with the settings handled by
+// JWKClient.
 type JWKClientOptions struct {
 	auth0.JWKClientOptions
+	// KeyIdentifyStrategy selects how keys are matched with tokens (see TokenIDGetterFactory)
 	KeyIdentifyStrategy string
-	UnknownKeysTTL      string
+	// UnknownKeysTTL is the duration during which a key that was not found in the JWK
+	// is not requested again. Values below one second disable it.
+	UnknownKeysTTL string
 }
 
+// JWKClient extends the auth0.JWKClient with configurable key identify strategies and
+// a cooldown for unknown keys, so the JWK provider is not flooded with requests for keys
+// it does not have.
 type JWKClient struct {
 	*auth0.JWKClient
 	extractor     auth0.RequestTokenExtractor
@@ -82,7 +94,9 @@ type JWKClient struct {
 
 // NewJWKClientWithCache creates a new JWKClient instance from the provided options and custom extractor and keycacher.
 // Passing nil to keyCacher will create a persistent key cacher.
-// the extractor is also saved in the extended JWKClient.
+// the extractor is also saved in the extended JWKClient. If options.UnknownKeysTTL is a
+// valid duration of at least one second, the ids of the keys not found are remembered for
+// that period and requests for them fail with ErrNoKeyFound without contacting the provider.
 func NewJWKClientWithCache(options JWKClientOptions, extractor auth0.RequestTokenExtractor, keyCacher auth0.KeyCacher) *JWKClient {
 	c := &JWKClient{
 		JWKClient:     auth0.NewJWKClientWithCache(options.JWKClientOptions, extractor, keyCacher),
@@ -111,7 +125,8 @@ func (j *JWKClient) GetSecret(r *http.Request) (interface{}, error) {
 	return j.SecretFromToken(token)
 }
 
-// SecretFromToken implements the GetSecret method of the SecretProvider interface.
+// SecretFromToken returns the key that verifies the token, identified with the
+// configured key identify strategy.
 func (j *JWKClient) SecretFromToken(token *jwt.JSONWebToken) (interface{}, error) {
 	if len(token.Headers) < 1 {
 		return nil, auth0.ErrNoJWTHeaders
