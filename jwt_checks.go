@@ -190,19 +190,11 @@ func NewJWTChecks(scfg *SignatureConfig, logger logging.Logger,
 		logger.Debug(logPrefix, "Validator enabled")
 	}
 
-	ps, err := NewPropagators(scfg.PropagateClaimsToHeader)
-	if err != nil && err != ErrNoHeadersToPropagate {
-		logger.Warning(logPrefix, fmt.Sprintf("error preparing header propagators: %s", err.Error()))
-		// TODO: review this !!
-		// originally this is not an error, but we could change the behaviour and return
-		// an error if claims wont be propagated as expected
-	}
 	return &JWTChecks{
 		Rejecter:    rejecter,
 		Validator:   validator,
 		Acl:         aclCheck,
 		ScopesCheck: scopesMatcher,
-		Propagators: ps,
 		scfg:        scfg,
 		logger:      logger,
 		logPrefix:   logPrefix,
@@ -264,7 +256,6 @@ func (j *JWTChecks) Check(bearer string) (Claims, error) {
 		return nil, e
 	}
 
-	// propagateMeta := HeadersToPropagate(j.Propagators, claims)
 	return claims, nil
 }
 
