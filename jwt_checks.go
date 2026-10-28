@@ -202,8 +202,9 @@ func NewJWTChecks(scfg *SignatureConfig, logger logging.Logger,
 }
 
 var (
-	ErrRequiredRoles  = fmt.Errorf("Token sent by client does not have sufficient roles")
-	ErrRequiredScopes = fmt.Errorf("Token sent by client does not have the required scopes")
+	ErrRequiredRoles  = fmt.Errorf("Token sent by client does not have sufficient roles")    // skipcq: SCC-ST1005
+	ErrRequiredScopes = fmt.Errorf("Token sent by client does not have the required scopes") // skipcq: SCC-ST1005
+	ErrTokenRejected  = fmt.Errorf("Token sent by client rejected")                          // skipcq: SCC-ST1005
 )
 
 // Check validates a jwt and returns a list of values to propagate
@@ -215,7 +216,7 @@ func (j *JWTChecks) Check(bearer string) (Claims, error) {
 
 	token, err = j.Validator.ValidateToken(token)
 	if err != nil {
-		e := fmt.Errorf("Unable to validate token: %s", err.Error())
+		e := fmt.Errorf("Unable to validate token: %s", err.Error()) // skipcq: SCC-ST1005
 		if j.scfg.OperationDebug {
 			j.logger.Error(j.logPrefix, e.Error())
 		}
@@ -225,7 +226,7 @@ func (j *JWTChecks) Check(bearer string) (Claims, error) {
 	claims := make(Claims)
 	err = j.Validator.ClaimsFromToken(token, &claims)
 	if err != nil {
-		e := fmt.Errorf("Token sent by client is invalid: %s", err.Error())
+		e := fmt.Errorf("Token sent by client is invalid: %s", err.Error()) // skipcq: SCC-ST1005
 		if j.scfg.OperationDebug {
 			j.logger.Error(j.logPrefix, e.Error())
 		}
@@ -233,7 +234,7 @@ func (j *JWTChecks) Check(bearer string) (Claims, error) {
 	}
 
 	if j.Rejecter.Reject(claims) {
-		e := fmt.Errorf("Token sent by client rejected")
+		e := ErrTokenRejected
 		if j.scfg.OperationDebug {
 			j.logger.Error(j.logPrefix, e.Error())
 		}
