@@ -38,3 +38,23 @@ func FromHeader(header string) func(r *http.Request) (*jwt.JSONWebToken, error) 
 		return jwt.ParseSigned(raw)
 	}
 }
+
+func StrTokenFromHeaderOrCookieFn(header, cookie string) func(r *http.Request) (string, error) {
+	if header == "" {
+		header = "Authorization"
+	}
+	if cookie == "" {
+		cookie = "access_token"
+	}
+
+	return func(r *http.Request) (string, error) {
+		if v := r.Header.Get(header); v != "" {
+			return v, nil
+		}
+		c, err := r.Cookie(cookie)
+		if err != nil {
+			return "", auth0.ErrTokenNotFound
+		}
+		return c.Value, nil
+	}
+}
