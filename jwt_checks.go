@@ -152,7 +152,6 @@ type JWTChecks struct {
 	Validator   *auth0.JWTValidator
 	Acl         func(map[string]interface{}) bool
 	ScopesCheck func(map[string]interface{}) bool
-	AuthField   string
 	Propagators []Propagator
 	scfg        *SignatureConfig
 	logger      logging.Logger
@@ -186,18 +185,13 @@ func NewJWTChecks(scfg *SignatureConfig, logger logging.Logger,
 	}
 
 	if scfg.OperationDebug {
-		logger.Debug(logPrefix, "Validator enabled for this method. Operation debug is enabled")
+		logger.Debug(logPrefix, "Validator enabled. Operation debug is enabled")
 	} else {
-		logger.Debug(logPrefix, "Validator enabled for this method")
-	}
-
-	authField := "authorization"
-	if scfg.AuthHeaderName != "" {
-		authField = strings.ToLower(scfg.AuthHeaderName)
+		logger.Debug(logPrefix, "Validator enabled")
 	}
 
 	ps, err := NewPropagators(scfg.PropagateClaimsToHeader)
-	if err != nil {
+	if err != nil && err != ErrNoHeadersToPropagate {
 		logger.Warning(logPrefix, fmt.Sprintf("error preparing header propagators: %s", err.Error()))
 		// TODO: review this !!
 		// originally this is not an error, but we could change the behaviour and return
@@ -208,7 +202,6 @@ func NewJWTChecks(scfg *SignatureConfig, logger logging.Logger,
 		Validator:   validator,
 		Acl:         aclCheck,
 		ScopesCheck: scopesMatcher,
-		AuthField:   authField,
 		Propagators: ps,
 		scfg:        scfg,
 		logger:      logger,
@@ -216,8 +209,13 @@ func NewJWTChecks(scfg *SignatureConfig, logger logging.Logger,
 	}, nil
 }
 
+var (
+	ErrRequiredRoles  = fmt.Errorf("Token sent by client does not have sufficient roles")
+	ErrRequiredScopes = fmt.Errorf("Token sent by client does not have the required scopes")
+)
+
 // Check validates a jwt and returns a list of values to propagate
-func (j *JWTChecks) Check(bearer string) (map[string]string, error) {
+func (j *JWTChecks) Check(bearer string) (Claims, error) {
 	token, err := StripBearerAndParse(bearer)
 	if err != nil {
 		return nil, err
@@ -251,7 +249,7 @@ func (j *JWTChecks) Check(bearer string) (map[string]string, error) {
 	}
 
 	if !j.Acl(claims) {
-		e := fmt.Errorf("Token sent by client does not have sufficient roles")
+		e := ErrRequiredRoles
 		if j.scfg.OperationDebug {
 			j.logger.Error(j.logPrefix, e.Error())
 		}
@@ -259,15 +257,15 @@ func (j *JWTChecks) Check(bearer string) (map[string]string, error) {
 	}
 
 	if !j.ScopesCheck(claims) {
-		e := fmt.Errorf("Token sent by client does not have the required scopes")
+		e := ErrRequiredScopes
 		if j.scfg.OperationDebug {
 			j.logger.Error(j.logPrefix, e.Error())
 		}
 		return nil, e
 	}
 
-	propagateMeta := HeadersToPropagate(j.Propagators, claims)
-	return propagateMeta, nil
+	// propagateMeta := HeadersToPropagate(j.Propagators, claims)
+	return claims, nil
 }
 
 func (j *JWTChecks) Scopes() []string {
