@@ -11,6 +11,8 @@ import (
 	"github.com/luraproject/lura/v3/logging"
 )
 
+// StripBearerAndParse converts a string to a jwt.JSONWebToken
+// extracting the "Bearer " prefix if exists.
 func StripBearerAndParse(token string) (*jwt.JSONWebToken, error) {
 	if len(token) > 7 && strings.EqualFold(token[0:7], "BEARER ") {
 		token = token[7:]
@@ -21,11 +23,28 @@ func StripBearerAndParse(token string) (*jwt.JSONWebToken, error) {
 	return jwt.ParseSigned(token)
 }
 
-func NewJWTValidator(signatureConfig *SignatureConfig) (*auth0.JWTValidator, error) {
+// NewJWTValidator eturns a JWT validator for the given signature config.
+// The keys are obtained from the SecretProvider configured with the JWK settings of signatureConfig.
+//
+// It configures an auth0.JWTValidator almost in the same way
+// that NewValidator, with the exception that extractor functions ae optional,
+// (in not provided, a call to `.ValidateRequest(*http.Request)`
+// will fail, because there ir no way to extract tokens), instead the
+// `.ValidateToken` function must be used (a string to token conversion
+// can be made externally using the StripBearerAndParse function).
+//
+// Delegating the work of extracting the token and parsing it to the
+// caller, we avoid coupling with an `http.Request` type can be avoided
+//
+// It returns an error if the algorithm is not supported, the fingerprints cannot be
+// decoded or the secret provider cannot be created. An invalid or empty Leeway
+// defaults to one second.
+func NewJWTValidator(signatureConfig *SignatureConfig, extr ...auth0.RequestTokenExtractor) (*auth0.JWTValidator, error) {
 	sa, ok := SupportedAlgorithm(signatureConfig.Alg)
 	if !ok {
 		return nil, fmt.Errorf("JOSE: unknown algorithm %s", signatureConfig.Alg)
 	}
+	te := auth0.FromMultiple(extr...)
 
 	decodedFs, err := DecodeFingerprints(signatureConfig.Fingerprints)
 	if err != nil {
@@ -52,7 +71,6 @@ func NewJWTValidator(signatureConfig *SignatureConfig) (*auth0.JWTValidator, err
 	// but, we can use the NewValidatorWitLeeway as long as we call
 	// ValidateToken directly, instead of ValidateRequest (that would fail
 	// with a token not found error with this implementation below).
-	te := auth0.FromMultiple()
 	// sp -> kakendjose.t
 	sp, err := SecretProvider(cfg, te)
 	if err != nil {
