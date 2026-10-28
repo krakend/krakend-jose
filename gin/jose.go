@@ -95,78 +95,19 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 			return erroredHandler
 		}
 
-		// the validator is created inside NewJWTChecks
-		/*
-			validator, err := krakendjose.NewValidator(scfg, josehttp.FromCookie, josehttp.FromHeader)
-			if err != nil {
-				logger.Fatal(logPrefix, "Unable to create the validator:", err.Error())
-				return erroredHandler
-			}
-		*/
-
-		// this block is moved to jose.ACLCheck that is used internally by NewJWTChecks
-		/*
-			var aclCheck func(map[string]interface{}) bool
-
-			if scfg.RolesKeyIsNested && strings.Contains(scfg.RolesKey, ".") && scfg.RolesKey[:4] != "http" {
-				logger.Debug(logPrefix, fmt.Sprintf("Roles will be matched against the nested key: '%s'", scfg.RolesKey))
-				aclCheck, err = krakendjose.AccessNestedCheck(scfg.RolesKey, scfg.Roles)
-				if err != nil {
-					logger.Warning(logPrefix, fmt.Sprintf("error preparing nested acl check: %s", err.Error()))
-					return erroredHandler
-				}
-			} else {
-				logger.Debug(logPrefix, fmt.Sprintf("Roles will be matched against the key: '%s'", scfg.RolesKey))
-				aclCheck = krakendjose.AccessCheck(scfg.RolesKey, scfg.Roles)
-			}
-		*/
-
-		// this block is moved to jose.ScopesMatcher tath is used internally by NewJWTChecks
-		/*
-			var scopesMatcher func(map[string]interface{}) bool
-
-			if len(scfg.Scopes) > 0 && scfg.ScopesKey != "" {
-				if scfg.ScopesMatcher == "all" {
-					logger.Debug(logPrefix, fmt.Sprintf("Constraint added: tokens must contain a claim '%s' with all these scopes: %v", scfg.ScopesKey, scfg.Scopes))
-					scopesMatcher, err = krakendjose.AllScopesMatcher(scfg.ScopesKey, scfg.Scopes)
-					if err != nil {
-						logger.Warning(logPrefix, fmt.Sprintf("error preparing all scopes matcher: %s", err.Error()))
-						return erroredHandler
-					}
-				} else {
-					logger.Debug(logPrefix, fmt.Sprintf("Constraint added: tokens must contain a claim '%s' with any of these scopes: %v", scfg.ScopesKey, scfg.Scopes))
-					scopesMatcher, err = krakendjose.AnyScopesMatcher(scfg.ScopesKey, scfg.Scopes)
-					if err != nil {
-						logger.Warning(logPrefix, fmt.Sprintf("error preparing any scopes matcher: %s", err.Error()))
-						return erroredHandler
-					}
-				}
-			} else {
-				logger.Debug(logPrefix, "No scope validation required")
-				scopesMatcher = krakendjose.DefaultScopesMatcher(scfg.ScopesKey, scfg.Scopes)
-			}
-		*/
-
-		// this is also done in the creation of NewJWTChecks
-		/*
-			if scfg.OperationDebug {
-				logger.Debug(logPrefix, "Validator enabled for this endpoint. Operation debug is enabled")
-			} else {
-				logger.Debug(logPrefix, "Validator enabled for this endpoint")
-			}
-		*/
-
 		paramExtractor := extractRequiredJWTClaims(cfg)
-
-		// this also done in the creation of NewJWTChecks
-		/*
-			ps, err := krakendjose.NewPropagators(scfg.PropagateClaimsToHeader)
-			if err != nil && err != krakendjose.ErrNoHeadersToPropagate {
-				logger.Warning(logPrefix, fmt.Sprintf("error preparing header propagators: %s", err.Error()))
-			}
-		*/
-
 		strTokenExtractor := josehttp.StrTokenFromHeaderOrCookieFn(scfg.AuthHeaderName, scfg.CookieKey)
+		propagators, err := krakendjose.NewPropagators(scfg.PropagateClaimsToHeader)
+		if err != nil && err != krakendjose.ErrNoHeadersToPropagate {
+			// -------------------------------------------------------------------
+			// TODO: Should we return an error if claims wont be propagated as expected?
+			//
+			// originally this is not an error, but we could change the behaviour and return
+			// an error if claims wont be available for some further checks down the
+			// pipeline ? could cause an endpoint to not be available
+			// -------------------------------------------------------------------
+			logger.Warning(logPrefix, fmt.Sprintf("error preparing header propagators: %s", err.Error()))
+		}
 
 		return func(c *gin.Context) {
 			strToken, err := strTokenExtractor(c.Request)
@@ -181,72 +122,14 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 
 			claims, err := jwtChecker.Check(strToken)
 			if err != nil {
-				// TODO:
-				// this error could be a http.StatusForbidden if the problem is
-				// the user has not enough privileges ??
 				if scfg.OperationDebug {
 					logger.Error(logPrefix, "Unable to validate the token:", err.Error())
 				}
-				if err == krakendjose.ErrRequiredRoles || err == krakendjose.ErrRequiredScopes {
-					c.AbortWithStatus(http.StatusForbidden)
-					return
-				}
-				c.AbortWithStatus(http.StatusUnauthorized)
+				c.AbortWithStatus(josehttp.CheckErrorToStatusCode(err))
 				return
 			}
-
-			// this is done in the jwtChecker.Check()
-			/*
-				token, err := validator.ValidateRequest(c.Request)
-				if err != nil {
-					if scfg.OperationDebug {
-						logger.Error(logPrefix, "Unable to validate the token:", err.Error())
-					}
-					c.AbortWithStatus(http.StatusUnauthorized)
-					return
-				}
-
-				claims := map[string]interface{}{}
-				err = validator.Claims(c.Request, token, &claims)
-				if err != nil {
-					if scfg.OperationDebug {
-						logger.Error(logPrefix, "Token sent by client is invalid:", err.Error())
-					}
-					c.AbortWithStatus(http.StatusUnauthorized)
-					return
-				}
-
-				if rejecter.Reject(claims) {
-					if scfg.OperationDebug {
-						logger.Error(logPrefix, "Token sent by client rejected")
-					}
-					c.AbortWithStatus(http.StatusUnauthorized)
-					return
-				}
-
-				if !aclCheck(claims) {
-					if scfg.OperationDebug {
-						logger.Error(logPrefix, "Token sent by client does not have sufficient roles")
-					}
-					c.AbortWithStatus(http.StatusForbidden)
-					return
-				}
-
-				if !scopesMatcher(claims) {
-					if scfg.OperationDebug {
-						logger.Error(logPrefix, "Token sent by client does not have the required scopes")
-					}
-					c.AbortWithStatus(http.StatusForbidden)
-					return
-				}
-			*/
-
-			josehttp.PropagateHeaders(c.Request, jwtChecker.Propagators, claims, scfg.PropagateClaimsPreserveArray)
-			// this is moved to http package, avoiding the use of the gin.Context
-			// propagateHeaders(ps, scfg.PropagateClaimsPreserveArray, claims, c)
-
+			josehttp.PropagateHeaders(c.Request, propagators, claims, scfg.PropagateClaimsPreserveArray)
 			paramExtractor(c, claims)
-
 			handler(c)
 		}
 	}
@@ -255,32 +138,6 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 func erroredHandler(c *gin.Context) {
 	c.AbortWithStatus(http.StatusUnauthorized)
 }
-
-/*
-func propagateHeaders(
-	ps []krakendjose.Propagator,
-	propagationPreserveArrays bool,
-	claims map[string]interface{},
-	c *gin.Context,
-) {
-	if len(ps) == 0 {
-		return
-	}
-	if !propagationPreserveArrays {
-		headersToPropagate := krakendjose.HeadersToPropagate(ps, claims)
-		for k, v := range headersToPropagate {
-			// Set header value - replaces existing one
-			c.Request.Header.Set(k, v)
-		}
-		return
-	}
-
-	headersToPropagate := krakendjose.ArrayHeadersToPropagate(ps, claims)
-	for k, v := range headersToPropagate {
-		c.Request.Header[textproto.CanonicalMIMEHeaderKey(k)] = v
-	}
-}
-*/
 
 var jwtParamsPattern = regexp.MustCompile(`{{\.JWT\.([^}]*)}}`)
 
