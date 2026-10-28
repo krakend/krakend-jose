@@ -6,7 +6,6 @@ import (
 	"math"
 	"net/http"
 	"strings"
-	"time"
 
 	jose "github.com/go-jose/go-jose/v3"
 	"github.com/go-jose/go-jose/v3/jwt"
@@ -32,55 +31,10 @@ type ExtractorFactory func(string) func(r *http.Request) (*jwt.JSONWebToken, err
 // decoded or the secret provider cannot be created. An invalid or empty Leeway
 // defaults to one second.
 func NewValidator(signatureConfig *SignatureConfig, cookieEf, headerEf ExtractorFactory) (*auth0.JWTValidator, error) {
-	sa, ok := supportedAlgorithms[signatureConfig.Alg]
-	if !ok {
-		return nil, fmt.Errorf("JOSE: unknown algorithm %s", signatureConfig.Alg)
-	}
-	te := auth0.FromMultiple(
+	return NewJWTValidator(signatureConfig,
 		auth0.RequestTokenExtractorFunc(headerEf(signatureConfig.AuthHeaderName)),
 		auth0.RequestTokenExtractorFunc(cookieEf(signatureConfig.CookieKey)),
 	)
-
-	decodedFs, err := DecodeFingerprints(signatureConfig.Fingerprints)
-	if err != nil {
-		return nil, err
-	}
-
-	cfg := SecretProviderConfig{
-		URI:                 signatureConfig.URI,
-		CacheEnabled:        signatureConfig.CacheEnabled,
-		CacheDuration:       signatureConfig.CacheDuration,
-		Fingerprints:        decodedFs,
-		Cs:                  signatureConfig.CipherSuites,
-		LocalCA:             signatureConfig.LocalCA,
-		AllowInsecure:       signatureConfig.DisableJWKSecurity,
-		LocalPath:           signatureConfig.LocalPath,
-		SecretURL:           signatureConfig.SecretURL,
-		CipherKey:           signatureConfig.CipherKey,
-		KeyIdentifyStrategy: signatureConfig.KeyIdentifyStrategy,
-		UnknownKeysTTL:      signatureConfig.UnknownKeysTTL,
-	}
-
-	sp, err := SecretProvider(cfg, te)
-	if err != nil {
-		return nil, err
-	}
-
-	leeway, err := time.ParseDuration(signatureConfig.Leeway)
-	if err != nil {
-		leeway = time.Second
-	}
-
-	return auth0.NewValidatorWithLeeway(
-		auth0.NewConfiguration(
-			sp,
-			signatureConfig.Audience,
-			signatureConfig.Issuer,
-			sa,
-		),
-		te,
-		leeway,
-	), nil
 }
 
 var (
