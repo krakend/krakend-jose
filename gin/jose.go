@@ -92,6 +92,7 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 
 		jwtChecker, err := krakendjose.NewJWTChecks(scfg, logger, logPrefix, rejecter)
 		if err != nil {
+			logger.Warning(logPrefix, "Unable to create JWT validator:", err.Error())
 			return erroredHandler
 		}
 
@@ -122,9 +123,6 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 
 			claims, err := jwtChecker.Check(strToken)
 			if err != nil {
-				if scfg.OperationDebug {
-					logger.Error(logPrefix, "Unable to validate the token:", err.Error())
-				}
 				c.AbortWithStatus(josehttp.CheckErrorToStatusCode(err))
 				return
 			}
@@ -168,3 +166,9 @@ func extractRequiredJWTClaims(cfg *config.EndpointConfig) func(*gin.Context, map
 		}
 	}
 }
+
+// Deprecated: use github.com/krakend/krakend-jose/v3/http.FromCookie
+var FromCookie = josehttp.FromCookie
+
+// Deprecated: use github.com/krakend/krakend-jose/v3/http.FromHeader
+var FromHeader = josehttp.FromHeader
