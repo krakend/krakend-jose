@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-jose/go-jose/v3"
+	"github.com/go-jose/go-jose/v4"
 	"github.com/luraproject/lura/v3/config"
 	"github.com/luraproject/lura/v3/logging"
 )

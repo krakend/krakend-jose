@@ -9,7 +9,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-jose/go-jose/v3/jwt"
+	"github.com/go-jose/go-jose/v4"
+	"github.com/go-jose/go-jose/v4/jwt"
 	auth0 "github.com/krakend/go-auth0/v2"
 	krakendjose "github.com/krakend/krakend-jose/v3"
 	"github.com/luraproject/lura/v3/config"
@@ -17,6 +18,22 @@ import (
 	"github.com/luraproject/lura/v3/proxy"
 	ginlura "github.com/luraproject/lura/v3/router/gin"
 )
+
+var signatureAlgorithms = []jose.SignatureAlgorithm{
+	jose.EdDSA,
+	jose.HS256,
+	jose.HS384,
+	jose.HS512,
+	jose.RS256,
+	jose.RS384,
+	jose.RS512,
+	jose.ES256,
+	jose.ES384,
+	jose.ES512,
+	jose.PS256,
+	jose.PS384,
+	jose.PS512,
+}
 
 func HandlerFactory(hf ginlura.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory) ginlura.HandlerFactory {
 	return TokenSignatureValidator(TokenSigner(hf, logger), logger, rejecterF)
@@ -263,7 +280,7 @@ func FromCookie(key string) func(r *http.Request) (*jwt.JSONWebToken, error) {
 		if err != nil {
 			return nil, auth0.ErrTokenNotFound
 		}
-		return jwt.ParseSigned(cookie.Value)
+		return jwt.ParseSigned(cookie.Value, signatureAlgorithms)
 	}
 }
 
@@ -279,6 +296,6 @@ func FromHeader(header string) func(r *http.Request) (*jwt.JSONWebToken, error) 
 		if raw == "" {
 			return nil, auth0.ErrTokenNotFound
 		}
-		return jwt.ParseSigned(raw)
+		return jwt.ParseSigned(raw, signatureAlgorithms)
 	}
 }

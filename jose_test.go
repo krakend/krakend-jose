@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/go-jose/go-jose/v3/jwt"
+	"github.com/go-jose/go-jose/v4/jwt"
 )
 
 func nopExtractor(_ string) func(r *http.Request) (*jwt.JSONWebToken, error) {
