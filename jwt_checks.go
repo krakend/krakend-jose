@@ -1,4 +1,3 @@
-// Package jose provides reusable primitives to reuse jwt authentication
 package jose
 
 import (
@@ -71,7 +70,6 @@ func NewJWTValidator(signatureConfig *SignatureConfig, extr ...auth0.RequestToke
 	// but, we can use the NewValidatorWitLeeway as long as we call
 	// ValidateToken directly, instead of ValidateRequest (that would fail
 	// with a token not found error with this implementation below).
-	// sp -> kakendjose.t
 	sp, err := SecretProvider(cfg, te)
 	if err != nil {
 		return nil, err
@@ -100,7 +98,7 @@ func ACLCheck(scfg *SignatureConfig, logger logging.Logger,
 	logPrefix string,
 ) (func(map[string]interface{}) bool, error) {
 	if scfg.RolesKeyIsNested && strings.Contains(scfg.RolesKey, ".") &&
-		scfg.RolesKey[:4] != "http" {
+		!strings.HasPrefix(scfg.RolesKey, "http") {
 
 		logger.Debug(logPrefix,
 			fmt.Sprintf("Roles will be matched against the nested key: '%s'", scfg.RolesKey))
@@ -148,11 +146,10 @@ func ScopesMatcher(scfg *SignatureConfig, logger logging.Logger,
 }
 
 type JWTChecks struct {
-	Rejecter    Rejecter
-	Validator   *auth0.JWTValidator
-	Acl         func(map[string]interface{}) bool
-	ScopesCheck func(map[string]interface{}) bool
-	Propagators []Propagator
+	rejecter    Rejecter
+	validator   *auth0.JWTValidator
+	acl         func(map[string]interface{}) bool
+	scopesCheck func(map[string]interface{}) bool
 	scfg        *SignatureConfig
 	logger      logging.Logger
 	logPrefix   string
@@ -191,10 +188,10 @@ func NewJWTChecks(scfg *SignatureConfig, logger logging.Logger,
 	}
 
 	return &JWTChecks{
-		Rejecter:    rejecter,
-		Validator:   validator,
-		Acl:         aclCheck,
-		ScopesCheck: scopesMatcher,
+		rejecter:    rejecter,
+		validator:   validator,
+		acl:         aclCheck,
+		scopesCheck: scopesMatcher,
 		scfg:        scfg,
 		logger:      logger,
 		logPrefix:   logPrefix,
@@ -214,7 +211,7 @@ func (j *JWTChecks) Check(bearer string) (Claims, error) {
 		return nil, err
 	}
 
-	token, err = j.Validator.ValidateToken(token)
+	token, err = j.validator.ValidateToken(token)
 	if err != nil {
 		e := fmt.Errorf("Unable to validate token: %s", err.Error()) // skipcq: SCC-ST1005
 		if j.scfg.OperationDebug {
@@ -224,7 +221,7 @@ func (j *JWTChecks) Check(bearer string) (Claims, error) {
 	}
 
 	claims := make(Claims)
-	err = j.Validator.ClaimsFromToken(token, &claims)
+	err = j.validator.ClaimsFromToken(token, &claims)
 	if err != nil {
 		e := fmt.Errorf("Token sent by client is invalid: %s", err.Error()) // skipcq: SCC-ST1005
 		if j.scfg.OperationDebug {
@@ -233,7 +230,7 @@ func (j *JWTChecks) Check(bearer string) (Claims, error) {
 		return nil, e
 	}
 
-	if j.Rejecter.Reject(claims) {
+	if j.rejecter.Reject(claims) {
 		e := ErrTokenRejected
 		if j.scfg.OperationDebug {
 			j.logger.Error(j.logPrefix, e.Error())
@@ -241,7 +238,7 @@ func (j *JWTChecks) Check(bearer string) (Claims, error) {
 		return nil, e
 	}
 
-	if !j.Acl(claims) {
+	if !j.acl(claims) {
 		e := ErrRequiredRoles
 		if j.scfg.OperationDebug {
 			j.logger.Error(j.logPrefix, e.Error())
@@ -249,7 +246,7 @@ func (j *JWTChecks) Check(bearer string) (Claims, error) {
 		return nil, e
 	}
 
-	if !j.ScopesCheck(claims) {
+	if !j.scopesCheck(claims) {
 		e := ErrRequiredScopes
 		if j.scfg.OperationDebug {
 			j.logger.Error(j.logPrefix, e.Error())

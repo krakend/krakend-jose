@@ -111,6 +111,7 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 
 		jwtChecker, err := krakendjose.NewJWTChecks(scfg, logger, logPrefix, rejecter)
 		if err != nil {
+			logger.Warning(logPrefix, "Unable to create JWT validator:", err.Error())
 			return erroredHandler
 		}
 
@@ -141,9 +142,6 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 
 			claims, err := jwtChecker.Check(strToken)
 			if err != nil {
-				if scfg.OperationDebug {
-					logger.Error(logPrefix, "Unable to validate the token:", err.Error())
-				}
 				c.AbortWithStatus(josehttp.CheckErrorToStatusCode(err))
 				return
 			}
@@ -188,31 +186,8 @@ func extractRequiredJWTClaims(cfg *config.EndpointConfig) func(*gin.Context, map
 	}
 }
 
-func FromCookie(key string) func(r *http.Request) (*jwt.JSONWebToken, error) {
-	if key == "" {
-		key = "access_token"
-	}
-	return func(r *http.Request) (*jwt.JSONWebToken, error) {
-		cookie, err := r.Cookie(key)
-		if err != nil {
-			return nil, auth0.ErrTokenNotFound
-		}
-		return jwt.ParseSigned(cookie.Value, signatureAlgorithms)
-	}
-}
+// Deprecated: use github.com/krakend/krakend-jose/v3/http.FromCookie
+var FromCookie = josehttp.FromCookie
 
-func FromHeader(header string) func(r *http.Request) (*jwt.JSONWebToken, error) {
-	if header == "" {
-		header = "Authorization"
-	}
-	return func(r *http.Request) (*jwt.JSONWebToken, error) {
-		raw := r.Header.Get(header)
-		if len(raw) > 7 && strings.EqualFold(raw[0:7], "BEARER ") {
-			raw = raw[7:]
-		}
-		if raw == "" {
-			return nil, auth0.ErrTokenNotFound
-		}
-		return jwt.ParseSigned(raw, signatureAlgorithms)
-	}
-}
+// Deprecated: use github.com/krakend/krakend-jose/v3/http.FromHeader
+var FromHeader = josehttp.FromHeader
