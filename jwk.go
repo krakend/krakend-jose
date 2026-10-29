@@ -16,7 +16,7 @@ import (
 	"os"
 	"time"
 
-	jose "github.com/go-jose/go-jose/v3"
+	jose "github.com/go-jose/go-jose/v4"
 	auth0 "github.com/krakend/go-auth0/v2"
 	"github.com/luraproject/lura/v2/core"
 
