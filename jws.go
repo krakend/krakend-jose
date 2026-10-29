@@ -7,7 +7,7 @@ import (
 	"net/textproto"
 	"strings"
 
-	jose "github.com/go-jose/go-jose/v3"
+	jose "github.com/go-jose/go-jose/v4"
 	"github.com/krakend/go-auth0/v2"
 	"github.com/luraproject/lura/v3/config"
 )
