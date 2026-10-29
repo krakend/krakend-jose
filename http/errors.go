@@ -14,5 +14,4 @@ func CheckErrorToStatusCode(err error) int {
 }
 
 func CheckErrorToStautusCodeAndHeaders() {
-
 }
