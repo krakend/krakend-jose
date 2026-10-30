@@ -215,13 +215,11 @@ func NewMemoryKeyCacher(maxKeyAge time.Duration, maxCacheSize int, keyIdentifySt
 
 // NewGlobalMemoryKeyCacher creates a GMemoryKeyCacher backed by the global cache of the
 // key identify strategy, if SetGlobalCacher was called. Otherwise, it behaves as a
-// MemoryKeyCacher. The uri of the JWK provider scopes the entries this cacher reads from
-// and writes to the shared global cache.
-func NewGlobalMemoryKeyCacher(maxKeyAge time.Duration, maxCacheSize int, keyIdentifyStrategy, uri string) *GMemoryKeyCacher {
+// MemoryKeyCacher.
+func NewGlobalMemoryKeyCacher(maxKeyAge time.Duration, maxCacheSize int, keyIdentifyStrategy string) *GMemoryKeyCacher {
 	kc := &GMemoryKeyCacher{
 		MemoryKeyCacher: NewMemoryKeyCacher(maxKeyAge, maxCacheSize, keyIdentifyStrategy),
 		Global:          GlobalCacher{},
-		uri:             uri,
 	}
 	if keyIdentifyStrategy == "" {
 		keyIdentifyStrategy = defaultStrategy
@@ -230,6 +228,15 @@ func NewGlobalMemoryKeyCacher(maxKeyAge time.Duration, maxCacheSize int, keyIden
 		g := globalKeyCacher[keyIdentifyStrategy]
 		kc.Global = g
 	}
+	return kc
+}
+
+// NewGlobalMemoryKeyCacherWithURI is like NewGlobalMemoryKeyCacher but scopes this provider's
+// entries in the shared global cache by uri, so that providers publishing different keys under
+// the same key id cannot read each other's.
+func NewGlobalMemoryKeyCacherWithURI(maxKeyAge time.Duration, maxCacheSize int, keyIdentifyStrategy, uri string) *GMemoryKeyCacher {
+	kc := NewGlobalMemoryKeyCacher(maxKeyAge, maxCacheSize, keyIdentifyStrategy)
+	kc.uri = uri
 	return kc
 }
 
