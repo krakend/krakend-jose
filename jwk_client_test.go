@@ -53,7 +53,7 @@ func TestJWKClient_globalCache(t *testing.T) {
 		client := NewJWKClientWithCache(
 			opts,
 			te,
-			NewGlobalMemoryKeyCacher(1*time.Second, auth0.MaxCacheSizeNoCheck, opts.KeyIdentifyStrategy, opts.URI),
+			NewGlobalMemoryKeyCacher(1*time.Second, auth0.MaxCacheSizeNoCheck, opts.KeyIdentifyStrategy),
 		)
 		if _, err := client.GetKey("8-2-2PBmlHKMo5tizxp-uw9pFrQQamfa1M1ZYMrAFZI"); err != nil {
 			t.Error(err)
@@ -69,7 +69,7 @@ func TestJWKClient_globalCache(t *testing.T) {
 		client := NewJWKClientWithCache(
 			opts,
 			te,
-			NewGlobalMemoryKeyCacher(1*time.Second, auth0.MaxCacheSizeNoCheck, opts.KeyIdentifyStrategy, opts.URI),
+			NewGlobalMemoryKeyCacher(1*time.Second, auth0.MaxCacheSizeNoCheck, opts.KeyIdentifyStrategy),
 		)
 		if _, err := client.GetKey("8-2-2PBmlHKMo5tizxp-uw9pFrQQamfa1M1ZYMrAFZI"); err != nil {
 			t.Error(err)
