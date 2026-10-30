@@ -19,7 +19,8 @@ var (
 	defaultStrategy                 = "kid"
 
 	// globalCacheScopeSep separates the JWK provider uri from the key id in the shared
-	// global cache keys. The NUL byte does not appear in uris nor in key ids.
+	// global cache keys. The NUL byte does not appear in uris nor in key ids, so it keeps
+	// the scope unambiguous.
 	globalCacheScopeSep = "\x00"
 
 	// Configuring with MaxKeyAgeNoCheck will skip key expiry check
@@ -263,9 +264,10 @@ func (mkc *MemoryKeyCacher) Add(keyID string, downloadedKeys []jose.JSONWebKey) 
 	return nil, ErrNoKeyFound
 }
 
-// addScoped stores every downloaded key under a composite key that prepends scope to the
-// key id, so entries from different JWK providers do not collide even when they share the
-// same key id. It is used for the shared global cache, which keeps every downloaded key.
+// addScoped stores every downloaded key in the cache under a composite key that prepends
+// scope to the key id, so entries from different JWK providers do not collide even when
+// they share the same key id. It is used for the shared global cache, which keeps every
+// downloaded key.
 func (mkc *MemoryKeyCacher) addScoped(scope string, downloadedKeys []jose.JSONWebKey) {
 	mkc.mu.Lock()
 	defer mkc.mu.Unlock()
