@@ -70,7 +70,7 @@ func SecretProvider(cfg SecretProviderConfig, te auth0.RequestTokenExtractor) (*
 	client := NewJWKClientWithCache(
 		opts,
 		te,
-		NewGlobalMemoryKeyCacher(cacheDuration, auth0.MaxCacheSizeNoCheck, opts.KeyIdentifyStrategy, cfg.URI),
+		NewGlobalMemoryKeyCacherWithURI(cacheDuration, auth0.MaxCacheSizeNoCheck, opts.KeyIdentifyStrategy, cfg.URI),
 	)
 
 	if _, ok := cacheOnce[cfg.URI]; !ok {
