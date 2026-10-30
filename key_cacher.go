@@ -18,6 +18,11 @@ var (
 	defaultGlobalCacheMaxAge uint32 = 900
 	defaultStrategy                 = "kid"
 
+	// globalCacheScopeSep separates the JWK provider uri from the key id in the shared
+	// global cache keys. The NUL byte does not appear in uris nor in key ids, so it keeps
+	// the scope unambiguous.
+	globalCacheScopeSep = "\x00"
+
 	// Configuring with MaxKeyAgeNoCheck will skip key expiry check
 	MaxKeyAgeNoCheck    = time.Duration(-1)
 	globalKeyCacher     = map[string]GlobalCacher{}
@@ -25,7 +30,7 @@ var (
 )
 
 type GlobalCacher struct {
-	kc KeyCacher
+	kc *MemoryKeyCacher
 	mu *sync.RWMutex
 }
 
@@ -138,12 +143,21 @@ type keyCacherEntry struct {
 type GMemoryKeyCacher struct {
 	*MemoryKeyCacher
 	Global GlobalCacher
+	// uri of the JWK provider, used to scope the entries in the shared global cache so
+	// that providers publishing different keys under the same id cannot read each other's.
+	uri string
+}
+
+// globalScope returns the prefix that namespaces this provider's entries in the shared
+// global cache.
+func (gkc *GMemoryKeyCacher) globalScope() string {
+	return gkc.uri + globalCacheScopeSep
 }
 
 func (gkc *GMemoryKeyCacher) Add(keyID string, downloadedKeys []jose.JSONWebKey) (*jose.JSONWebKey, error) {
 	if gkc.Global.kc != nil {
 		gkc.Global.mu.Lock()
-		gkc.Global.kc.Add(keyID, downloadedKeys)
+		gkc.Global.kc.addScoped(gkc.globalScope(), downloadedKeys)
 		gkc.Global.mu.Unlock()
 	}
 
@@ -158,7 +172,7 @@ func (gkc *GMemoryKeyCacher) Get(keyID string) (*jose.JSONWebKey, error) {
 	}
 
 	gkc.Global.mu.RLock()
-	v, err := gkc.Global.kc.Get(keyID)
+	v, err := gkc.Global.kc.Get(gkc.globalScope() + keyID)
 	gkc.Global.mu.RUnlock()
 	if err == nil {
 		gkc.MemoryKeyCacher.Add(keyID, []jose.JSONWebKey{*v})
@@ -190,6 +204,15 @@ func NewGlobalMemoryKeyCacher(maxKeyAge time.Duration, maxCacheSize int, keyIden
 		g := globalKeyCacher[keyIdentifyStrategy]
 		kc.Global = g
 	}
+	return kc
+}
+
+// NewGlobalMemoryKeyCacherWithURI is like NewGlobalMemoryKeyCacher but scopes this provider's
+// entries in the shared global cache by uri, so that providers publishing different keys under
+// the same key id cannot read each other's.
+func NewGlobalMemoryKeyCacherWithURI(maxKeyAge time.Duration, maxCacheSize int, keyIdentifyStrategy, uri string) *GMemoryKeyCacher {
+	kc := NewGlobalMemoryKeyCacher(maxKeyAge, maxCacheSize, keyIdentifyStrategy)
+	kc.uri = uri
 	return kc
 }
 
@@ -239,6 +262,22 @@ func (mkc *MemoryKeyCacher) Add(keyID string, downloadedKeys []jose.JSONWebKey) 
 		return &addingKey, nil
 	}
 	return nil, ErrNoKeyFound
+}
+
+// addScoped stores every downloaded key in the cache under a composite key that prepends
+// scope to the key id, so entries from different JWK providers do not collide even when
+// they share the same key id. It is used for the shared global cache, which keeps every
+// downloaded key.
+func (mkc *MemoryKeyCacher) addScoped(scope string, downloadedKeys []jose.JSONWebKey) {
+	mkc.mu.Lock()
+	defer mkc.mu.Unlock()
+	for i := range downloadedKeys {
+		cacheKey := scope + mkc.keyIDGetter.Get(&downloadedKeys[i])
+		mkc.entries[cacheKey] = keyCacherEntry{
+			addedAt:    time.Now(),
+			JSONWebKey: downloadedKeys[i],
+		}
+	}
 }
 
 // keyIsExpired deletes the key from cache if it is expired
