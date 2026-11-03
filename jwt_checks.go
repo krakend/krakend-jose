@@ -5,7 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-jose/go-jose/v3/jwt"
+	"github.com/go-jose/go-jose/v4"
+	"github.com/go-jose/go-jose/v4/jwt"
 	auth0 "github.com/krakend/go-auth0/v2"
 	"github.com/luraproject/lura/v3/logging"
 )
@@ -19,7 +20,27 @@ func StripBearerAndParse(token string) (*jwt.JSONWebToken, error) {
 	if token == "" {
 		return nil, auth0.ErrTokenNotFound
 	}
-	return jwt.ParseSigned(token)
+	return ParseSigned(token)
+}
+
+var signatureAlgorithms = []jose.SignatureAlgorithm{
+	jose.EdDSA,
+	jose.HS256,
+	jose.HS384,
+	jose.HS512,
+	jose.RS256,
+	jose.RS384,
+	jose.RS512,
+	jose.ES256,
+	jose.ES384,
+	jose.ES512,
+	jose.PS256,
+	jose.PS384,
+	jose.PS512,
+}
+
+func ParseSigned(token string) (*jwt.JSONWebToken, error) {
+	return jwt.ParseSigned(token, signatureAlgorithms)
 }
 
 // NewJWTValidator eturns a JWT validator for the given signature config.

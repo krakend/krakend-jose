@@ -4,10 +4,10 @@ package http
 
 import (
 	"net/http"
-	"strings"
 
-	"github.com/go-jose/go-jose/v3/jwt"
+	"github.com/go-jose/go-jose/v4/jwt"
 	auth0 "github.com/krakend/go-auth0/v2"
+	krakendjose "github.com/krakend/krakend-jose/v3"
 )
 
 func FromCookie(key string) func(r *http.Request) (*jwt.JSONWebToken, error) {
@@ -19,7 +19,7 @@ func FromCookie(key string) func(r *http.Request) (*jwt.JSONWebToken, error) {
 		if err != nil {
 			return nil, auth0.ErrTokenNotFound
 		}
-		return jwt.ParseSigned(cookie.Value)
+		return krakendjose.ParseSigned(cookie.Value)
 	}
 }
 
@@ -28,14 +28,7 @@ func FromHeader(header string) func(r *http.Request) (*jwt.JSONWebToken, error) 
 		header = "Authorization"
 	}
 	return func(r *http.Request) (*jwt.JSONWebToken, error) {
-		raw := r.Header.Get(header)
-		if len(raw) > 7 && strings.EqualFold(raw[0:7], "BEARER ") {
-			raw = raw[7:]
-		}
-		if raw == "" {
-			return nil, auth0.ErrTokenNotFound
-		}
-		return jwt.ParseSigned(raw)
+		return krakendjose.StripBearerAndParse(r.Header.Get(header))
 	}
 }
 

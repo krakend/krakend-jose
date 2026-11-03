@@ -9,31 +9,13 @@ import (
 	"net/textproto"
 	"strings"
 
-	"github.com/go-jose/go-jose/v4"
-	"github.com/go-jose/go-jose/v4/jwt"
-	"github.com/krakend/go-auth0/v2"
 	krakendjose "github.com/krakend/krakend-jose/v3"
+	josehttp "github.com/krakend/krakend-jose/v3/http"
 	"github.com/luraproject/lura/v3/config"
 	"github.com/luraproject/lura/v3/logging"
 	"github.com/luraproject/lura/v3/proxy"
 	muxlura "github.com/luraproject/lura/v3/router/mux"
 )
-
-var signatureAlgorithms = []jose.SignatureAlgorithm{
-	jose.EdDSA,
-	jose.HS256,
-	jose.HS384,
-	jose.HS512,
-	jose.RS256,
-	jose.RS384,
-	jose.RS512,
-	jose.ES256,
-	jose.ES384,
-	jose.ES512,
-	jose.PS256,
-	jose.PS384,
-	jose.PS512,
-}
 
 func HandlerFactory(hf muxlura.HandlerFactory, paramExtractor muxlura.ParamExtractor, logger logging.Logger, rejecterF krakendjose.RejecterFactory) muxlura.HandlerFactory {
 	return TokenSignatureValidator(TokenSigner(hf, paramExtractor, logger), logger, rejecterF)
@@ -202,35 +184,6 @@ func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, r
 	}
 }
 
-func FromCookie(key string) func(r *http.Request) (*jwt.JSONWebToken, error) {
-	if key == "" {
-		key = "access_token"
-	}
-	return func(r *http.Request) (*jwt.JSONWebToken, error) {
-		cookie, err := r.Cookie(key)
-		if err != nil {
-			return nil, auth0.ErrTokenNotFound
-		}
-		return jwt.ParseSigned(cookie.Value, signatureAlgorithms)
-	}
-}
-
-func FromHeader(header string) func(r *http.Request) (*jwt.JSONWebToken, error) {
-	if header == "" {
-		header = "Authorization"
-	}
-	return func(r *http.Request) (*jwt.JSONWebToken, error) {
-		raw := r.Header.Get(header)
-		if len(raw) > 7 && strings.EqualFold(raw[0:7], "BEARER ") {
-			raw = raw[7:]
-		}
-		if raw == "" {
-			return nil, auth0.ErrTokenNotFound
-		}
-		return jwt.ParseSigned(raw, signatureAlgorithms)
-	}
-}
-
 func propagateHeaders(
 	ps []krakendjose.Propagator,
 	propagationPreserveArrays bool,
@@ -253,3 +206,9 @@ func propagateHeaders(
 		}
 	}
 }
+
+// Deprecated: use github.com/krakend/krakend-jose/v3/http.FromCookie
+var FromCookie = josehttp.FromCookie
+
+// Deprecated: use github.com/krakend/krakend-jose/v3/http.FromHeader
+var FromHeader = josehttp.FromHeader

@@ -10,30 +10,11 @@ import (
 	josehttp "github.com/krakend/krakend-jose/v3/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-jose/go-jose/v4"
-	"github.com/go-jose/go-jose/v4/jwt"
-	auth0 "github.com/krakend/go-auth0/v2"
 	"github.com/luraproject/lura/v3/config"
 	"github.com/luraproject/lura/v3/logging"
 	"github.com/luraproject/lura/v3/proxy"
 	ginlura "github.com/luraproject/lura/v3/router/gin"
 )
-
-var signatureAlgorithms = []jose.SignatureAlgorithm{
-	jose.EdDSA,
-	jose.HS256,
-	jose.HS384,
-	jose.HS512,
-	jose.RS256,
-	jose.RS384,
-	jose.RS512,
-	jose.ES256,
-	jose.ES384,
-	jose.ES512,
-	jose.PS256,
-	jose.PS384,
-	jose.PS512,
-}
 
 func HandlerFactory(hf ginlura.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory) ginlura.HandlerFactory {
 	return TokenSignatureValidator(TokenSigner(hf, logger), logger, rejecterF)
