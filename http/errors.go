@@ -12,5 +12,6 @@ func CheckErrorToStatusCode(err error) int {
 	}
 	return http.StatusUnauthorized
 }
+
 func CheckErrorToStautusCodeAndHeaders() {
 }
