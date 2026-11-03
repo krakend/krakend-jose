@@ -167,8 +167,8 @@ func extractRequiredJWTClaims(cfg *config.EndpointConfig) func(*gin.Context, map
 	}
 }
 
-// Deprecated: use github.com/krakend/krakend-jose/v3/http.FromCookie
+// FromCookie aliases http.FromCokie. Deprecated: use github.com/krakend/krakend-jose/v3/http.FromCookie
 var FromCookie = josehttp.FromCookie
 
-// Deprecated: use github.com/krakend/krakend-jose/v3/http.FromHeader
+// FromHeader aliases http.FromHeader. Deprecated: use github.com/krakend/krakend-jose/v3/http.FromHeader
 var FromHeader = josehttp.FromHeader

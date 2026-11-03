@@ -177,38 +177,15 @@ func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, r
 				return
 			}
 
-			propagateHeaders(ps, signatureConfig.PropagateClaimsPreserveArray, claims, r)
+			josehttp.PropagateHeaders(r, ps, claims, signatureConfig.PropagateClaimsPreserveArray)
 
 			handler(w, r)
 		}
 	}
 }
 
-func propagateHeaders(
-	ps []krakendjose.Propagator,
-	propagationPreserveArrays bool,
-	claims map[string]interface{},
-	r *http.Request,
-) {
-	if len(ps) > 0 {
-		if !propagationPreserveArrays {
-			headersToPropagate := krakendjose.HeadersToPropagate(ps, claims)
-			for k, v := range headersToPropagate {
-				// Set header value - replaces existing one
-				r.Header.Set(k, v)
-			}
-			return
-		}
-
-		headersToPropagate := krakendjose.ArrayHeadersToPropagate(ps, claims)
-		for k, v := range headersToPropagate {
-			r.Header[textproto.CanonicalMIMEHeaderKey(k)] = v
-		}
-	}
-}
-
-// Deprecated: use github.com/krakend/krakend-jose/v3/http.FromCookie
+// FromCookie aliases http.FromCokie. Deprecated: use github.com/krakend/krakend-jose/v3/http.FromCookie
 var FromCookie = josehttp.FromCookie
 
-// Deprecated: use github.com/krakend/krakend-jose/v3/http.FromHeader
+// FromHeader aliases http.FromHeader. Deprecated: use github.com/krakend/krakend-jose/v3/http.FromHeader
 var FromHeader = josehttp.FromHeader
