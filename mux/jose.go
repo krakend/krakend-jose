@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/textproto"
 	"strings"
 
 	krakendjose "github.com/krakend/krakend-jose/v3"
