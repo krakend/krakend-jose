@@ -1,17 +1,15 @@
 package http
 
 import (
+	"errors"
 	"net/http"
 
 	krakendjose "github.com/krakend/krakend-jose/v3"
 )
 
 func CheckErrorToStatusCode(err error) int {
-	if err == krakendjose.ErrRequiredRoles || err == krakendjose.ErrRequiredScopes {
+	if errors.Is(err, krakendjose.ErrRequiredRoles) || errors.Is(err, krakendjose.ErrRequiredScopes) {
 		return http.StatusForbidden
 	}
 	return http.StatusUnauthorized
-}
-
-func CheckErrorToStautusCodeAndHeaders() {
 }

@@ -14,7 +14,7 @@ import (
 // StripBearerAndParse converts a string to a jwt.JSONWebToken
 // extracting the "Bearer " prefix if exists.
 func StripBearerAndParse(token string) (*jwt.JSONWebToken, error) {
-	if len(token) > 7 && strings.EqualFold(token[0:7], "BEARER ") {
+	if len(token) >= 7 && strings.EqualFold(token[0:7], "BEARER ") {
 		token = token[7:]
 	}
 	if token == "" {
@@ -23,21 +23,15 @@ func StripBearerAndParse(token string) (*jwt.JSONWebToken, error) {
 	return ParseSigned(token)
 }
 
-var signatureAlgorithms = []jose.SignatureAlgorithm{
-	jose.EdDSA,
-	jose.HS256,
-	jose.HS384,
-	jose.HS512,
-	jose.RS256,
-	jose.RS384,
-	jose.RS512,
-	jose.ES256,
-	jose.ES384,
-	jose.ES512,
-	jose.PS256,
-	jose.PS384,
-	jose.PS512,
-}
+// signatureAlgorithms is the list of algorithms accepted when parsing a token.
+// It is derived from supportedAlgorithms so both stay in sync.
+var signatureAlgorithms = func() []jose.SignatureAlgorithm {
+	algs := make([]jose.SignatureAlgorithm, 0, len(supportedAlgorithms))
+	for _, a := range supportedAlgorithms {
+		algs = append(algs, a)
+	}
+	return algs
+}()
 
 func ParseSigned(token string) (*jwt.JSONWebToken, error) {
 	return jwt.ParseSigned(token, signatureAlgorithms)
@@ -60,15 +54,22 @@ func ParseSigned(token string) (*jwt.JSONWebToken, error) {
 // decoded or the secret provider cannot be created. An invalid or empty Leeway
 // defaults to one second.
 func NewJWTValidator(signatureConfig *SignatureConfig, extr ...auth0.RequestTokenExtractor) (*auth0.JWTValidator, error) {
+	v, _, _, err := newJWTValidator(signatureConfig, extr...)
+	return v, err
+}
+
+// newJWTValidator builds the validator and also returns the secret provider
+// and the leeway it was configured with.
+func newJWTValidator(signatureConfig *SignatureConfig, extr ...auth0.RequestTokenExtractor) (*auth0.JWTValidator, auth0.TokenSecretProvider, time.Duration, error) {
 	sa, ok := SupportedAlgorithm(signatureConfig.Alg)
 	if !ok {
-		return nil, fmt.Errorf("JOSE: unknown algorithm %s", signatureConfig.Alg)
+		return nil, nil, 0, fmt.Errorf("JOSE: unknown algorithm %s", signatureConfig.Alg)
 	}
 	te := auth0.FromMultiple(extr...)
 
 	decodedFs, err := DecodeFingerprints(signatureConfig.Fingerprints)
 	if err != nil {
-		return nil, err
+		return nil, nil, 0, err
 	}
 
 	cfg := SecretProviderConfig{
@@ -93,15 +94,16 @@ func NewJWTValidator(signatureConfig *SignatureConfig, extr ...auth0.RequestToke
 	// with a token not found error with this implementation below).
 	sp, err := SecretProvider(cfg, te)
 	if err != nil {
-		return nil, err
+		return nil, nil, 0, err
 	}
 
 	leeway, err := time.ParseDuration(signatureConfig.Leeway)
-	if err != nil {
+	if err != nil || leeway < time.Second {
+		// same lower bound auth0.NewValidatorWithLeeway applies
 		leeway = time.Second
 	}
 
-	return auth0.NewValidatorWithLeeway(
+	v := auth0.NewValidatorWithLeeway(
 		auth0.NewConfiguration(
 			sp,
 			signatureConfig.Audience,
@@ -110,7 +112,8 @@ func NewJWTValidator(signatureConfig *SignatureConfig, extr ...auth0.RequestToke
 		),
 		te,
 		leeway,
-	), nil
+	)
+	return v, sp, leeway, nil
 }
 
 // ACLCheck creates a function to for ACL and returns if the key used for ACL
@@ -169,6 +172,9 @@ func ScopesMatcher(scfg *SignatureConfig, logger logging.Logger,
 type JWTChecks struct {
 	rejecter    Rejecter
 	validator   *auth0.JWTValidator
+	secrets     auth0.TokenSecretProvider
+	expected    jwt.Expected
+	leeway      time.Duration
 	acl         func(map[string]interface{}) bool
 	scopesCheck func(map[string]interface{}) bool
 	scfg        *SignatureConfig
@@ -183,13 +189,11 @@ func NewJWTChecks(scfg *SignatureConfig, logger logging.Logger,
 		rejecter = FixedRejecter(false)
 	}
 
-	validator, err := NewJWTValidator(scfg)
+	validator, secrets, leeway, err := newJWTValidator(scfg)
 	if err != nil {
-		logger.Fatal(logPrefix, "Unable to create the validator:", err.Error())
-		// TODO: in the krakend-jose/gin/jose.go implementation, if gails with a panic
-		// instead of disabling the endpoints that cannot be secured with JWT.
-		// What should we do here ?
-		return nil, err
+		// do not terminate the process here: the caller decides what to do
+		// with an endpoint that cannot be secured (e.g. reject all requests)
+		return nil, fmt.Errorf("unable to create the validator: %w", err)
 	}
 
 	aclCheck, err := ACLCheck(scfg, logger, logPrefix)
@@ -211,6 +215,9 @@ func NewJWTChecks(scfg *SignatureConfig, logger logging.Logger,
 	return &JWTChecks{
 		rejecter:    rejecter,
 		validator:   validator,
+		secrets:     secrets,
+		expected:    jwt.Expected{Issuer: scfg.Issuer, AnyAudience: scfg.Audience},
+		leeway:      leeway,
 		acl:         aclCheck,
 		scopesCheck: scopesMatcher,
 		scfg:        scfg,
@@ -225,57 +232,54 @@ var (
 	ErrTokenRejected  = fmt.Errorf("Token sent by client rejected")                          // skipcq: SCC-ST1005
 )
 
-// Check validates a jwt and returns a list of values to propagate
+// Check validates a jwt and returns its claims. Errors wrap the underlying
+// cause, so callers can inspect them with errors.Is / errors.As.
 func (j *JWTChecks) Check(bearer string) (Claims, error) {
 	token, err := StripBearerAndParse(bearer)
 	if err != nil {
-		return nil, err
+		return nil, j.debugErr(fmt.Errorf("Unable to parse token: %w", err)) // skipcq: SCC-ST1005
 	}
 
-	token, err = j.validator.ValidateToken(token)
+	if err := j.validator.ValidateTokenHeaders(token); err != nil {
+		return nil, j.debugErr(fmt.Errorf("Unable to validate token: %w", err)) // skipcq: SCC-ST1005
+	}
+
+	key, err := j.secrets.SecretFromToken(token)
 	if err != nil {
-		e := fmt.Errorf("Unable to validate token: %s", err.Error()) // skipcq: SCC-ST1005
-		if j.scfg.OperationDebug {
-			j.logger.Error(j.logPrefix, e.Error())
-		}
-		return nil, e
+		return nil, j.debugErr(fmt.Errorf("Unable to validate token: %w", err)) // skipcq: SCC-ST1005
 	}
 
+	// verify the signature once, decoding both the registered and the full set of claims
+	var registered jwt.Claims
 	claims := make(Claims)
-	err = j.validator.ClaimsFromToken(token, &claims)
-	if err != nil {
-		e := fmt.Errorf("Token sent by client is invalid: %s", err.Error()) // skipcq: SCC-ST1005
-		if j.scfg.OperationDebug {
-			j.logger.Error(j.logPrefix, e.Error())
-		}
-		return nil, e
+	if err := token.Claims(key, &registered, &claims); err != nil {
+		return nil, j.debugErr(fmt.Errorf("Unable to validate token: %w", err)) // skipcq: SCC-ST1005
+	}
+
+	if err := registered.ValidateWithLeeway(j.expected.WithTime(time.Now()), j.leeway); err != nil {
+		return nil, j.debugErr(fmt.Errorf("Unable to validate token: %w", err)) // skipcq: SCC-ST1005
 	}
 
 	if j.rejecter.Reject(claims) {
-		e := ErrTokenRejected
-		if j.scfg.OperationDebug {
-			j.logger.Error(j.logPrefix, e.Error())
-		}
-		return nil, e
+		return nil, j.debugErr(ErrTokenRejected)
 	}
 
 	if !j.acl(claims) {
-		e := ErrRequiredRoles
-		if j.scfg.OperationDebug {
-			j.logger.Error(j.logPrefix, e.Error())
-		}
-		return nil, e
+		return nil, j.debugErr(ErrRequiredRoles)
 	}
 
 	if !j.scopesCheck(claims) {
-		e := ErrRequiredScopes
-		if j.scfg.OperationDebug {
-			j.logger.Error(j.logPrefix, e.Error())
-		}
-		return nil, e
+		return nil, j.debugErr(ErrRequiredScopes)
 	}
 
 	return claims, nil
+}
+
+func (j *JWTChecks) debugErr(err error) error {
+	if j.scfg.OperationDebug {
+		j.logger.Error(j.logPrefix, err.Error())
+	}
+	return err
 }
 
 func (j *JWTChecks) Scopes() []string {
