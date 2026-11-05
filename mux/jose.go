@@ -3,10 +3,9 @@ package mux
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"log"
 	"net/http"
-	"strings"
 
 	krakendjose "github.com/krakend/krakend-jose/v3"
 	josehttp "github.com/krakend/krakend-jose/v3/http"
@@ -91,96 +90,69 @@ func jsonRender(w http.ResponseWriter, response *proxy.Response) error {
 	return err
 }
 
-func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory) muxlura.HandlerFactory { // skipcq: GO-R1005
+func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory) muxlura.HandlerFactory {
 	return func(cfg *config.EndpointConfig, prxy proxy.Proxy) http.HandlerFunc {
-		if rejecterF == nil {
-			rejecterF = new(krakendjose.NopRejecterFactory)
-		}
-		rejecter := rejecterF.New(logger, cfg)
-
+		logPrefix := fmt.Sprintf("[ENDPOINT: %s %s][JWTValidator]", cfg.Method, cfg.Endpoint)
 		handler := hf(cfg, prxy)
-		signatureConfig, err := krakendjose.GetSignatureConfig(cfg)
+		scfg, err := krakendjose.GetSignatureConfig(cfg)
 		if err == krakendjose.ErrNoValidatorCfg {
 			logger.Info("JOSE: validator disabled for the endpoint", cfg.Endpoint)
 			return handler
 		}
 		if err != nil {
-			logger.Warning(fmt.Sprintf("JOSE: validator for %s: %s", cfg.Endpoint, err.Error()))
-			return handler
+			logger.Warning(logPrefix, "Unable to parse the configuration:", err.Error())
+			return erroredHandler
 		}
 
-		validator, err := krakendjose.NewValidator(signatureConfig, FromCookie, FromHeader)
+		if rejecterF == nil {
+			rejecterF = new(krakendjose.NopRejecterFactory)
+		}
+		rejecter := rejecterF.New(logger, cfg)
+
+		jwtChecker, err := krakendjose.NewJWTChecks(scfg, logger, logPrefix, rejecter)
 		if err != nil {
-			log.Fatalf("%s: %s", cfg.Endpoint, err.Error())
-		}
-
-		var aclCheck func(map[string]interface{}) bool
-
-		if signatureConfig.RolesKeyIsNested && strings.Contains(signatureConfig.RolesKey, ".") && signatureConfig.RolesKey[:4] != "http" {
-			aclCheck, err = krakendjose.AccessNestedCheck(signatureConfig.RolesKey, signatureConfig.Roles)
-			if err != nil {
-				logger.Warning(fmt.Sprintf("error preparing nested acl check on endpoint %s: %s", cfg.Endpoint, err.Error()))
-				return handler
-			}
-		} else {
-			aclCheck = krakendjose.AccessCheck(signatureConfig.RolesKey, signatureConfig.Roles)
-		}
-
-		var scopesMatcher func(map[string]interface{}) bool
-
-		if len(signatureConfig.Scopes) > 0 && signatureConfig.ScopesKey != "" {
-			if signatureConfig.ScopesMatcher == "all" {
-				scopesMatcher, err = krakendjose.AllScopesMatcher(signatureConfig.ScopesKey, signatureConfig.Scopes)
-				logger.Warning(fmt.Sprintf("error preparing all scopes matcher on endpoint %s: %s", cfg.Endpoint, err.Error()))
-			} else {
-				scopesMatcher, err = krakendjose.AnyScopesMatcher(signatureConfig.ScopesKey, signatureConfig.Scopes)
-				logger.Warning(fmt.Sprintf("error preparing any scopes matcher on endpoint %s: %s", cfg.Endpoint, err.Error()))
-			}
-		} else {
-			scopesMatcher = krakendjose.DefaultScopesMatcher(signatureConfig.ScopesKey, signatureConfig.Scopes)
+			logger.Warning(logPrefix, "Unable to create JWT validator:", err.Error())
+			return erroredHandler
 		}
 
 		logger.Info("JOSE: validator enabled for the endpoint", cfg.Endpoint)
 
-		ps, err := krakendjose.NewPropagators(signatureConfig.PropagateClaimsToHeader)
+		strTokenExtractor := josehttp.StrTokenFromHeaderOrCookieFn(scfg.AuthHeaderName, scfg.CookieKey)
+		ps, err := krakendjose.NewPropagators(scfg.PropagateClaimsToHeader)
 		if err != nil && err != krakendjose.ErrNoHeadersToPropagate {
-			logger.Warning(fmt.Sprintf("error preparing header propagators for endpoint %s: %s", cfg.Endpoint, err.Error()))
+			logger.Warning(logPrefix, fmt.Sprintf("error preparing header propagators: %s", err.Error()))
 		}
 
 		return func(w http.ResponseWriter, r *http.Request) {
-			token, err := validator.ValidateRequest(r)
+			strToken, err := strTokenExtractor(r)
 			if err != nil {
+				if scfg.OperationDebug {
+					logger.Error(logPrefix, "Unable to validate the token:", err.Error())
+				}
 				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
 			}
 
-			claims := map[string]interface{}{}
-			err = validator.Claims(r, token, &claims)
+			claims, err := jwtChecker.Check(strToken)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusUnauthorized)
+				status := josehttp.CheckErrorToStatusCode(err)
+				msg := ""
+				if status == http.StatusUnauthorized && !errors.Is(err, krakendjose.ErrTokenRejected) {
+					msg = err.Error()
+				}
+				http.Error(w, msg, status)
 				return
 			}
 
-			if rejecter.Reject(claims) {
-				http.Error(w, "", http.StatusUnauthorized)
-				return
-			}
-
-			if !aclCheck(claims) {
-				http.Error(w, "", http.StatusForbidden)
-				return
-			}
-
-			if !scopesMatcher(claims) {
-				http.Error(w, "", http.StatusForbidden)
-				return
-			}
-
-			josehttp.PropagateHeaders(r, ps, claims, signatureConfig.PropagateClaimsPreserveArray)
+			josehttp.PropagateHeaders(r, ps, claims, scfg.PropagateClaimsPreserveArray)
 
 			handler(w, r)
 		}
 	}
+}
+
+func erroredHandler(w http.ResponseWriter, _ *http.Request) {
+	http.Error(w, "", http.StatusUnauthorized)
 }
 
 // FromCookie aliases http.FromCokie. Deprecated: use github.com/krakend/krakend-jose/v3/http.FromCookie
