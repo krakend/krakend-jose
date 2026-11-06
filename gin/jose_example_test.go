@@ -54,15 +54,15 @@ func Example_rs256() {
 	//  DEBUG: [ENDPOINT: GET /private][JWTSigner] Signer disabled
 	//  DEBUG: [ENDPOINT: GET /private][JWTValidator] Roles will be matched against the key: 'roles'
 	//  DEBUG: [ENDPOINT: GET /private][JWTValidator] No scope validation required
-	//  DEBUG: [ENDPOINT: GET /private][JWTValidator] Validator enabled for this endpoint. Operation debug is enabled
+	//  DEBUG: [ENDPOINT: GET /private][JWTValidator] Validator enabled. Operation debug is enabled
 	//  DEBUG: [ENDPOINT: POST /token][JWTSigner] Signer enabled
-	//  INFO: [ENDPOINT: POST /token][JWTValidator] Validator disabled for this endpoint
+	//  INFO: [ENDPOINT: POST /token][JWTValidator] Validator disabled
 	//  DEBUG: [ENDPOINT: POST /refresh_token][JWTSigner] Signer enabled
 	//  DEBUG: [ENDPOINT: POST /refresh_token][JWTValidator] Roles will be matched against the key: 'roles'
 	//  DEBUG: [ENDPOINT: POST /refresh_token][JWTValidator] No scope validation required
-	//  DEBUG: [ENDPOINT: POST /refresh_token][JWTValidator] Validator enabled for this endpoint. Operation debug is enabled
+	//  DEBUG: [ENDPOINT: POST /refresh_token][JWTValidator] Validator enabled. Operation debug is enabled
 	//  DEBUG: [ENDPOINT: GET /private][JWTSigner] Signer disabled
-	//  INFO: [ENDPOINT: GET /private][JWTValidator] Validator disabled for this endpoint
+	//  INFO: [ENDPOINT: GET /private][JWTValidator] Validator disabled
 	//  ERROR: [ENDPOINT: GET /private][JWTValidator] Unable to validate the token: Token not found
 }
 
@@ -97,15 +97,15 @@ func Example_hs256() {
 	//  DEBUG: [ENDPOINT: GET /private][JWTSigner] Signer disabled
 	//  DEBUG: [ENDPOINT: GET /private][JWTValidator] Roles will be matched against the key: 'roles'
 	//  DEBUG: [ENDPOINT: GET /private][JWTValidator] No scope validation required
-	//  DEBUG: [ENDPOINT: GET /private][JWTValidator] Validator enabled for this endpoint
+	//  DEBUG: [ENDPOINT: GET /private][JWTValidator] Validator enabled
 	//  DEBUG: [ENDPOINT: POST /token][JWTSigner] Signer enabled
-	//  INFO: [ENDPOINT: POST /token][JWTValidator] Validator disabled for this endpoint
+	//  INFO: [ENDPOINT: POST /token][JWTValidator] Validator disabled
 	//  DEBUG: [ENDPOINT: POST /refresh_token][JWTSigner] Signer enabled
 	//  DEBUG: [ENDPOINT: POST /refresh_token][JWTValidator] Roles will be matched against the key: 'roles'
 	//  DEBUG: [ENDPOINT: POST /refresh_token][JWTValidator] No scope validation required
-	//  DEBUG: [ENDPOINT: POST /refresh_token][JWTValidator] Validator enabled for this endpoint
+	//  DEBUG: [ENDPOINT: POST /refresh_token][JWTValidator] Validator enabled
 	//  DEBUG: [ENDPOINT: GET /private][JWTSigner] Signer disabled
-	//  INFO: [ENDPOINT: GET /private][JWTValidator] Validator disabled for this endpoint
+	//  INFO: [ENDPOINT: GET /private][JWTValidator] Validator disabled
 }
 
 func Example_hs256_cookie() {
@@ -168,7 +168,7 @@ func Example_hs256_cookie() {
 	//  DEBUG: [ENDPOINT: GET /private][JWTSigner] Signer disabled
 	//  DEBUG: [ENDPOINT: GET /private][JWTValidator] Roles will be matched against the key: 'roles'
 	//  DEBUG: [ENDPOINT: GET /private][JWTValidator] No scope validation required
-	//  DEBUG: [ENDPOINT: GET /private][JWTValidator] Validator enabled for this endpoint
+	//  DEBUG: [ENDPOINT: GET /private][JWTValidator] Validator enabled
 }
 
 func runValidationCycle(signerEndpointCfg, validatorEndpointCfg *config.EndpointConfig) {

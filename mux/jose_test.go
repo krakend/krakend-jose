@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	jose "github.com/krakend/krakend-jose/v3"
+	"github.com/luraproject/lura/v3/config"
 	"github.com/luraproject/lura/v3/logging"
 	"github.com/luraproject/lura/v3/proxy"
 	muxlura "github.com/luraproject/lura/v3/router/mux"
@@ -327,4 +328,51 @@ func jwkEndpoint(name string) http.HandlerFunc {
 
 func dummyParamsExtractor(_ *http.Request) map[string]string {
 	return map[string]string{}
+}
+
+func TestTokenSignatureValidator_buildDoesNotCrashAndFailsClosed(t *testing.T) {
+	server := httptest.NewServer(jwkEndpoint("public"))
+	defer server.Close()
+
+	// valid RS256 token with roles [role_a, role_b] and no scope claim
+	token := "eyJhbGciOiJSUzI1NiIsImtpZCI6IjIwMTEtMDQtMjkiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJodHRwOi8vYXBpLmV4YW1wbGUuY29tIiwiZXhwIjoyMDUxODgyNzU1LCJpc3MiOiJodHRwOi8vZXhhbXBsZS5jb20iLCJqdGkiOiJtbmIyM3Zjc3J0NzU2eXVpb21uYnZjeDk4ZXJ0eXVpb3AiLCJyb2xlcyI6WyJyb2xlX2EiLCJyb2xlX2IiXSwic3ViIjoiMTIzNDU2Nzg5MHF3ZXJ0eXVpbyJ9.u1fK05FpXctB-VkhhT3xu2WSIkEr1_VM71ald-yeKTesxhxg68TsHFEOBCgoXPuCviOP8QnUKNuVSeyMJh9z3nnrfQIjo9VZ2yicZu6ImYptSQ2DJbR80GDSPp-H7KnjaR9AAY0HZ0M-KUTaHdLABZFr307nkOeaJn_5jMpav7pqa7nrU3sI1CLX5pYVTggG6t7Zoqj2ebzzqdRxQEtdmZkD_NfH-3w3t-H0ylVdeBnPh-RvlspxC_mJzyUIJ0BwPlZpabppHm1ISySa4kwnwxEYnux0oZcb3PSoOZZZA467JySZ69PRlenNPdfGPL6E3uL1nqPHcxhte7ikSG4Q6Q"
+
+	for _, tc := range []struct {
+		name   string
+		extra  map[string]interface{}
+		status int
+	}{
+		{"any scopes matcher", map[string]interface{}{"scopes": []string{"read"}, "scopes_key": "scope"}, http.StatusForbidden},
+		{"all scopes matcher", map[string]interface{}{"scopes": []string{"read"}, "scopes_key": "scope", "scopes_matcher": "all"}, http.StatusForbidden},
+		{"short nested roles key", map[string]interface{}{"roles_key": "a.b", "roles_key_is_nested": true}, http.StatusForbidden},
+		{"unknown algorithm", map[string]interface{}{"alg": "unknown"}, http.StatusUnauthorized},
+		{"unparseable config", map[string]interface{}{"roles": "not-an-array"}, http.StatusUnauthorized},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := newVerifierEndpointCfg("RS256", server.URL, []string{"role_a"}, false)
+			ns := cfg.ExtraConfig[jose.ValidatorNamespace].(map[string]interface{})
+			for k, v := range tc.extra {
+				ns[k] = v
+			}
+
+			reached := false
+			next := func(_ *config.EndpointConfig, _ proxy.Proxy) http.HandlerFunc {
+				return func(w http.ResponseWriter, _ *http.Request) { reached = true }
+			}
+			logger, _ := logging.NewLogger("CRITICAL", new(bytes.Buffer), "")
+			h := TokenSignatureValidator(next, logger, nil)(cfg, proxy.NoopProxy)
+
+			req := httptest.NewRequest("GET", cfg.Endpoint, http.NoBody)
+			req.Header.Set("Authorization", "BEARER "+token)
+			w := httptest.NewRecorder()
+			h(w, req)
+
+			if reached {
+				t.Error("the request reached the protected handler")
+			}
+			if w.Code != tc.status {
+				t.Errorf("unexpected status code: %d, want %d", w.Code, tc.status)
+			}
+		})
+	}
 }
