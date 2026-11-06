@@ -449,27 +449,31 @@ func CalculateArrayHeadersToPropagate(propagationCfg [][]string, claims map[stri
 	return ArrayHeadersToPropagate(ps, claims), nil
 }
 
-var supportedAlgorithms = map[string]jose.SignatureAlgorithm{
-	"EdDSA": jose.EdDSA,
-	"HS256": jose.HS256,
-	"HS384": jose.HS384,
-	"HS512": jose.HS512,
-	"RS256": jose.RS256,
-	"RS384": jose.RS384,
-	"RS512": jose.RS512,
-	"ES256": jose.ES256,
-	"ES384": jose.ES384,
-	"ES512": jose.ES512,
-	"PS256": jose.PS256,
-	"PS384": jose.PS384,
-	"PS512": jose.PS512,
+var supportedAlgorithms = []jose.SignatureAlgorithm{
+	jose.EdDSA,
+	jose.HS256,
+	jose.HS384,
+	jose.HS512,
+	jose.RS256,
+	jose.RS384,
+	jose.RS512,
+	jose.ES256,
+	jose.ES384,
+	jose.ES512,
+	jose.PS256,
+	jose.PS384,
+	jose.PS512,
 }
 
 // SupportedAlgorithm returns the signature algorithm named s and whether the validator
 // supports it.
 func SupportedAlgorithm(s string) (jose.SignatureAlgorithm, bool) {
-	a, ok := supportedAlgorithms[s]
-	return a, ok
+	for _, sa := range supportedAlgorithms {
+		if (string)(sa) == s {
+			return sa, true
+		}
+	}
+	return jose.SignatureAlgorithm(""), false
 }
 
 func convertToStringSlice(input []interface{}) []string {

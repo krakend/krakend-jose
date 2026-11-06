@@ -3,7 +3,6 @@ package jose
 import (
 	"bytes"
 	"errors"
-	"sort"
 	"strings"
 	"testing"
 
@@ -35,21 +34,6 @@ func newTestJWTChecks(t *testing.T, scfg *SignatureConfig, buf *bytes.Buffer) *J
 		t.Fatal(err)
 	}
 	return j
-}
-
-func TestSignatureAlgorithmsMatchSupportedAlgorithms(t *testing.T) {
-	var got, want []string
-	for _, a := range signatureAlgorithms {
-		got = append(got, string(a))
-	}
-	for _, a := range supportedAlgorithms {
-		want = append(want, string(a))
-	}
-	sort.Strings(got)
-	sort.Strings(want)
-	if strings.Join(got, ",") != strings.Join(want, ",") {
-		t.Errorf("signatureAlgorithms %v != supportedAlgorithms %v", got, want)
-	}
 }
 
 func TestNewJWTChecks_unknownAlgReturnsError(t *testing.T) {

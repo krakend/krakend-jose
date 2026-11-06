@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-jose/go-jose/v4"
 	"github.com/go-jose/go-jose/v4/jwt"
 	auth0 "github.com/krakend/go-auth0/v2"
 	"github.com/luraproject/lura/v3/logging"
@@ -23,18 +22,8 @@ func StripBearerAndParse(token string) (*jwt.JSONWebToken, error) {
 	return ParseSigned(token)
 }
 
-// signatureAlgorithms is the list of algorithms accepted when parsing a token.
-// It is derived from supportedAlgorithms so both stay in sync.
-var signatureAlgorithms = func() []jose.SignatureAlgorithm {
-	algs := make([]jose.SignatureAlgorithm, 0, len(supportedAlgorithms))
-	for _, a := range supportedAlgorithms {
-		algs = append(algs, a)
-	}
-	return algs
-}()
-
 func ParseSigned(token string) (*jwt.JSONWebToken, error) {
-	return jwt.ParseSigned(token, signatureAlgorithms)
+	return jwt.ParseSigned(token, supportedAlgorithms)
 }
 
 // NewJWTValidator eturns a JWT validator for the given signature config.
@@ -237,47 +226,51 @@ var (
 func (j *JWTChecks) Check(bearer string) (Claims, error) {
 	token, err := StripBearerAndParse(bearer)
 	if err != nil {
-		return nil, j.debugErr(fmt.Errorf("Unable to parse token: %w", err)) // skipcq: SCC-ST1005
+		return nil, j.debugErr("Unable to parse token", err) // skipcq: SCC-ST1005
 	}
 
 	if err := j.validator.ValidateTokenHeaders(token); err != nil {
-		return nil, j.debugErr(fmt.Errorf("Unable to validate token: %w", err)) // skipcq: SCC-ST1005
+		return nil, j.debugErr("Unable to validate token", err) // skipcq: SCC-ST1005
 	}
 
 	key, err := j.secrets.SecretFromToken(token)
 	if err != nil {
-		return nil, j.debugErr(fmt.Errorf("Unable to validate token: %w", err)) // skipcq: SCC-ST1005
+		return nil, j.debugErr("Unable to validate token", err) // skipcq: SCC-ST1005
 	}
 
 	// verify the signature once, decoding both the registered and the full set of claims
 	var registered jwt.Claims
 	claims := make(Claims)
 	if err := token.Claims(key, &registered, &claims); err != nil {
-		return nil, j.debugErr(fmt.Errorf("Unable to validate token: %w", err)) // skipcq: SCC-ST1005
+		return nil, j.debugErr("Unable to validate token", err) // skipcq: SCC-ST1005
 	}
 
 	if err := registered.ValidateWithLeeway(j.expected.WithTime(time.Now()), j.leeway); err != nil {
-		return nil, j.debugErr(fmt.Errorf("Unable to validate token: %w", err)) // skipcq: SCC-ST1005
+		return nil, j.debugErr("Unable to validate token", err) // skipcq: SCC-ST1005
 	}
 
 	if j.rejecter.Reject(claims) {
-		return nil, j.debugErr(ErrTokenRejected)
+		return nil, j.debugErr("", ErrTokenRejected)
 	}
 
 	if !j.acl(claims) {
-		return nil, j.debugErr(ErrRequiredRoles)
+		return nil, j.debugErr("", ErrRequiredRoles)
 	}
 
 	if !j.scopesCheck(claims) {
-		return nil, j.debugErr(ErrRequiredScopes)
+		return nil, j.debugErr("", ErrRequiredScopes)
 	}
 
 	return claims, nil
 }
 
-func (j *JWTChecks) debugErr(err error) error {
+func (j *JWTChecks) debugErr(msg string, err error) error {
 	if j.scfg.OperationDebug {
-		j.logger.Error(j.logPrefix, err.Error())
+		if msg == "" {
+			j.logger.Error(j.logPrefix, err.Error())
+		} else {
+			j.logger.Error(j.logPrefix, msg, err.Error())
+		}
 	}
 	return err
 }
