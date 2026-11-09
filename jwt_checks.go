@@ -49,7 +49,7 @@ func NewJWTValidator(signatureConfig *SignatureConfig, extr ...auth0.RequestToke
 
 // newJWTValidator builds the validator and also returns the secret provider
 // and the leeway it was configured with.
-func newJWTValidator(signatureConfig *SignatureConfig, extr ...auth0.RequestTokenExtractor) (*auth0.JWTValidator, auth0.TokenSecretProvider, time.Duration, error) {
+func newJWTValidator(signatureConfig *SignatureConfig, extr ...auth0.RequestTokenExtractor) (*auth0.JWTValidator, auth0.TokenSecretProvider, time.Duration, error) { // skipcq: RVV-B0001
 	sa, ok := SupportedAlgorithm(signatureConfig.Alg)
 	if !ok {
 		return nil, nil, 0, fmt.Errorf("JOSE: unknown algorithm %s", signatureConfig.Alg)

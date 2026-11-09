@@ -357,7 +357,7 @@ func TestTokenSignatureValidator_buildDoesNotCrashAndFailsClosed(t *testing.T) {
 
 			reached := false
 			next := func(_ *config.EndpointConfig, _ proxy.Proxy) http.HandlerFunc {
-				return func(w http.ResponseWriter, _ *http.Request) { reached = true }
+				return func(_ http.ResponseWriter, _ *http.Request) { reached = true }
 			}
 			logger, _ := logging.NewLogger("CRITICAL", new(bytes.Buffer), "")
 			h := TokenSignatureValidator(next, logger, nil)(cfg, proxy.NoopProxy)
