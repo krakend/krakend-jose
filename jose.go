@@ -2,11 +2,11 @@ package jose
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"net/http"
 	"strings"
-	"time"
 
 	jose "github.com/go-jose/go-jose/v4"
 	"github.com/go-jose/go-jose/v4/jwt"
@@ -17,7 +17,7 @@ import (
 
 // ErrNoHeadersToPropagate is returned by NewPropagators when the configuration
 // does not declare any claim to be propagated as a header.
-var ErrNoHeadersToPropagate = fmt.Errorf("header propagation is disabled because there is no propagate_claims attribute")
+var ErrNoHeadersToPropagate = errors.New("header propagation is disabled because there is no propagate_claims attribute")
 
 // ExtractorFactory builds a function that extracts a JSON web token from a request.
 // The string argument is the name of the header or cookie holding the token.
@@ -32,55 +32,10 @@ type ExtractorFactory func(string) func(r *http.Request) (*jwt.JSONWebToken, err
 // decoded or the secret provider cannot be created. An invalid or empty Leeway
 // defaults to one second.
 func NewValidator(signatureConfig *SignatureConfig, cookieEf, headerEf ExtractorFactory) (*auth0.JWTValidator, error) {
-	sa, ok := supportedAlgorithms[signatureConfig.Alg]
-	if !ok {
-		return nil, fmt.Errorf("JOSE: unknown algorithm %s", signatureConfig.Alg)
-	}
-	te := auth0.FromMultiple(
+	return NewJWTValidator(signatureConfig,
 		auth0.RequestTokenExtractorFunc(headerEf(signatureConfig.AuthHeaderName)),
 		auth0.RequestTokenExtractorFunc(cookieEf(signatureConfig.CookieKey)),
 	)
-
-	decodedFs, err := DecodeFingerprints(signatureConfig.Fingerprints)
-	if err != nil {
-		return nil, err
-	}
-
-	cfg := SecretProviderConfig{
-		URI:                 signatureConfig.URI,
-		CacheEnabled:        signatureConfig.CacheEnabled,
-		CacheDuration:       signatureConfig.CacheDuration,
-		Fingerprints:        decodedFs,
-		Cs:                  signatureConfig.CipherSuites,
-		LocalCA:             signatureConfig.LocalCA,
-		AllowInsecure:       signatureConfig.DisableJWKSecurity,
-		LocalPath:           signatureConfig.LocalPath,
-		SecretURL:           signatureConfig.SecretURL,
-		CipherKey:           signatureConfig.CipherKey,
-		KeyIdentifyStrategy: signatureConfig.KeyIdentifyStrategy,
-		UnknownKeysTTL:      signatureConfig.UnknownKeysTTL,
-	}
-
-	sp, err := SecretProvider(cfg, te)
-	if err != nil {
-		return nil, err
-	}
-
-	leeway, err := time.ParseDuration(signatureConfig.Leeway)
-	if err != nil {
-		leeway = time.Second
-	}
-
-	return auth0.NewValidatorWithLeeway(
-		auth0.NewConfiguration(
-			sp,
-			signatureConfig.Audience,
-			signatureConfig.Issuer,
-			sa,
-		),
-		te,
-		leeway,
-	), nil
 }
 
 var (
@@ -495,27 +450,31 @@ func CalculateArrayHeadersToPropagate(propagationCfg [][]string, claims map[stri
 	return ArrayHeadersToPropagate(ps, claims), nil
 }
 
-var supportedAlgorithms = map[string]jose.SignatureAlgorithm{
-	"EdDSA": jose.EdDSA,
-	"HS256": jose.HS256,
-	"HS384": jose.HS384,
-	"HS512": jose.HS512,
-	"RS256": jose.RS256,
-	"RS384": jose.RS384,
-	"RS512": jose.RS512,
-	"ES256": jose.ES256,
-	"ES384": jose.ES384,
-	"ES512": jose.ES512,
-	"PS256": jose.PS256,
-	"PS384": jose.PS384,
-	"PS512": jose.PS512,
+var supportedAlgorithms = []jose.SignatureAlgorithm{
+	jose.EdDSA,
+	jose.HS256,
+	jose.HS384,
+	jose.HS512,
+	jose.RS256,
+	jose.RS384,
+	jose.RS512,
+	jose.ES256,
+	jose.ES384,
+	jose.ES512,
+	jose.PS256,
+	jose.PS384,
+	jose.PS512,
 }
 
 // SupportedAlgorithm returns the signature algorithm named s and whether the validator
 // supports it.
 func SupportedAlgorithm(s string) (jose.SignatureAlgorithm, bool) {
-	a, ok := supportedAlgorithms[s]
-	return a, ok
+	for _, sa := range supportedAlgorithms {
+		if string(sa) == s {
+			return sa, true
+		}
+	}
+	return jose.SignatureAlgorithm(""), false
 }
 
 func convertToStringSlice(input []interface{}) []string {
