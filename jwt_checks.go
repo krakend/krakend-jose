@@ -182,7 +182,7 @@ func NewJWTChecks(scfg *SignatureConfig, logger logging.Logger,
 	if err != nil {
 		// do not terminate the process here: the caller decides what to do
 		// with an endpoint that cannot be secured (e.g. reject all requests)
-		return nil, fmt.Errorf("unable to create the validator: %w", err)
+		return nil, err
 	}
 
 	aclCheck, err := ACLCheck(scfg, logger, logPrefix)

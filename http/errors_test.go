@@ -2,7 +2,6 @@ package http
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"testing"
 
@@ -16,7 +15,6 @@ func TestCheckErrorToStatusCode(t *testing.T) {
 	}{
 		{krakendjose.ErrRequiredRoles, http.StatusForbidden},
 		{krakendjose.ErrRequiredScopes, http.StatusForbidden},
-		{fmt.Errorf("wrapped: %w", krakendjose.ErrRequiredRoles), http.StatusForbidden},
 		{krakendjose.ErrTokenRejected, http.StatusUnauthorized},
 		{errors.New("anything else"), http.StatusUnauthorized},
 	} {

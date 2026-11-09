@@ -2,6 +2,7 @@ package jose
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"net/http"
@@ -16,7 +17,7 @@ import (
 
 // ErrNoHeadersToPropagate is returned by NewPropagators when the configuration
 // does not declare any claim to be propagated as a header.
-var ErrNoHeadersToPropagate = fmt.Errorf("header propagation is disabled because there is no propagate_claims attribute")
+var ErrNoHeadersToPropagate = errors.New("header propagation is disabled because there is no propagate_claims attribute")
 
 // ExtractorFactory builds a function that extracts a JSON web token from a request.
 // The string argument is the name of the header or cookie holding the token.
