@@ -293,3 +293,68 @@ func newVerifierEndpointCfg(alg, URL string, roles []string) *config.EndpointCon
 		},
 	}
 }
+
+func TestWWWAuthenticateHeader_String(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		h    *WWWAuthenticateHeader
+		want string
+	}{
+		{"nil", nil, ""},
+		{"empty scheme", &WWWAuthenticateHeader{Token68: "abc"}, ""},
+		{"scheme only", &WWWAuthenticateHeader{AuthScheme: "Bearer"}, "Bearer"},
+		{"token68", &WWWAuthenticateHeader{AuthScheme: "Newauth", Token68: "abc=="}, "Newauth abc=="},
+		{
+			"params",
+			&WWWAuthenticateHeader{AuthScheme: "Bearer", Params: []AuthenticateParam{
+				{Key: "realm", Val: "example"},
+				{Key: "scope", Val: "openid profile"},
+			}},
+			`Bearer realm="example", scope="openid profile"`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.h.String(); got != tc.want {
+				t.Errorf("got %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestWWWAuthenticateHeader_Validate(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		h       *WWWAuthenticateHeader
+		wantErr bool
+	}{
+		{"nil", nil, false},
+		{"scheme only", &WWWAuthenticateHeader{AuthScheme: "Bearer"}, false},
+		{"token68", &WWWAuthenticateHeader{AuthScheme: "Newauth", Token68: "abc=="}, false},
+		{"params", &WWWAuthenticateHeader{AuthScheme: "Bearer", Params: []AuthenticateParam{{Key: "realm", Val: "x"}}}, false},
+		{"empty scheme", &WWWAuthenticateHeader{}, true},
+		{"scheme with spaces", &WWWAuthenticateHeader{AuthScheme: "Bear er"}, true},
+		{"token68 and params", &WWWAuthenticateHeader{AuthScheme: "Bearer", Token68: "abc", Params: []AuthenticateParam{{Key: "realm", Val: "x"}}}, true},
+		{"token68 with spaces", &WWWAuthenticateHeader{AuthScheme: "Bearer", Token68: "a\tbc"}, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := tc.h.Validate(); (err != nil) != tc.wantErr {
+				t.Errorf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func Test_getSignatureConfig_wwwAuthenticate(t *testing.T) {
+	cfg := newVerifierEndpointCfg("RS256", "http://example.com", []string{})
+	cfg.ExtraConfig[ValidatorNamespace].(map[string]interface{})["www_authenticate"] = map[string]interface{}{
+		"auth_scheme": "Bearer",
+		"params":      []map[string]string{{"key": "realm", "value": "example"}},
+	}
+	scfg, err := GetSignatureConfig(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := scfg.WWWAuthenticate.String(); got != `Bearer realm="example"` {
+		t.Errorf("unexpected header: %q", got)
+	}
+}

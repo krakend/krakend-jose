@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/textproto"
 	"strings"
+	"unicode"
 
 	jose "github.com/go-jose/go-jose/v4"
 	"github.com/krakend/go-auth0/v2"
@@ -77,6 +78,9 @@ type SignatureConfig struct {
 	Leeway string `json:"leeway"`
 	// UnknownKeysTTL is the cooldown for keys not found in the JWK (see JWKClientOptions)
 	UnknownKeysTTL string `json:"failed_jwk_key_cooldown"`
+	// WWWAuthenticate is the header advertising the HTTP authentication methods
+	// or challenges that might be used to gain access
+	WWWAuthenticate *WWWAuthenticateHeader `json:"www_authenticate"`
 }
 
 // SignerConfig is the configuration of the JWT signer, declared under the
@@ -108,6 +112,66 @@ type SignerConfig struct {
 	SecretURL string `json:"secret_url,omitempty"`
 	// CipherKey is the encrypted key used to decrypt the file at LocalPath
 	CipherKey []byte `json:"cypher_key,omitempty"`
+}
+
+type AuthenticateParam struct {
+	Key string `json:"key"`
+	Val string `json:"value"`
+}
+
+func (p *AuthenticateParam) String() string {
+	if p == nil {
+		return ""
+	}
+	return fmt.Sprintf("%s=%q", p.Key, p.Val)
+}
+
+type WWWAuthenticateHeader struct {
+	AuthScheme string              `json:"auth_scheme"`
+	Token68    string              `json:"token68"`
+	Params     []AuthenticateParam `json:"params"`
+}
+
+// Validate checks that the header can be rendered as a valid challenge.
+// A nil header is valid (the header is disabled).
+func (h *WWWAuthenticateHeader) Validate() error {
+	if h == nil {
+		return nil
+	}
+	if h.AuthScheme == "" {
+		return errors.New("auth_scheme cannot be empty")
+	}
+	if strings.IndexFunc(h.AuthScheme, unicode.IsSpace) >= 0 {
+		return errors.New("auth_scheme cannot have spaces")
+	}
+	if h.Token68 != "" {
+		if len(h.Params) > 0 {
+			return errors.New("cannot have both token68 and params")
+		}
+		if strings.IndexFunc(h.Token68, unicode.IsSpace) >= 0 {
+			return errors.New("token68 cannot have spaces")
+		}
+	}
+	return nil
+}
+
+// String renders the header value. It returns an empty string when the
+// header is not configured, meaning that no header should be sent.
+func (h *WWWAuthenticateHeader) String() string {
+	if h == nil || h.AuthScheme == "" {
+		return ""
+	}
+	if h.Token68 != "" {
+		return h.AuthScheme + " " + h.Token68
+	}
+	if len(h.Params) == 0 {
+		return h.AuthScheme
+	}
+	s := make([]string, 0, len(h.Params))
+	for _, p := range h.Params {
+		s = append(s, p.String())
+	}
+	return h.AuthScheme + " " + strings.Join(s, ", ")
 }
 
 var (
