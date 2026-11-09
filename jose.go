@@ -470,7 +470,7 @@ var supportedAlgorithms = []jose.SignatureAlgorithm{
 // supports it.
 func SupportedAlgorithm(s string) (jose.SignatureAlgorithm, bool) {
 	for _, sa := range supportedAlgorithms {
-		if (string)(sa) == s {
+		if string(sa) == s {
 			return sa, true
 		}
 	}
