@@ -109,6 +109,20 @@ func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, r
 		}
 		rejecter := rejecterF.New(logger, cfg)
 
+		if err := scfg.WWWAuthenticate.Validate(); err != nil {
+			logger.Warning(logPrefix, "Invalid www_authenticate config:", err.Error())
+		}
+		wwwAuthenticate := scfg.WWWAuthenticate.String()
+		httpError := http.Error
+		if wwwAuthenticate != "" {
+			httpError = func(w http.ResponseWriter, msg string, status int) {
+				if status == http.StatusUnauthorized {
+					w.Header().Set("WWW-Authenticate", wwwAuthenticate)
+				}
+				http.Error(w, msg, status)
+			}
+		}
+
 		jwtChecker, err := krakendjose.NewJWTChecks(scfg, logger, logPrefix, rejecter)
 		if err != nil {
 			logger.Warning(logPrefix, "Unable to create JWT validator:", err.Error())
@@ -129,7 +143,7 @@ func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, r
 				if scfg.OperationDebug {
 					logger.Error(logPrefix, "Unable to validate the token:", err.Error())
 				}
-				http.Error(w, err.Error(), http.StatusUnauthorized)
+				httpError(w, err.Error(), http.StatusUnauthorized)
 				return
 			}
 
@@ -140,7 +154,7 @@ func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, r
 				if status == http.StatusUnauthorized && !errors.Is(err, krakendjose.ErrTokenRejected) {
 					msg = err.Error()
 				}
-				http.Error(w, msg, status)
+				httpError(w, msg, status)
 				return
 			}
 
