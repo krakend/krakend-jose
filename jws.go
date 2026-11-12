@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/textproto"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -123,7 +124,25 @@ func (p *AuthenticateParam) String() string {
 	if p == nil {
 		return ""
 	}
-	return fmt.Sprintf("%s=%q", p.Key, p.Val)
+	var b strings.Builder
+	b.Grow(p.len())
+	p.writeTo(&b)
+	return b.String()
+}
+
+// len returns the expected length of the rendered param, assuming
+// that its value does not need escaping.
+func (p *AuthenticateParam) len() int {
+	return len(p.Key) + len(p.Val) + 3 // = and the two quotes
+}
+
+// writeTo renders the param as key="value". The value is quoted
+// the same way as with %q.
+func (p *AuthenticateParam) writeTo(b *strings.Builder) {
+	var scratch [64]byte
+	b.WriteString(p.Key)
+	b.WriteByte('=')
+	b.Write(strconv.AppendQuote(scratch[:0], p.Val))
 }
 
 type WWWAuthenticateHeader struct {
@@ -167,11 +186,22 @@ func (h *WWWAuthenticateHeader) String() string {
 	if len(h.Params) == 0 {
 		return h.AuthScheme
 	}
-	s := make([]string, 0, len(h.Params))
-	for _, p := range h.Params {
-		s = append(s, p.String())
+	const sep = ", "
+	n := len(h.AuthScheme) + 1 + len(sep)*(len(h.Params)-1)
+	for i := range h.Params {
+		n += h.Params[i].len()
 	}
-	return h.AuthScheme + " " + strings.Join(s, ", ")
+	var b strings.Builder
+	b.Grow(n)
+	b.WriteString(h.AuthScheme)
+	b.WriteByte(' ')
+	for i := range h.Params {
+		if i > 0 {
+			b.WriteString(sep)
+		}
+		h.Params[i].writeTo(&b)
+	}
+	return b.String()
 }
 
 var (
