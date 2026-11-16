@@ -90,10 +90,14 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 		}
 		rejecter := rejecterF.New(logger, cfg)
 
+		// the header is only sent on 401 responses (RFC 9110, section 11.6.1).
+		// 403 responses from failed roles or scopes do not get it.
+		var wwwAuthenticate string
 		if err := scfg.WWWAuthenticate.Validate(); err != nil {
-			logger.Warning(logPrefix, "Invalid www_authenticate config:", err.Error())
+			logger.Warning(logPrefix, "Invalid www_authenticate config, the header will not be sent:", err.Error())
+		} else {
+			wwwAuthenticate = scfg.WWWAuthenticate.String()
 		}
-		wwwAuthenticate := scfg.WWWAuthenticate.String()
 		abortWithStatus := (*gin.Context).AbortWithStatus
 		if wwwAuthenticate != "" {
 			abortWithStatus = func(c *gin.Context, status int) {

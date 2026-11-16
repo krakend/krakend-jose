@@ -27,7 +27,7 @@ func TestTokenSignatureValidator_wwwAuthenticate(t *testing.T) { // skipcq: GO-R
 			{"key": "scope", "value": "openid profile"},
 		},
 	}
-	// invalid: token68 and params at the same time. It must warn but keep working.
+	// invalid: token68 and params at the same time. It must warn, not send the header, and keep working.
 	invalid := map[string]interface{}{
 		"auth_scheme": "Newauth",
 		"token68":     "abc==",
@@ -49,7 +49,7 @@ func TestTokenSignatureValidator_wwwAuthenticate(t *testing.T) { // skipcq: GO-R
 		{name: "token68", www: map[string]interface{}{"auth_scheme": "Newauth", "token68": "abc=="}, wantStatus: http.StatusUnauthorized, wantHeader: "Newauth abc=="},
 		{name: "scheme only", www: map[string]interface{}{"auth_scheme": "Bearer"}, wantStatus: http.StatusUnauthorized, wantHeader: "Bearer"},
 		{name: "empty scheme sends no header", www: map[string]interface{}{"token68": "abc=="}, wantStatus: http.StatusUnauthorized, wantLog: "Invalid www_authenticate config"},
-		{name: "invalid config warns and keeps working", www: invalid, wantStatus: http.StatusUnauthorized, wantHeader: `Newauth abc==`, wantLog: "Invalid www_authenticate config"},
+		{name: "invalid config warns and sends no header", www: invalid, wantStatus: http.StatusUnauthorized, wantLog: "Invalid www_authenticate config"},
 		{name: "validator build error uses erroredHandler", www: bearerRealm, extra: map[string]interface{}{"alg": "unknown"}, authHeader: "BEARER " + token, wantStatus: http.StatusUnauthorized},
 		{name: "forbidden has no header", www: bearerRealm, extra: map[string]interface{}{"roles": []string{"role_c"}}, authHeader: "BEARER " + token, wantStatus: http.StatusForbidden},
 		{name: "valid token has no header", www: bearerRealm, authHeader: "BEARER " + token, wantStatus: http.StatusOK},

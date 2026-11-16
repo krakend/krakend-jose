@@ -5,9 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/textproto"
-	"strconv"
 	"strings"
-	"unicode"
 
 	jose "github.com/go-jose/go-jose/v4"
 	"github.com/krakend/go-auth0/v2"
@@ -115,40 +113,35 @@ type SignerConfig struct {
 	CipherKey []byte `json:"cypher_key,omitempty"`
 }
 
+// AuthenticateParam is an auth-param of a WWW-Authenticate challenge,
+// rendered as key="value".
 type AuthenticateParam struct {
+	// Key is the name of the param. It must be an RFC 9110 token.
 	Key string `json:"key"`
-	Val string `json:"value"`
+	// Value is the value of the param. It is always sent as a quoted-string.
+	Value string `json:"value"`
 }
 
+// String renders the param as key="value", escaping the value as an
+// RFC 9110 quoted-string.
 func (p *AuthenticateParam) String() string {
 	if p == nil {
 		return ""
 	}
-	var b strings.Builder
-	b.Grow(p.len())
-	p.writeTo(&b)
-	return b.String()
+	return p.Key + "=" + quoteString(p.Value)
 }
 
-// len returns the expected length of the rendered param, assuming
-// that its value does not need escaping.
-func (p *AuthenticateParam) len() int {
-	return len(p.Key) + len(p.Val) + 3 // = and the two quotes
-}
-
-// writeTo renders the param as key="value". The value is quoted
-// the same way as with %q.
-func (p *AuthenticateParam) writeTo(b *strings.Builder) {
-	var scratch [64]byte
-	b.WriteString(p.Key)
-	b.WriteByte('=')
-	b.Write(strconv.AppendQuote(scratch[:0], p.Val))
-}
-
+// WWWAuthenticateHeader is the challenge sent in the WWW-Authenticate header
+// of 401 responses. It has an auth scheme followed by either a token68 or a
+// list of params (RFC 9110, section 11.6.1).
 type WWWAuthenticateHeader struct {
-	AuthScheme string              `json:"auth_scheme"`
-	Token68    string              `json:"token68"`
-	Params     []AuthenticateParam `json:"params"`
+	// AuthScheme is the authentication scheme (e.g. Bearer). It must be an RFC 9110 token.
+	AuthScheme string `json:"auth_scheme"`
+	// Token68 is an optional token68 sent after the scheme. It cannot be
+	// combined with Params.
+	Token68 string `json:"token68"`
+	// Params is an optional list of auth-params sent after the scheme.
+	Params []AuthenticateParam `json:"params"`
 }
 
 // Validate checks that the header can be rendered as a valid challenge.
@@ -160,15 +153,26 @@ func (h *WWWAuthenticateHeader) Validate() error {
 	if h.AuthScheme == "" {
 		return errors.New("auth_scheme cannot be empty")
 	}
-	if strings.IndexFunc(h.AuthScheme, unicode.IsSpace) >= 0 {
-		return errors.New("auth_scheme cannot have spaces")
+	if !isToken(h.AuthScheme) {
+		return fmt.Errorf("auth_scheme %q has invalid characters", h.AuthScheme)
 	}
 	if h.Token68 != "" {
 		if len(h.Params) > 0 {
 			return errors.New("cannot have both token68 and params")
 		}
-		if strings.IndexFunc(h.Token68, unicode.IsSpace) >= 0 {
-			return errors.New("token68 cannot have spaces")
+		if !isToken68(h.Token68) {
+			return fmt.Errorf("token68 %q has invalid characters", h.Token68)
+		}
+	}
+	for i := range h.Params {
+		if h.Params[i].Key == "" {
+			return fmt.Errorf("param %d: key cannot be empty", i)
+		}
+		if !isToken(h.Params[i].Key) {
+			return fmt.Errorf("param %d: key %q has invalid characters", i, h.Params[i].Key)
+		}
+		if !isQuotable(h.Params[i].Value) {
+			return fmt.Errorf("param %d: value of %q has control characters", i, h.Params[i].Key)
 		}
 	}
 	return nil
@@ -186,21 +190,78 @@ func (h *WWWAuthenticateHeader) String() string {
 	if len(h.Params) == 0 {
 		return h.AuthScheme
 	}
-	const sep = ", "
-	n := len(h.AuthScheme) + 1 + len(sep)*(len(h.Params)-1)
+	params := make([]string, len(h.Params))
 	for i := range h.Params {
-		n += h.Params[i].len()
+		params[i] = h.Params[i].String()
 	}
-	var b strings.Builder
-	b.Grow(n)
-	b.WriteString(h.AuthScheme)
-	b.WriteByte(' ')
-	for i := range h.Params {
-		if i > 0 {
-			b.WriteString(sep)
+	return h.AuthScheme + " " + strings.Join(params, ", ")
+}
+
+// isToken reports whether s is a non empty RFC 9110 token.
+func isToken(s string) bool {
+	if s == "" {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if isAlphaNum(c) || strings.IndexByte("!#$%&'*+-.^_`|~", c) >= 0 {
+			continue
 		}
-		h.Params[i].writeTo(&b)
+		return false
 	}
+	return true
+}
+
+// isToken68 reports whether s is a non empty RFC 9110 token68: a sequence of
+// ALPHA / DIGIT / "-" / "." / "_" / "~" / "+" / "/" followed by optional "=".
+func isToken68(s string) bool {
+	i := 0
+	for ; i < len(s); i++ {
+		c := s[i]
+		if !isAlphaNum(c) && strings.IndexByte("-._~+/", c) < 0 {
+			break
+		}
+	}
+	if i == 0 {
+		return false
+	}
+	for ; i < len(s); i++ {
+		if s[i] != '=' {
+			return false
+		}
+	}
+	return true
+}
+
+func isAlphaNum(c byte) bool {
+	return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9')
+}
+
+// isQuotable reports whether s can be sent as an RFC 9110 quoted-string:
+// it cannot contain control characters other than HTAB.
+func isQuotable(s string) bool {
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if (c < 0x20 && c != '\t') || c == 0x7f {
+			return false
+		}
+	}
+	return true
+}
+
+// quoteString renders s as an RFC 9110 quoted-string, where only `"` and `\` are
+// escaped with a backslash.
+func quoteString(s string) string {
+	var b strings.Builder
+	b.Grow(len(s) + 2)
+	b.WriteByte('"')
+	for i := 0; i < len(s); i++ {
+		if s[i] == '"' || s[i] == '\\' {
+			b.WriteByte('\\')
+		}
+		b.WriteByte(s[i])
+	}
+	b.WriteByte('"')
 	return b.String()
 }
 
