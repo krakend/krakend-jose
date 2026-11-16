@@ -90,6 +90,24 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 		}
 		rejecter := rejecterF.New(logger, cfg)
 
+		// the header is only sent on 401 responses (RFC 9110, section 11.6.1).
+		// 403 responses from failed roles or scopes do not get it.
+		var wwwAuthenticate string
+		if err := scfg.WWWAuthenticate.Validate(); err != nil {
+			logger.Warning(logPrefix, "Invalid www_authenticate config, the header will not be sent:", err.Error())
+		} else {
+			wwwAuthenticate = scfg.WWWAuthenticate.String()
+		}
+		abortWithStatus := (*gin.Context).AbortWithStatus
+		if wwwAuthenticate != "" {
+			abortWithStatus = func(c *gin.Context, status int) {
+				if status == http.StatusUnauthorized {
+					c.Header("WWW-Authenticate", wwwAuthenticate)
+				}
+				c.AbortWithStatus(status)
+			}
+		}
+
 		jwtChecker, err := krakendjose.NewJWTChecks(scfg, logger, logPrefix, rejecter)
 		if err != nil {
 			logger.Warning(logPrefix, "Unable to create JWT validator:", err.Error())
@@ -117,13 +135,13 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 				if scfg.OperationDebug {
 					logger.Error(logPrefix, "Unable to validate the token:", err.Error())
 				}
-				c.AbortWithStatus(http.StatusUnauthorized)
+				abortWithStatus(c, http.StatusUnauthorized)
 				return
 			}
 
 			claims, err := jwtChecker.Check(strToken)
 			if err != nil {
-				c.AbortWithStatus(josehttp.CheckErrorToStatusCode(err))
+				abortWithStatus(c, josehttp.CheckErrorToStatusCode(err))
 				return
 			}
 			josehttp.PropagateHeaders(c.Request, propagators, claims, scfg.PropagateClaimsPreserveArray)
