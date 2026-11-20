@@ -507,6 +507,41 @@ func TestCalculateHeadersToPropagate(t *testing.T) {
 				"x-f": "",
 			},
 		},
+		{
+			cfg: [][]string{
+				{"https://identity.example.com/claims/attributes", "x-attributes"},
+				{"http://api.example.com/custom/id", "x-id"},
+				{"https://identity.example.com/claims/missing", "x-missing"},
+				{"d.e", "x-not-http"},
+				{"d.f", "x-nested"},
+				{"a..b", "x-invalid-path"},
+				{"http://a..b", "x-http-invalid-path"},
+				{"httpfoo.bar", "x-http-nested"},
+			},
+			claims: map[string]interface{}{
+				"https://identity.example.com/claims/attributes": []interface{}{"a", "b"},
+				"http://api.example.com/custom/id":               1,
+				"d.e":                                            "literal",
+				"a..b":                                           "double-dot",
+				"http://a..b":                                    "http-double-dot",
+				"d": map[string]interface{}{
+					"e": "nested",
+					"f": "nested-only",
+				},
+				"httpfoo": map[string]interface{}{
+					"bar": "http-nested",
+				},
+			},
+			expected: map[string]string{
+				"x-attributes":        "a,b",
+				"x-id":                "1",
+				"x-missing":           "",
+				"x-not-http":          "nested",
+				"x-nested":            "nested-only",
+				"x-http-invalid-path": "http-double-dot",
+				"x-http-nested":       "http-nested",
+			},
+		},
 	} {
 		res, err := CalculateHeadersToPropagate(tc.cfg, tc.claims)
 		if err != nil {
@@ -568,6 +603,41 @@ func TestCalculateArrayHeadersToPropagate(t *testing.T) {
 				"x-d": {`{"a":1,"b":"foo","c":["one","two"]}`},
 				"x-e": {"one", "two"},
 				"x-f": {""},
+			},
+		},
+		{
+			cfg: [][]string{
+				{"https://identity.example.com/claims/attributes", "x-attributes"},
+				{"http://api.example.com/custom/id", "x-id"},
+				{"https://identity.example.com/claims/missing", "x-missing"},
+				{"d.e", "x-not-http"},
+				{"d.f", "x-nested"},
+				{"a..b", "x-invalid-path"},
+				{"http://a..b", "x-http-invalid-path"},
+				{"httpfoo.bar", "x-http-nested"},
+			},
+			claims: map[string]interface{}{
+				"https://identity.example.com/claims/attributes": []interface{}{"a", "b"},
+				"http://api.example.com/custom/id":               1,
+				"d.e":                                            "literal",
+				"a..b":                                           "double-dot",
+				"http://a..b":                                    "http-double-dot",
+				"d": map[string]interface{}{
+					"e": "nested",
+					"f": "nested-only",
+				},
+				"httpfoo": map[string]interface{}{
+					"bar": "http-nested",
+				},
+			},
+			expected: map[string][]string{
+				"x-attributes":        {"a", "b"},
+				"x-id":                {"1"},
+				"x-missing":           {""},
+				"x-not-http":          {"nested"},
+				"x-nested":            {"nested-only"},
+				"x-http-invalid-path": {"http-double-dot"},
+				"x-http-nested":       {"http-nested"},
 			},
 		},
 	} {
