@@ -310,13 +310,15 @@ func (c Claims) List(name string) ([]string, bool) {
 // Propagator copies the value of a claim, selected with a dot notation path, into a
 // request header.
 type Propagator struct {
-	e *dotnotation.Extractor
-	h string
+	e     *dotnotation.Extractor
+	claim string
+	h     string
 }
 
 // NewPropagators builds a Propagator for every [claim, header] pair in propagationCfg.
-// Pairs with a different number of elements or an invalid claim path are skipped. It
-// returns ErrNoHeadersToPropagate if propagationCfg is empty.
+// Pairs with a different number of elements are skipped, and so are pairs with an
+// invalid claim path, unless the claim name starts with "http": that one is still
+// looked up as a whole. It returns ErrNoHeadersToPropagate if propagationCfg is empty.
 func NewPropagators(propagationCfg [][]string) ([]Propagator, error) {
 	if len(propagationCfg) == 0 {
 		return nil, ErrNoHeadersToPropagate
@@ -326,16 +328,35 @@ func NewPropagators(propagationCfg [][]string) ([]Propagator, error) {
 		if len(tuple) != 2 {
 			continue
 		}
+		prop := Propagator{h: tuple[1]}
+		if strings.HasPrefix(tuple[0], "http") && strings.Contains(tuple[0], ".") {
+			prop.claim = tuple[0]
+		}
 		e, err := dotnotation.CompileExtractor(tuple[0])
-		if err != nil {
+		if err == nil {
+			prop.e = e
+		} else if prop.claim == "" {
 			continue
 		}
-		p = append(p, Propagator{
-			e: e,
-			h: tuple[1],
-		})
+		p = append(p, prop)
 	}
 	return p, nil
+}
+
+func (p Propagator) extract(claims map[string]interface{}) (interface{}, bool) {
+	if p.claim != "" {
+		if v, ok := claims[p.claim]; ok {
+			return v, true
+		}
+	}
+	if p.e == nil {
+		return nil, false
+	}
+	v := p.e.Extract(claims)
+	if len(v) != 1 {
+		return nil, false
+	}
+	return v[0], true
 }
 
 func toString(tmp interface{}) string {
@@ -399,12 +420,12 @@ func toList(tmp interface{}) []string {
 func HeadersToPropagate(ps []Propagator, claims map[string]interface{}) map[string]string {
 	propagated := make(map[string]string)
 	for _, p := range ps {
-		v := p.e.Extract(claims)
-		if len(v) != 1 {
+		v, ok := p.extract(claims)
+		if !ok {
 			propagated[p.h] = ""
 			continue
 		}
-		propagated[p.h] = toString(v[0])
+		propagated[p.h] = toString(v)
 	}
 	return propagated
 }
@@ -414,12 +435,12 @@ func HeadersToPropagate(ps []Propagator, claims map[string]interface{}) map[stri
 func ArrayHeadersToPropagate(ps []Propagator, claims map[string]interface{}) map[string][]string {
 	propagated := make(map[string][]string)
 	for _, p := range ps {
-		v := p.e.Extract(claims)
-		if len(v) != 1 {
+		v, ok := p.extract(claims)
+		if !ok {
 			propagated[p.h] = []string{""}
 			continue
 		}
-		propagated[p.h] = toList(v[0])
+		propagated[p.h] = toList(v)
 	}
 	return propagated
 }
