@@ -293,3 +293,81 @@ func newVerifierEndpointCfg(alg, URL string, roles []string) *config.EndpointCon
 		},
 	}
 }
+
+func TestWWWAuthenticateHeader_String(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		h    *WWWAuthenticateHeader
+		want string
+	}{
+		{"nil", nil, ""},
+		{"empty scheme", &WWWAuthenticateHeader{Token68: "abc"}, ""},
+		{"scheme only", &WWWAuthenticateHeader{AuthScheme: "Bearer"}, "Bearer"},
+		{"token68", &WWWAuthenticateHeader{AuthScheme: "Newauth", Token68: "abc=="}, "Newauth abc=="},
+		{
+			"params",
+			&WWWAuthenticateHeader{AuthScheme: "Bearer", Params: []AuthenticateParam{
+				{Key: "realm", Value: "example"},
+				{Key: "scope", Value: "openid profile"},
+			}},
+			`Bearer realm="example", scope="openid profile"`,
+		},
+		{"value with tab", &WWWAuthenticateHeader{AuthScheme: "Bearer", Params: []AuthenticateParam{{Key: "realm", Value: "a\tb"}}}, "Bearer realm=\"a\tb\""},
+		{"value with quote and backslash", &WWWAuthenticateHeader{AuthScheme: "Bearer", Params: []AuthenticateParam{{Key: "realm", Value: `a"b\c`}}}, `Bearer realm="a\"b\\c"`},
+		{"value with unicode", &WWWAuthenticateHeader{AuthScheme: "Bearer", Params: []AuthenticateParam{{Key: "realm", Value: "ñ"}}}, `Bearer realm="ñ"`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.h.String(); got != tc.want {
+				t.Errorf("got %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestWWWAuthenticateHeader_Validate(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		h       *WWWAuthenticateHeader
+		wantErr bool
+	}{
+		{"nil", nil, false},
+		{"scheme only", &WWWAuthenticateHeader{AuthScheme: "Bearer"}, false},
+		{"token68", &WWWAuthenticateHeader{AuthScheme: "Newauth", Token68: "abc=="}, false},
+		{"params", &WWWAuthenticateHeader{AuthScheme: "Bearer", Params: []AuthenticateParam{{Key: "realm", Value: "x"}}}, false},
+		{"empty scheme", &WWWAuthenticateHeader{}, true},
+		{"scheme with spaces", &WWWAuthenticateHeader{AuthScheme: "Bear er"}, true},
+		{"token68 and params", &WWWAuthenticateHeader{AuthScheme: "Bearer", Token68: "abc", Params: []AuthenticateParam{{Key: "realm", Value: "x"}}}, true},
+		{"token68 with spaces", &WWWAuthenticateHeader{AuthScheme: "Bearer", Token68: "a\tbc"}, true},
+		{"token68 padding", &WWWAuthenticateHeader{AuthScheme: "Newauth", Token68: "a-._~+/b=="}, false},
+		{"token68 only padding", &WWWAuthenticateHeader{AuthScheme: "Newauth", Token68: "=="}, true},
+		{"token68 padding in the middle", &WWWAuthenticateHeader{AuthScheme: "Newauth", Token68: "a=b"}, true},
+		{"token68 with quote", &WWWAuthenticateHeader{AuthScheme: "Bearer", Token68: `a"b`}, true},
+		{"scheme with comma", &WWWAuthenticateHeader{AuthScheme: "Bearer,"}, true},
+		{"param key with space", &WWWAuthenticateHeader{AuthScheme: "Bearer", Params: []AuthenticateParam{{Key: "realm x", Value: "x"}}}, true},
+		{"empty param key", &WWWAuthenticateHeader{AuthScheme: "Bearer", Params: []AuthenticateParam{{Key: "", Value: "x"}}}, true},
+		{"param value with tab", &WWWAuthenticateHeader{AuthScheme: "Bearer", Params: []AuthenticateParam{{Key: "realm", Value: "a\tb"}}}, false},
+		{"param value with newline", &WWWAuthenticateHeader{AuthScheme: "Bearer", Params: []AuthenticateParam{{Key: "realm", Value: "a\nb"}}}, true},
+		{"param value with DEL", &WWWAuthenticateHeader{AuthScheme: "Bearer", Params: []AuthenticateParam{{Key: "realm", Value: "a\x7fb"}}}, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := tc.h.Validate(); (err != nil) != tc.wantErr {
+				t.Errorf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func Test_getSignatureConfig_wwwAuthenticate(t *testing.T) {
+	cfg := newVerifierEndpointCfg("RS256", "http://example.com", []string{})
+	cfg.ExtraConfig[ValidatorNamespace].(map[string]interface{})["www_authenticate"] = map[string]interface{}{
+		"auth_scheme": "Bearer",
+		"params":      []map[string]string{{"key": "realm", "value": "example"}},
+	}
+	scfg, err := GetSignatureConfig(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := scfg.WWWAuthenticate.String(); got != `Bearer realm="example"` {
+		t.Errorf("unexpected header: %q", got)
+	}
+}
